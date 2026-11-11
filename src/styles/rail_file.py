@@ -190,7 +190,6 @@ class RailFile(ft.GestureDetector):
             bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
             border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            
         )
 
         self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
@@ -201,7 +200,6 @@ class RailFile(ft.GestureDetector):
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True)], expand=True)),
             content=shad.ContextMenu(
                 ft.Container(
-                
                     ft.Row([
                         leading_control, 
                         self.title_text,

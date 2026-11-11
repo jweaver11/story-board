@@ -624,7 +624,6 @@ class ContentRail(ft.Column):
                 ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
             ],
         )
-
         
         # Load our content directory data into the rail
         load_directory_data(
@@ -636,25 +635,30 @@ class ContentRail(ft.Column):
 
         
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
-        content.controls.append(ft.Container(expand=True))
+        content.controls.append(
+            ft.Container(
+                shad.ContextMenu(
+                    ft.Container(expand=True, height=1000), # Force CM to work until bottom of page
+                    expand=True,
+                    items=self.new_item_options()
+                )
+            )
+        )
 
 
         # Wrap the gd in a drag target so we can move characters here
         dt = ft.DragTarget(
             group="widgets", on_will_accept=self.highlight_rail, on_leave=self.stop_highlight_rail,
             content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path'))
+            on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path')),
+            expand=True
         )
 
-        self.highlight_container = ft.Container(dt, border_radius=6)
+        self.highlight_container = ft.Container(dt, border_radius=6, expand=True)
    
         self.controls = [
             header,
             ft.Divider(thickness=2, leading_indent=8),
-            shad.ContextMenu(
-                self.highlight_container,  # Container to hold so we can highlight
-                expand=True,
-                items=self.new_item_options()
-            )
+            self.highlight_container,
         ]
         

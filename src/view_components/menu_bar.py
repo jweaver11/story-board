@@ -19,6 +19,7 @@ import stat
 from constants import STORIES_DIRECTORY_PATH
 from styles.snack_bar import SnackBar
 from utils import google_drive
+import flet_shadcn_ui as shad
 
 
 
@@ -388,88 +389,66 @@ class MenuBar(ft.Container):
             ft.context.page.show_dialog(dlg)
             
 
-            
+        def highlight(e):
+            e.control.content.bgcolor = ft.Colors.with_opacity(0.25, ft.Colors.BLUE_400)
+            e.control.update()
+
+        def unhighlight(e):
+            e.control.content.bgcolor = None
+            e.control.update()
     
         # Create our menu bar with submenu items
-        file_options = ft.MenuBar(
-            #expand=True,
-            style=ft.MenuStyle(     # Styling our menubar
-                alignment=ft.Alignment.CENTER,
-                bgcolor=ft.Colors.TRANSPARENT,
-                shadow_color=ft.Colors.TRANSPARENT,
-                padding=ft.Padding.all(0)
-            ),
-            controls=[  # The controls shown in our menu bar from left to right
-                ft.SubmenuButton(   # Button that opens a subment
-                    content=ft.Container(
-                        #content=ft.Text("File", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),     # Content of subment button
-                        content=ft.Icon(ft.Icons.MENU, ft.Colors.PRIMARY),
-                        alignment=ft.Alignment.CENTER
-                    ), 
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    menu_style=ft.MenuStyle(padding=ft.Padding.all(0)),
-                    
-                    controls=[      # The options shown inside of our button
-                        ft.MenuItemButton(
-                            content=ft.Text("New Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_create_story,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Open Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY),
-                            close_on_click=True,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_open_story,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Rename Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True, disabled=self.story is None,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_rename_story,
-                        ),
-                        
-                        
-                        
-                        ft.MenuItemButton(
-                            content=ft.Text("Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(
-                                ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
-                                ft.Colors.PRIMARY
-                            ),
-                            close_on_click=True, 
-                            disabled=self.story is None,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=toggle_show_canvas_rail,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Export", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True, disabled=self.story is None,
-                            tooltip="Export widgets from your story into other formats.",
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=self.story.handle_export if self.story else None,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                            close_on_click=True, 
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_settings_clicked,
-                        ),
-                        ft.MenuItemButton(
-                            content=ft.Text("Delete Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                            leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),
-                            close_on_click=True, disabled=self.story is None,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                            on_click=handle_delete_story,
-                        ),
-                    ],
+        file_options = shad.ContextMenu(
+            open_on_tap=True,
+            content=ft.GestureDetector(
+                ft.Container(ft.Icon(ft.Icons.MENU_OUTLINED, ft.Colors.PRIMARY), border_radius=6, padding=8),
+                on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
+            ), 
+            items=[      # The options shown inside of our button
+                shad.MenuItem(
+                    "New Story",
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, ft.Colors.PRIMARY, size=20),
+                    on_click=handle_create_story,
                 ),
-            ], 
+                shad.MenuItem(
+                    "Open Story",
+                    leading=ft.Icon(ft.CupertinoIcons.BOOK, ft.Colors.PRIMARY, size=20),
+                    on_click=handle_open_story,
+                ),
+                shad.MenuItem(
+                    "Rename Story",
+                    leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    disabled=self.story is None,
+                    on_click=handle_rename_story,
+                ),
+                shad.MenuItem(
+                    "Drawing Controls", 
+                    leading=ft.Icon(
+                        ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                        ft.Colors.PRIMARY, size=20
+                    ),
+                    disabled=self.story is None,
+                    on_click=toggle_show_canvas_rail,
+                ),
+                shad.MenuItem(
+                    "Export",
+                    leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    disabled=self.story is None,
+                    tooltip="Export widgets from your story into other formats.",
+                    on_click=self.story.handle_export,
+                ),
+                shad.MenuItem(
+                    "Settings",
+                    leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    on_click=handle_settings_clicked,
+                ),
+                shad.MenuItem(
+                    "Delete Story", 
+                    leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, size=20),
+                    disabled=self.story is None,
+                    on_click=handle_delete_story,
+                ),
+            ],
         )
 
 
@@ -590,24 +569,6 @@ class MenuBar(ft.Container):
                 "Confirm", pull_action, "Pulling from Google Drive...", "Pulled from Google Drive",
             )
 
-        
-        
-
-        # Create our menu bar with submenu items
-        drawing_controls = ft.MenuBar(
-            #expand=True,
-            visible=ft.context.page.platform.is_mobile(),
-            style=ft.MenuStyle(     # Styling our menubar
-                alignment=ft.Alignment.CENTER,
-                bgcolor=ft.Colors.TRANSPARENT,
-                shadow_color=ft.Colors.TRANSPARENT,
-            ),
-            controls=[  # Segment button of draw mode, brush options, and dropdown of saved brushes with option to save current
-                
-                ft.Container()
-            ], 
-        )
-
         def set_cloud_button() -> list[ft.PopupMenuItem]:
             if app.is_cloud_authenticated == True:
                 self.cloud_button.icon = ft.Icon(ft.Icons.CLOUD_DONE_OUTLINED, ft.Colors.PRIMARY)
@@ -681,11 +642,9 @@ class MenuBar(ft.Container):
         self.content = ft.Row(
             spacing=0, visible=not self.page.platform.is_mobile(),
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            margin=ft.Margin.only(left=10),
             controls=[
                 file_options,    # File options button
-
-                drawing_controls,   # Main drawing controls
-
                 ft.Row([        # Row that has alpha text, info button, and settings button
                     ft.Text(
                         "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
