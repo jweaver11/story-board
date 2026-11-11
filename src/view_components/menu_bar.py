@@ -431,12 +431,14 @@ def MenuBar() -> ft.Control:
                         on_click=lambda: set_show_rename_story_dialog(True),
                     ),
                     ft.MenuItemButton(
-                        content=ft.Text("Import Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        tooltip="Import a folder containing an exported story from Story Board on another device.",
-                        leading=ft.Icon(ft.Icons.FILE_UPLOAD_OUTLINED, ft.Colors.PRIMARY),
-                        close_on_click=True,
+                        content=ft.Text("Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
+                        leading=ft.Icon(
+                            ft.Icons.VISIBILITY_OUTLINED if show_drawing_controls else ft.Icons.VISIBILITY_OFF_OUTLINED,
+                            ft.Colors.PRIMARY
+                        ),
+                        close_on_click=True, 
                         style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=handle_import_story,
+                        on_click=toggle_show_drawing_controls,
                     ),
                     ft.MenuItemButton(
                         content=ft.Text("Export Story", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
@@ -447,16 +449,7 @@ def MenuBar() -> ft.Control:
                         on_click=handle_export_story,
                     ),
                     
-                    ft.MenuItemButton(
-                        content=ft.Text("Hide Drawing Controls" if show_drawing_controls else "Show Drawing Controls", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
-                        leading=ft.Icon(
-                            ft.Icons.VISIBILITY_OUTLINED if show_drawing_controls else ft.Icons.VISIBILITY_OFF_OUTLINED,
-                            ft.Colors.PRIMARY
-                        ),
-                        close_on_click=True, 
-                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4),),
-                        on_click=toggle_show_drawing_controls,
-                    ),
+                    
                     ft.MenuItemButton(
                         content=ft.Text("Settings", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE,),
                         leading=ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
