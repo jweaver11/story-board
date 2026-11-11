@@ -29,7 +29,7 @@ class MenuBar(ft.Container):
 
         super().__init__(
             border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            bgcolor=ft.Colors.SURFACE,
         )
 
     def is_isolated(self):

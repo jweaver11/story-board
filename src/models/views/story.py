@@ -158,6 +158,9 @@ class Story(ft.View):
         if directory_path is None:
             directory_path = self.data.get('content_directory_path', '')
 
+        if directory_path in self.data.get('folders', {}):
+            return
+
         try:
 
             if full_path is None:
@@ -1243,7 +1246,7 @@ class Story(ft.View):
                 width=10,   # Total width of the GD, so its easier to find with mouse
                 content=ft.VerticalDivider(2, 2),     # Original
                 padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+                bgcolor=ft.Colors.SURFACE
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging

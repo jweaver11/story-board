@@ -12,6 +12,7 @@ dependencies = [
   "flet-quill @ git+https://github.com/jweaver11/Flet-Quill",
   "flet-color-pickers",
   "flet>=1.1.0",
+  "flet-shadcn-ui",
   "flet-charts",
   "google-api-python-client",
   "google-auth-oauthlib",

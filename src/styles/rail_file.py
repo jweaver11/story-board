@@ -9,6 +9,7 @@ import os
 import asyncio
 import math
 from styles.snack_bar import SnackBar
+import flet_shadcn_ui as shad
 
 # Class for items within a tree view on the rail
 class RailFile(ft.GestureDetector):
@@ -60,7 +61,7 @@ class RailFile(ft.GestureDetector):
         super().__init__(
             on_enter = self._highlight,
             on_exit = self._stop_highlight,
-            on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
+            #on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
             mouse_cursor = ft.MouseCursor.CLICK,
         )
@@ -121,54 +122,39 @@ class RailFile(ft.GestureDetector):
         )
 
         return [
-            MenuOptionStyle(
-                on_click=handle_rename,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'),),
-                    ft.Text(
-                        f"Rename {self.widget.data.get('title')}",
-                        weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True
-                    ), 
-                ]),
-            ),
-            ft.MenuItemButton(
-                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, ft.Colors.PRIMARY), content="Export Widget",
-                on_click=self.widget.story.handle_export, close_on_click=True,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                tooltip="Export this part of your story.", data=file_path
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', "primary")), 
-                        ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.widget.get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this widget's color"
-                ),
-                no_padding=True, no_effects=True
-            ),
-            MenuOptionStyle(
-                on_click=self.widget.delete_clicked,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text(f"Delete {self.widget.data.get('title')}", weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                ]),
-            )
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
+                content=f"Rename {self.widget.data.get('title')}", 
+                on_click=handle_rename, 
+            ),   
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.DOWNLOAD_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
+                content=f"Export {self.widget.data.get('title')}", data=file_path,
+                on_click=self.widget.story.handle_export,
+            ),   
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
+                content=f"Color {self.widget.data.get('title')}", data=file_path,
+                items=self.widget.get_color_options(),
+                close_on_click=True, 
+                trailing=ft.Icon(ft.Icons.ARROW_RIGHT)
+            ),   
+            
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20), content=f"Delete {self.widget.data.get('title')}", 
+                on_click=self.widget.delete_clicked, close_on_click=True, 
+            ),   
         ]
 
     # Called when hovering mouse over a tree view item
     async def _highlight(self, e=None):
-        self.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+        self.content.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
         #self.options_button.opacity = 1
         self.update()
 
     # Called when stopping hover over a tree view item
     async def _stop_highlight(self, e=None):
-        self.content.content.bgcolor = ft.Colors.TRANSPARENT
+        self.content.content.content.bgcolor = ft.Colors.TRANSPARENT
         #self.options_button.opacity = 0
         self.update()
 
@@ -213,16 +199,21 @@ class RailFile(ft.GestureDetector):
             group="widgets",
             data=self.widget.data.get('id', ""),
             content_feedback=ft.TextButton(ft.Row([ft.Icon(self.icon, self.icon_color, expand=True), ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True)], expand=True)),
-            content=ft.Container(
-                ft.Row([
-                    leading_control, 
-                    self.title_text,
-                    self.edit_title_tf,
-                    #self.options_button
-                ], spacing=6),
-                border_radius=4,
-                on_click=self.widget.show_widget,
-                padding=ft.Padding.only(top=2, bottom=2),
+            content=shad.ContextMenu(
+                ft.Container(
                 
+                    ft.Row([
+                        leading_control, 
+                        self.title_text,
+                        self.edit_title_tf,
+                        #self.options_button
+                    ], spacing=6),
+                    border_radius=4,
+                    on_click=self.widget.show_widget,
+                    padding=ft.Padding.only(top=2, bottom=2),
+                ),
+                items=self.get_menu_options(),
+                open_on_long_press=True if ft.context.page.platform.is_mobile() else False, 
             ),
+            
     )

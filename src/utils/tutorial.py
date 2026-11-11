@@ -110,7 +110,7 @@ def run_tutorial(story) -> list[ft.Control]:
         for widget in story.widgets.values():
             widget.update_data(**{'visible': False})
 
-        story.active_rail.reload_rail()
+        story.tree_view_rail.reload_rail()
 
     async def show_widget(widget_tag: str, chart_type: str="radar"):
         nonlocal story
@@ -175,12 +175,12 @@ def run_tutorial(story) -> list[ft.Control]:
                 tutorial_arrow.icon = ft.Icons.ARROW_BACK
 
                 canvas_rail.visible = True
-                active_rail.visible = False
-                active_rail_resizer.visible = False
+                tree_view_rail.visible = False
+                tree_view_rail_resizer.visible = False
                 workspace.visible = False
                 canvas_rail.update()
-                active_rail.update()
-                active_rail_resizer.update()
+                tree_view_rail.update()
+                tree_view_rail_resizer.update()
                 workspace.update()
             
             case 4:
@@ -191,10 +191,10 @@ def run_tutorial(story) -> list[ft.Control]:
                 tutorial_arrow.left = 330
                 tutorial_tip_container.left = 330
 
-                active_rail.visible = True
-                active_rail_resizer.visible = True
-                active_rail.update()
-                active_rail_resizer.update()
+                tree_view_rail.visible = True
+                tree_view_rail_resizer.visible = True
+                tree_view_rail.update()
+                tree_view_rail_resizer.update()
 
                 workspace.visible = True
                 workspace.update()
@@ -343,20 +343,20 @@ def run_tutorial(story) -> list[ft.Control]:
     # Grab our variables so we can hide and show them when we want
     page: ft.Page = story.page
     canvas_rail = story.canvas_rail
-    active_rail = story.active_rail
-    active_rail_resizer = story.active_rail_resizer
+    tree_view_rail = story.tree_view_rail
+    tree_view_rail_resizer = story.tree_view_rail_resizer
     workspace = story.workspace
 
     # Rails start hidden
     canvas_rail.visible = False
-    active_rail.visible = False
-    active_rail_resizer.visible = False
+    tree_view_rail.visible = False
+    tree_view_rail_resizer.visible = False
     workspace.visible = False
 
     # Update elements manually, since story excludes itself from automatic updates
     canvas_rail.update()
-    active_rail.update()
-    active_rail_resizer.update()
+    tree_view_rail.update()
+    tree_view_rail_resizer.update()
     workspace.update()
 
     # Clear out any existing things in the rail

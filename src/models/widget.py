@@ -18,6 +18,7 @@ import asyncio
 import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
 import time
+import flet_shadcn_ui as shad
 
 
 
@@ -480,10 +481,9 @@ class Widget(ft.Container):
         # Create our controls for our color options
         for color in colors:
             color_controls.append(
-                ft.MenuItemButton(
-                    content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
+                shad.MenuItem(
+                    content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
                     on_click=_change_icon_color, close_on_click=True, data=color,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
                 )
             )
 
