@@ -14,6 +14,8 @@ from styles.snack_bar import SnackBar
 import asyncio
 from flet_color_pickers import BlockPicker
 from styles.colors import colors
+import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
     
 
 class ComicPreview(Widget):
@@ -124,39 +126,7 @@ class ComicPreview(Widget):
             )
             self.story.page.show_dialog(dlg)
 
-        # Called to refresh any connected canvases featured_panels that might be outdated
-        async def handle_refresh_panels():
-            
-            # Go through panels. If they are connected to a canvas, refresh the image from the canvas
-            for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                if panel.get('id'):
-                    widget = self.story.get_widget_by_id(panel['id'])
-                    if not widget:
-                        continue
-                    image_str = widget.get_snapshot_string("max")
-                    panel['image'] = image_str
-                    preview_panel_controls[idx] = build_preview_panel(idx, panel.get('image'))
-                    panel_minimap.controls[idx] = build_minimap_panel(idx, panel.get('image'))
-
-            # Update data UI
-            self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
-            self.update()
         
-        # Handles toggling the preview direction between vertical and horizontal
-        async def toggle_preview_direction(e: ft.Event):
-            # Show the appropriate wrapper and update the button icon
-            if self.data.get('preview_direction', "vertical") == "vertical":
-                self.update_data(**{'preview_direction': "horizontal"})
-                vertical_preview_wrapper.visible = False
-                horizontal_preview_wrapper.visible = True
-                toggle_preview_direction_button.leading.icon = ft.Icons.SWAP_HORIZ
-                
-            else:
-                self.update_data(**{'preview_direction': "vertical"})
-                horizontal_preview_wrapper.visible = False
-                vertical_preview_wrapper.visible = True
-                toggle_preview_direction_button.leading.icon = ft.Icons.SWAP_VERT
-            self.update()
             
         # Handles uploading new panel(s) from external files
         async def handle_upload_panel(e: ft.Event):
@@ -290,56 +260,212 @@ class ComicPreview(Widget):
             self.update()
             await update_minimap_indices()
 
-        # Adjusts the spacing between panels in the preview display
-        async def adjust_spacing(e: ft.Event):
-            new_spacing = int(e.control.data)
-            self.update_data(**{'preview_spacing': new_spacing})
-            e.control.parent.content = f"Preview Spacing: {str(new_spacing)}"
-            vertical_preview.spacing = new_spacing
-            horizontal_preview.spacing = new_spacing
-            self.update()
+        
+
+        def build_header_cm_button() -> shad.ContextMenu:
+            # Called to refresh any connected canvases featured_panels that might be outdated
+            async def handle_refresh_panels():
+                close_popovers()
+                # Go through panels. If they are connected to a canvas, refresh the image from the canvas
+                for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                    if panel.get('id'):
+                        widget = self.story.get_widget_by_id(panel['id'])
+                        if not widget:
+                            continue
+                        image_str = widget.get_snapshot_string("max")
+                        panel['image'] = image_str
+                        preview_panel_controls[idx] = build_preview_panel(idx, panel.get('image'))
+                        panel_minimap.controls[idx] = build_minimap_panel(idx, panel.get('image'))
+    
+                # Update data UI
+                self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
+                self.update()
             
-        # Adjusts the scaling of the preview display
-        async def adjust_scaling(e: ft.Event):
-            new_scaling = int(e.control.data)
-            self.update_data(**{'preview_scale': new_scaling})
-            e.control.parent.content = f"Preview Scaling: {str(new_scaling)}"
-            vertical_preview.parent.expand = new_scaling
-            horizontal_preview.parent.expand = new_scaling
-            self.update()
-
-        # Sets the background color of the preview display
-        async def set_preview_background_color(e: ft.Event):
-            new_color = e.control.data
-            self.update_data(**{'preview_background_color': new_color})
-            e.control.parent.leading.color = new_color
-            vertical_preview.parent.bgcolor = new_color
-            horizontal_preview.parent.bgcolor = new_color
-            self.update()
-
-        # Sets the filter quality of the preview display
-        async def set_filter_quality(e: ft.Event):
-            new_quality = str(e.control.data)
-            self.update_data(**{'filter_quality': new_quality})
-            e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
-            fq = {
-                "low": ft.FilterQuality.LOW,
-                "medium": ft.FilterQuality.MEDIUM,
-                "high": ft.FilterQuality.HIGH
-            }.get(new_quality, ft.FilterQuality.MEDIUM)
-            for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                preview_panel_controls[idx].filter_quality = fq
-                panel_minimap.controls[idx].content.content.controls[1].filter_quality = fq
-            self.update()
-
-        async def toggle_anti_aliasing(e: ft.Event):
-            new_value = not self.data.get('use_anti_aliasing', True)
-            self.update_data(**{'use_anti_aliasing': new_value})
-            e.control.content = f"Anti-Aliasing: {str(new_value)}"
-            for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                preview_panel_controls[idx].anti_alias = new_value
-                panel_minimap.controls[idx].content.content.controls[1].anti_alias = new_value
-            self.update()
+            # Handles toggling the preview direction between vertical and horizontal
+            async def toggle_preview_direction(e: ft.Event):
+                close_popovers()
+                # Show the appropriate wrapper and update the button icon
+                if self.data.get('preview_direction', "vertical") == "vertical":
+                    self.update_data(**{'preview_direction': "horizontal"})
+                    vertical_preview_wrapper.visible = False
+                    horizontal_preview_wrapper.visible = True
+                    self.sidebar_header.controls[-1] = build_header_cm_button()
+                    
+                else:
+                    self.update_data(**{'preview_direction': "vertical"})
+                    horizontal_preview_wrapper.visible = False
+                    vertical_preview_wrapper.visible = True
+                    self.sidebar_header.controls[-1] = build_header_cm_button()
+                self.update()
+            # Adjusts the spacing between panels in the preview display
+            async def adjust_spacing(e: ft.Event):
+                close_popovers()
+                new_spacing = int(e.control.data)
+                self.update_data(**{'preview_spacing': new_spacing})
+                self.sidebar_header.controls[-1] = build_header_cm_button()
+                vertical_preview.spacing = new_spacing
+                horizontal_preview.spacing = new_spacing
+                self.update()
+                
+            # Adjusts the scaling of the preview display
+            async def adjust_scaling(e: ft.Event):
+                close_popovers()
+                new_scaling = int(e.control.data)
+                self.update_data(**{'preview_scale': new_scaling})
+                self.sidebar_header.controls[-1] = build_header_cm_button()
+                vertical_preview.parent.expand = new_scaling
+                horizontal_preview.parent.expand = new_scaling
+                self.update()
+    
+            # Sets the background color of the preview display
+            async def set_preview_background_color(e: ft.Event):
+                close_popovers()
+                new_color = e.control.data
+                self.update_data(**{'preview_background_color': new_color})
+                self.sidebar_header.controls[-1] = build_header_cm_button()
+                vertical_preview.parent.bgcolor = new_color
+                horizontal_preview.parent.bgcolor = new_color
+                self.update()
+    
+            # Sets the filter quality of the preview display
+            async def set_filter_quality(e: ft.Event):
+                close_popovers()
+                new_quality = str(e.control.data)
+                self.update_data(**{'filter_quality': new_quality})
+                e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
+                fq = {
+                    "low": ft.FilterQuality.LOW,
+                    "medium": ft.FilterQuality.MEDIUM,
+                    "high": ft.FilterQuality.HIGH
+                }.get(new_quality, ft.FilterQuality.MEDIUM)
+                for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                    preview_panel_controls[idx].filter_quality = fq
+                    panel_minimap.controls[idx].content.content.controls[1].filter_quality = fq
+                self.update()
+    
+            async def toggle_anti_aliasing(e: ft.Event):
+                close_popovers()
+                new_value = not self.data.get('use_anti_aliasing', True)
+                self.update_data(**{'use_anti_aliasing': new_value})
+                e.control.content = f"Anti-Aliasing: {str(new_value)}"
+                for idx, panel in enumerate(self.data.get('featured_panels', [])):
+                    preview_panel_controls[idx].anti_alias = new_value
+                    panel_minimap.controls[idx].content.content.controls[1].anti_alias = new_value
+                self.update()
+            def toggle_bgcolor_popover(e):
+                bgcolor_popover.open = not bgcolor_popover.open
+                self.update()
+            def toggle_preview_spacing_popover(e):
+                preview_spacing_popover.open = not preview_spacing_popover.open
+                self.update()
+            def toggle_preview_scaling_popover(e):
+                preview_scaling_popover.open = not preview_scaling_popover.open
+                self.update()
+            def toggle_image_filter_popover(e):
+                image_filter_popover.open = not image_filter_popover.open
+                self.update()
+            def close_popovers():
+                bgcolor_popover.open = False
+                preview_spacing_popover.open = False
+                preview_scaling_popover.open = False
+                image_filter_popover.open = False
+                self.update()
+            return shad.ContextMenu(
+                HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
+                [
+                    shad.MenuItem(
+                        "Refresh Canvas Panels",
+                        leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        tooltip="Refresh panels connected to Canvases that may be outdated",
+                        on_click=handle_refresh_panels,
+                    ),
+                    toggle_preview_direction_button := shad.MenuItem(
+                        "Swap Preview Direction",
+                        leading=ft.Icon(
+                            ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
+                            ft.Colors.PRIMARY, size=20
+                        ),
+                        tooltip="Swap the preview direction between vertical and horizontal.",
+                        on_click=toggle_preview_direction,
+                    ),
+                    shad.MenuItem(
+                        f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
+                        leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
+                        on_click=toggle_anti_aliasing,
+                    ),
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    bgcolor_popover := shad.Popover(
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('preview_background_color', ft.Colors.PRIMARY), size=20),
+                            content=ft.Row([ft.Text("Background Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            on_click=toggle_bgcolor_popover,
+                            close_on_click=False,
+                        ),
+                        ft.Column([
+                            shad.MenuItem(
+                                content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                                on_click=set_preview_background_color, close_on_click=True, data=color,
+                                expand=True
+                            ) for color in colors
+                        ] + [shad.MenuItem(
+                            content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
+                            on_click=set_preview_background_color, close_on_click=True, data="#00000000",
+                            expand=True
+                        )], tight=True, spacing=0, width=100)
+                    ), 
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    preview_spacing_popover := shad.Popover(
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content=ft.Row([ft.Text(f"Preview Spacing: {self.data.get('preview_spacing', 0)}"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            on_click=toggle_preview_spacing_popover,
+                            close_on_click=False,
+                        ),
+                        ft.Column([
+                            shad.MenuItem(
+                                content=ft.Text(str(i)),
+                                on_click=adjust_spacing, close_on_click=True, data=i,
+                                expand=True
+                            ) for i in range(0, 21) if i % 2 == 0
+                        ], tight=True, spacing=0, width=100)
+                    ),
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    preview_scaling_popover := shad.Popover(
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content=ft.Row([ft.Text(f"Preview Scaling: {self.data.get('preview_scale', 0)}"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            on_click=toggle_preview_scaling_popover,
+                            close_on_click=False,
+                        ),
+                        ft.Column([
+                            shad.MenuItem(
+                                content=ft.Text(str(i)),
+                                on_click=adjust_scaling, close_on_click=True, data=i,
+                                expand=True
+                            ) for i in range(1, 6)
+                        ], tight=True, spacing=0, width=100)
+                    ),
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    image_filter_popover := shad.Popover(
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.FILTER_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content=ft.Row([ft.Text(f"Image Filter Quality: {self.data.get('filter_quality', 'Medium').capitalize()}"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            on_click=toggle_image_filter_popover,
+                            close_on_click=False,
+                        ),
+                        ft.Column([
+                            shad.MenuItem(
+                                content=ft.Text(str(quality).capitalize()),
+                                data=quality,
+                                on_click=set_filter_quality, 
+                            ) for quality in ("low", "medium", "high")
+                        ], tight=True, spacing=0, width=100)
+                    ),
+                ],
+                open_on_tap=True
+            )
+        
         
         preview_panel_controls = [build_preview_panel(idx, panel.get('image')) for idx, panel in enumerate(self.data.get('featured_panels', []))]
             
@@ -387,140 +513,32 @@ class ComicPreview(Widget):
             horizontal_preview_wrapper
         ], expand=3, alignment=ft.Alignment.CENTER)
 
+        
+
         # Adds settings for this widget into the header on the sidebar
-        self.sidebar_header.controls.insert(
-            1,
-            ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, "primary"),
-                        [
-                            ft.MenuItemButton(
-                                "Refresh Canvas Panels",
-                                leading=ft.Icon(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY),
-                                tooltip="Refresh panels connected to Canvases that may be outdated",
-                                on_click=handle_refresh_panels,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                            ),
-                            toggle_preview_direction_button := ft.MenuItemButton(
-                                "Swap Preview Direction", True,
-                                leading=ft.Icon(
-                                    ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                                    ft.Colors.PRIMARY,
-                                ),
-                                tooltip="Swap the preview direction between vertical and horizontal.",
-                                on_click=toggle_preview_direction,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                            ),
-                            
-                            ft.MenuItemButton(
-                                f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
-                                leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, ft.Colors.PRIMARY),
-                                tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                                on_click=toggle_anti_aliasing,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor=ft.MouseCursor.CLICK),
-                            ),
-                            ft.SubmenuButton(
-                                f"Change Background Color",
-                                [
-                                    ft.MenuItemButton(
-                                        ft.Icon(ft.Icons.CIRCLE, color), data=color,
-                                        on_click=set_preview_background_color,
-                                    ) for color in colors
-                                ] + [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_preview_background_color,)],
-                                tooltip="Adjust the scale of the preview display.",
-                                leading=ft.Icon(ft.Icons.SCALE_OUTLINED, self.data.get('preview_background_color', "#00000000")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            ),
-                            ft.SubmenuButton(
-                                f"Preview Spacing: {self.data.get('preview_spacing', 0)}",
-                                [
-                                    ft.MenuItemButton(
-                                        str(i), data=i,
-                                        on_click=adjust_spacing,
-                                    ) for i in range(0, 21) if i % 2 == 0
-                                ],
-                                tooltip="Adjust the spacing between panels in the preview display.",
-                                leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            ),
-                            
-                            ft.SubmenuButton(
-                                f"Preview Scaling: {self.data.get('preview_scale', 0)}",
-                                [
-                                    ft.MenuItemButton(
-                                        str(i), data=i,
-                                        on_click=adjust_scaling,
-                                    ) for i in range(1, 6)
-                                ],
-                                tooltip="Adjust the scale of the preview display.",
-                                leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            ),
-                            
-                            ft.SubmenuButton(
-                                f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
-                                [
-                                    ft.MenuItemButton("Low", data="low", on_click=set_filter_quality),
-                                    ft.MenuItemButton("Medium", data="medium", on_click=set_filter_quality),
-                                    ft.MenuItemButton("High", data="high", on_click=set_filter_quality),
-                                ],
-                                tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
-                                leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, ft.Colors.PRIMARY),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            ),
-                            
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this widget."
-                    ),
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                ),
-            )
+        self.sidebar_header.controls.append(
+            build_header_cm_button()
         )
         
         # Set the sidebar content
         self.sidebar_body.controls.extend([
             ft.Row([
                 ft.Text(f"Panels", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ft.MenuBar(
+                shad.ContextMenu(
+                    HighlightButton(ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
                     [
-                        ft.SubmenuButton(
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, "primary"),
-                                
-                            [
-                                ft.MenuItemButton(      # Folders
-                                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Add Canvases", 
-                                    on_click=handle_add_canvas_panel, close_on_click=True,
-                                    tooltip="Add Canvases created in Story Board to the comic preview.",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ), 
-                                ft.MenuItemButton(      # Documents
-                                    leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image(s)", 
-                                    on_click=handle_upload_panel, close_on_click=True,
-                                    tooltip="Upload images to the comic preview from your device to the comic preview.",
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                ),  
-                            ],
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                            style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Add Canvases",
+                            on_click=handle_add_canvas_panel,
+                        ),
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image(s)",
+                            on_click=handle_upload_panel,
                         ),
                     ],
-                    style=ft.MenuStyle(
-                        bgcolor="transparent", shadow_color="transparent",
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                        padding=ft.Padding.all(0)
-                    ),
+                    open_on_tap=True
                 ),
+                
             ], spacing=0),
             panel_minimap,
         ])
