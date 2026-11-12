@@ -675,7 +675,7 @@ class CanvasBoard(Widget):
                     tooltip="Details about this sketch, such as what it is, what it represents, or any other notes.\nSize of the sketch can be adjusted here, between 200 and 300 pixels.\nNotice: previews with different aspect ratios may look warped from the preview"
                 ),
                 ft.Button(
-                    "Add Row", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                    "Add Panel", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                     on_click=create_row, 
                     style=ft.ButtonStyle( mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
                 )  

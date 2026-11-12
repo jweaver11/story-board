@@ -468,8 +468,8 @@ class Map(Widget):
             # Add text if in text mode
             else:
                 await self.add_text(e)
-        else:
-            self.story.open_menu(self.get_new_item_options())
+        #else:
+            #self.story.open_menu(self.get_new_item_options())
 
 
 
@@ -1248,68 +1248,9 @@ class Map(Widget):
     def get_new_item_options(self) -> list[ft.Control]:
 
         # Locks our position at wherever we clicked to open the menu
-
-        def toggle_new_popover(e=None):
-            new_popover.open = not new_popover.open
-            new_popover.update()
-
-        return [
-            new_popover := shad.Popover(
-                shad.MenuItem(
-                    leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
-                    content=ft.Row([ft.Text("New"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    on_click=toggle_new_popover,
-                    close_on_click=False,
-                ),
-                ft.Column([
-                    shad.MenuItem(
-                        leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY, size=20), 
-                        content="Location",
-                        on_click=self.create_location, 
-                    ),
-                    shad.MenuItem(
-                        leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY, size=20),
-                        content="Label",
-                        on_click=self.create_label, 
-                    ),
-                ], tight=True, spacing=0, width=230)
-            ),
-            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
-                content="Show Info",
-                on_click=self.show_info,
-            ),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content=("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing",
-                on_click=self.toggle_draw_mode,
-            ),
-        ]
-    
-    # Also sets our mouse coordinates for the menu to open at the right place
-    def set_mouse_coords(self, e: ft.PointerEvent):
-        self.new_location_position = (e.local_position.x, e.local_position.y)
-        super().set_mouse_coords(e)
-
-    
-    async def toggle_draw_mode(self, e=None):
-        await self.story.close_menu()   # Close menu
-        new_draw_mode = not self.data.get('draw_mode', False)
-        self.update_data(**{'draw_mode': new_draw_mode})
-        if self.showing_info:
-            self.sidebar_draw_mode_toggle_button.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
-            self.sidebar_draw_mode_toggle_button.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
-            self.sidebar_draw_mode_toggle_button.update()
-        self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
-        self.map_controller.update()
-
-    # Creates our header controls for the sidebar, including our settings button
-    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-
         def set_canvas_bg_image(e: ft.Event[ft.MenuItemButton]):
-        
-            # Set the canvas id when selecting a canvas from the radio group
+                
+                    # Set the canvas id when selecting a canvas from the radio group
             def select_canvas(e: ft.Event[ft.RadioGroup]):
                 nonlocal canvas_id
                 canvas_id = e.data
@@ -1342,6 +1283,8 @@ class Map(Widget):
                 self.bg_image.update()
                 self.page.pop_dialog()
 
+            close_popovers()
+
             canvas_id: str = None
         
             dlg = ft.AlertDialog(
@@ -1363,7 +1306,7 @@ class Map(Widget):
 
         # Uploads an image and sets it as the background image for our map
         async def handle_set_bg_image(e: ft.Event[ft.MenuItemButton]):
-            await self.story.close_menu()   # Close menu
+            close_popovers()
             
             files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
@@ -1389,6 +1332,7 @@ class Map(Widget):
 
         # Set our built in options, or none, to set no background image
         def handle_set_built_in_image(e: ft.Event[ft.MenuItemButton]):
+            close_popovers()
 
             self.update_data(**{'background_image': e.control.data})
             self.bg_image.image = ft.DecorationImage(
@@ -1396,6 +1340,112 @@ class Map(Widget):
                 fit=ft.BoxFit.FILL
             )
             self.bg_image.update()
+
+        def toggle_new_popover(e=None):
+            new_popover.open = not new_popover.open
+            new_popover.update()
+
+        def toggle_bg_popover(e=None):
+            bg_popover.open = not bg_popover.open
+            bg_popover.update()
+        def close_popovers(e=None):
+            new_popover.open = False
+            new_popover.update()
+            bg_popover.open = False
+            bg_popover.update()
+
+        return [
+            new_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    content=ft.Row([ft.Text("New"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    on_click=toggle_new_popover,
+                    close_on_click=False,
+                ),
+                ft.Column([
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                        content="Location",
+                        on_click=self.create_location, 
+                    ),
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content="Label",
+                        on_click=self.create_label, 
+                    ),
+                ], tight=True, spacing=0, width=100)
+            ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
+                content="Show Info",
+                on_click=self.show_info,
+            ),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY, size=20),
+                content=("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing",
+                on_click=self.toggle_draw_mode,
+            ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            bg_popover := shad.Popover(
+                shad.MenuItem(
+                    content=ft.Row([ft.Text("Background"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    on_click=toggle_bg_popover, close_on_click=False,
+                ),
+                ft.Column([
+                    shad.MenuItem(      
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
+                        on_click=set_canvas_bg_image,
+                        tooltip="Select a canvas to use as the background for this map",
+                    ), 
+                    shad.MenuItem(      # Folders
+                        leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
+                        tooltip="Upload an image to use as the background for this map",
+                        on_click=handle_set_bg_image,
+                    ),  
+                    shad.MenuItem(      # 1
+                        "Dark Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                        data="map_bg_fantasy_dark.png", on_click=handle_set_built_in_image,
+                    ), 
+                    shad.MenuItem(      # 1
+                        "Light Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                        data="map_bg_fantasy_light.png", on_click=handle_set_built_in_image,
+                    ), 
+                    shad.MenuItem(      # 2
+                        "Sci-Fi", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                        data="map_bg_scifi.png", on_click=handle_set_built_in_image,
+                    ),
+                    shad.MenuItem(      # 1
+                        "Space", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
+                        data="map_bg_space.jpg", on_click=handle_set_built_in_image,
+                    ), 
+                    
+                ], tight=True, width=150),
+                
+            )
+        ]
+    
+    # Also sets our mouse coordinates for the menu to open at the right place
+    def set_mouse_coords(self, e: ft.PointerEvent):
+        self.new_location_position = (e.local_position.x, e.local_position.y)
+        super().set_mouse_coords(e)
+
+    
+    async def toggle_draw_mode(self, e=None):
+        await self.story.close_menu()   # Close menu
+        new_draw_mode = not self.data.get('draw_mode', False)
+        self.update_data(**{'draw_mode': new_draw_mode})
+        if self.showing_info:
+            self.sidebar_draw_mode_toggle_button.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
+            self.sidebar_draw_mode_toggle_button.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
+            self.sidebar_draw_mode_toggle_button.update()
+        self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
+        self.map_controller.update()
+
+    # Creates our header controls for the sidebar, including our settings button
+    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
+
 
         self.undo_button = ft.IconButton(
             ft.Icons.UNDO,
@@ -1427,79 +1477,6 @@ class Map(Widget):
         ctrls.extend([
             self.undo_button,
             self.redo_button,
-            ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        [
-                            self.sidebar_draw_mode_toggle_button,
-                            ft.SubmenuButton(
-                                "Set Background Image",
-                                [
-                                    ft.MenuItemButton(      
-                                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
-                                        close_on_click=True,
-                                        on_click=set_canvas_bg_image,
-                                        tooltip="Select a canvas to use as the background for this map",
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ), 
-                                    ft.MenuItemButton(      # Folders
-                                        leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY), content="Upload Image", 
-                                        close_on_click=True,
-                                        tooltip="Upload an image to use as the background for this map",
-                                        on_click=handle_set_bg_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ),  
-                                    ft.MenuItemButton(      # 1
-                                        "Dark Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        data="map_bg_fantasy_dark.png", on_click=handle_set_built_in_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ), 
-                                    ft.MenuItemButton(      # 1
-                                        "Light Fantasy", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        data="map_bg_fantasy_light.png", on_click=handle_set_built_in_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ), 
-                                    ft.MenuItemButton(      # 2
-                                        "Sci-Fi", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        data="map_bg_scifi.png", on_click=handle_set_built_in_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ),
-                                    ft.MenuItemButton(      # 1
-                                        "Space", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        close_on_click=True,
-                                        data="map_bg_space.jpg", on_click=handle_set_built_in_image,
-                                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    ), 
-                                    #ft.MenuItemButton(      # 2
-                                        #"None", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
-                                        #close_on_click=True,
-                                        #data="", on_click=handle_set_built_in_image,
-                                        #style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                    #),
-                                ],
-                                leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY),
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                            ),
-                            
-                        ],
-                        
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this map"
-                    ),
-                    
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                )
-            )
         ])
         return ctrls
 
