@@ -13,6 +13,7 @@ import asyncio
 from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 import uuid
 from styles.text_fields import NoLabelTextField
+import flet_shadcn_ui as shad
 
 class PlotChart(Widget):
 
@@ -60,7 +61,6 @@ class PlotChart(Widget):
         #self.source_side: str = None      # Determines which sides of the nodes we start dragging from
         #self.target_side: str = None       # Determines which sides of the nodes we end dragging on
 
-        self.add_node_button: ft.Button     # Button to add new nodes that is displayed OUTSIDE the sidebar
 
         
         
@@ -552,32 +552,6 @@ class PlotChart(Widget):
         # Default label
         node_label = f"Node {len(self.data.get('nodes', [])) + 1}"
 
-        required_offset = str(e.control.data)
-        locked_position = str(e.control.data) == "right_click"
-        if required_offset.lower() == "sidebar":
-            offset_amount = ((self.w - self.sidebar.width) / 2, 0)
-        elif required_offset.lower() == "button":
-            offset_amount = ((self.w / 2), (self.h / 2))
-        else:       # If we right clicked, our locked pos should be accurate
-            offset_amount = ((self.w / 2), (self.h / 2))
-
-
-        # If from sidebar or button, 
-        old_new_node_position = self.new_node_position  # Keep ref to old position to reset after
-        self.new_node_position = (
-            self.new_node_position[0] - offset_amount[0],
-            self.new_node_position[1] - offset_amount[1]
-        )
-        # Use the locked position if we right clicked
-        if locked_position:
-            self.new_node_position = self.locked_new_node_position
-        if self.new_node_position[0] < 100 or self.new_node_position[1] < 100:
-            self.new_node_position = (
-                max(100, self.new_node_position[0]), max(100, self.new_node_position[1])
-            )
-        elif self.new_node_position[0] > FIXED_STACK_WIDTH or self.new_node_position[1] > FIXED_STACK_HEIGHT:
-            self.new_node_position = (min(FIXED_STACK_WIDTH, self.new_node_position[0]), min(FIXED_STACK_HEIGHT, self.new_node_position[1]))
-
         self.data['nodes'].append({
             'id': str(uuid.uuid4()),
             'label': node_label, 
@@ -596,7 +570,6 @@ class PlotChart(Widget):
         )
 
         self.update()
-        self.new_node_position = old_new_node_position  # Reset node pos so we dont drift when adding multiple nodes from sidebar
 
 
     # Returns a sidebar control for a node
@@ -636,7 +609,6 @@ class PlotChart(Widget):
         def get_new_node_menu_options() -> list[ft.Control]:
             async def _create_node(e: ft.Event):
                 await self.create_node(e)
-                await self.story.close_menu()
             self.locked_new_node_position = self.new_node_position
 
             async def _toggle_view_mode(e: ft.Event):
@@ -650,23 +622,20 @@ class PlotChart(Widget):
                 self.update()
 
             return [
-                MenuOptionStyle(
+                shad.MenuItem(
+                    "New Node",
+                    leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
                     on_click=_create_node,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
-                        ft.Text("Node", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
-                    ]),
-                    data="right_click"
+                    #data="right_click"
                 ),
-                MenuOptionStyle(
+                shad.MenuItem(
+                    "Toggle Connections",
+                    leading=ft.Icon(
+                        ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
+                        ft.Colors.PRIMARY, size=20
+                    ),
                     on_click=_toggle_view_mode,
-                    content=ft.Row([
-                        ft.Icon(
-                            ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
-                            ft.Colors.PRIMARY
-                        ),
-                        ft.Text("Toggle Connections", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD, expand=True), 
-                    ], tooltip="Toggle between spider web connections and 3 line connections"),
+                    tooltip="Toggle between spider web connections and 3 line connections"
                 ),
             ]
             
@@ -680,8 +649,6 @@ class PlotChart(Widget):
                 ),
                 width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT,
                 on_hover=self.set_mouse_coords,
-                on_secondary_tap=lambda: self.story.open_menu(get_new_node_menu_options()),
-                on_tap=lambda: self.story.open_menu(get_new_node_menu_options()),
                 hover_interval=40,
                 data="right_click"
             ),
@@ -736,7 +703,7 @@ class PlotChart(Widget):
         
 
         # Interactive viewer to hold the stack for UI manipulation
-        self.iv = ft.InteractiveViewer(
+        iv = ft.InteractiveViewer(
             content=ft.Stack([      # Hold the edge canvas and node stack
                 ft.Container(
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
@@ -750,21 +717,16 @@ class PlotChart(Widget):
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
         )
-
-        self.add_node_button = ft.Button(
-            "Add Node", 
-            on_click=self.create_node, 
-            data="button",
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-            visible=not self.data.get('show_sidebar', False),
-            bottom=10, right=0,
-        )
          
 
         # Set up our main conent
         self.content = ft.Stack([
-            self.iv,
+            shad.ContextMenu(
+                iv,
+                get_new_node_menu_options(),
+                open_on_long_press=True,
+                expand=True
+            ),
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
