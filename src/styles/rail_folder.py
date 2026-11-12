@@ -207,6 +207,7 @@ class RailFolder(ft.GestureDetector):
                 ),
                 ft.Column(self._get_color_options(), tight=True, spacing=0, width=100)
             ), 
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
         
             # Rename the folder
             shad.MenuItem(

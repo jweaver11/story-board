@@ -262,7 +262,7 @@ class Manuscript(Widget):
         self.content = ft.Column([
             ft.Container(
                 quill_toolbar, 
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                bgcolor=ft.Colors.SURFACE, 
                 alignment=ft.Alignment.CENTER_LEFT, 
                 padding=ft.Padding.only(left=4),
             ),
