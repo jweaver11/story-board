@@ -193,8 +193,7 @@ class Workspace(ft.Container):
             return
 
         # Update the tab icon color
-        tab_gd: ft.GestureDetector = self.tab_bar.tabs[idx].label
-        tab_row: ft.Row = tab_gd.content
+        tab_row: ft.Row = self.tab_bar.tabs[idx].label
         tab_icon: ft.Icon = tab_row.controls[0]
         tab_icon.color = color
 
@@ -211,8 +210,7 @@ class Workspace(ft.Container):
             return
 
         # Update the tab title text
-        tab_gd: ft.GestureDetector = self.tab_bar.tabs[idx].label
-        tab_row: ft.Row = tab_gd.content
+        tab_row: ft.Row = self.tab_bar.tabs[idx].label
         tab_title: ft.Text = tab_row.controls[1]
         tab_title.value = title
 

@@ -224,10 +224,12 @@ class Note(Widget):
                         ft.Divider(ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE), 2, leading_indent=10, trailing_indent=10),
                         body_tf
                     ], spacing=0, expand=True),
-                    bgcolor=ft.Colors.with_opacity(0.05, color),
-                    border_radius=4
+                    bgcolor=ft.Colors.with_opacity(0.1, color),
+                    border_radius=4,
+                    #shadow=ft.BoxShadow(blur_style=ft.BlurStyle.OUTER),
+                    height=300, width=300, data=idx
                 ),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 height=300, width=400,
                 shape=ft.RoundedRectangleBorder(radius=4),
                 data=idx

@@ -219,7 +219,7 @@ class Manuscript(Widget):
 
         # Word count button
         word_count_button = ft.IconButton(
-            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, #icon_color=ft.Colors.PRIMARY,
+            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.ON_SURFACE,
             tooltip="Word Count", 
             on_click=get_word_count,
             bgcolor=ft.Colors.TRANSPARENT,
