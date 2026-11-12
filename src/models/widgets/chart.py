@@ -13,6 +13,10 @@ import flet_charts as fch
 from styles.colors import colors
 import math
 from styles.snack_bar import SnackBar
+import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
+
+
     
 
 class Chart(Widget):
@@ -511,76 +515,65 @@ class Chart(Widget):
         )
 
         # Insert our settings into the sidebar header after our title
-        self.sidebar_header.controls.insert(
-            1,
-            ft.MenuBar(
+        self.sidebar_header.controls.append(
+            shad.ContextMenu(
+                HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
                 [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        [
-                            # Toggle stacked rods
-                            ft.Switch(
-                                value=self.data.get('bar_data', {}).get('stack_rods', False), 
-                                label="\tStack Rods", on_change=set_stacked_rods
-                            ),
-                            # Toggle rounded rods
-                            ft.Switch(
-                                value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
-                                label="\tRounded Rods", on_change=set_rod_shape
-                            ),
-                            # Toggle axis labels
-                            ft.Switch(
-                                value=self.data.get('bar_data', {}).get('show_labels', False), 
-                                label="\tShow Axis Labels", on_change=set_show_labels
-                            ),
-                            # Toggle horizontal grid lines
-                            ft.Switch(
-                                value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
-                                label="\tShow Horizontal Grid Lines", on_change=set_grid_lines, data="horizontal"
-                            ),
-                            # Toggle vertical grid lines
-                            ft.Switch(
-                                value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
-                                label="\tShow Vertical Grid Lines", on_change=set_grid_lines, data="vertical"
-                            ),
-                            # Adjust max y value of the chart
-                            ft.TextField(
-                                label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
-                                input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
-                                margin=ft.Margin.only(top=6, left=10, right=10), 
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                                dense=True
-                            ),
-                            # Adjust Rod width
-                            ft.Row([
-                                ft.Text("\t\tRod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                                ft.Slider(
-                                    value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
-                                    label="{value}", expand=True, on_change=set_rod_width_value, on_change_end=set_rod_width_data
-                                ),
-                            ], spacing=0),
-                            # Adjust rod spacing
-                            ft.Row([
-                                ft.Text("\t\tRod Spacing", theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                                ft.Slider(
-                                    value=self.data.get('bar_data', {}).get('rod_spacing', 30), min=0, max=20, 
-                                    label="{value}", expand=True, on_change=set_rod_spacing_value, on_change_end=set_rod_spacing_data
-                                ),
-                            ], spacing=0),
-                            
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this bar chart."
+                    # Toggle stacked rods
+                    ft.Switch(
+                        value=self.data.get('bar_data', {}).get('stack_rods', False), 
+                        label="\tStack Rods", on_change=set_stacked_rods
                     ),
+                    # Toggle rounded rods
+                    ft.Switch(
+                        value=True if self.data.get('bar_data', {}).get('rod_shape', "rounded") == "rounded" else False, 
+                        label="\tRounded Rods", on_change=set_rod_shape
+                    ),
+                    # Toggle axis labels
+                    ft.Switch(
+                        value=self.data.get('bar_data', {}).get('show_labels', False), 
+                        label="\tShow Axis Labels", on_change=set_show_labels
+                    ),
+                    # Toggle horizontal grid lines
+                    ft.Switch(
+                        value=self.data.get('bar_data', {}).get('show_horizontal_grid_lines', False), 
+                        label="\tShow Horizontal Grid Lines", on_change=set_grid_lines, data="horizontal"
+                    ),
+                    # Toggle vertical grid lines
+                    ft.Switch(
+                        value=self.data.get('bar_data', {}).get('show_vertical_grid_lines', False), 
+                        label="\tShow Vertical Grid Lines", on_change=set_grid_lines, data="vertical"
+                    ),
+                    # Adjust max y value of the chart
+                    ft.TextField(
+                        label="Max Y Value", value=str(self.data.get('bar_data', {}).get('max_y', 20)), 
+                        input_filter=ft.NumbersOnlyInputFilter(), data="max", on_blur=set_max_y_value,
+                        margin=ft.Margin.only(top=6, left=10, right=10), 
+                        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
+                        dense=True
+                    ),
+                    # Adjust Rod width
+                    ft.Row([
+                        ft.Text("\t\tRod Width", theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                        ft.Slider(
+                            value=self.data.get('bar_data', {}).get('rod_width', 30), min=10, max=100, 
+                            label="{value}", expand=True, on_change=set_rod_width_value, on_change_end=set_rod_width_data
+                        ),
+                    ], spacing=0),
+                    # Adjust rod spacing
+                    ft.Row([
+                        ft.Text("\t\tRod Spacing", theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                        ft.Slider(
+                            value=self.data.get('bar_data', {}).get('rod_spacing', 30), min=0, max=20, 
+                            label="{value}", expand=True, on_change=set_rod_spacing_value, on_change_end=set_rod_spacing_data
+                        ),
+                    ], spacing=0),
                 ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                ),
-            )
+                open_on_tap=True
+            ),
         )
+
+        
 
         # Add a label and add groups button in the sidebar
         self.sidebar_notes_label.margin = None
@@ -725,7 +718,7 @@ class Chart(Widget):
                         border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                         text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
                         on_change=update_dataset_title, content_padding=4,
-                        width=120, bgcolor=ft.Colors.TRANSPARENT
+                        width=140, bgcolor=ft.Colors.TRANSPARENT, multiline=True
                     ),
                 ], tight=True, spacing=6),
                 border_radius=ft.BorderRadius.all(4), padding=ft.Padding.all(6),
@@ -1059,74 +1052,62 @@ class Chart(Widget):
             chart.update()
 
         # Insert our settings into the sidebar header after our title
-        self.sidebar_header.controls.insert(
-            1,
-            ft.MenuBar(
+        self.sidebar_header.controls.append(
+            shad.ContextMenu(
+                HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
                 [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        [
-                            ft.Switch(
-                                True, "\tMake Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
-                                on_change=toggle_shape, mouse_cursor=ft.MouseCursor.CLICK
-                            ),
-                            ft.Switch(
-                                True, "\tShow Interval Labels", value=self.data.get('radar_data', {}).get('show_tick_labels', False),
-                                on_change=update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
-                            ),
-                            ft.Switch(
-                                True, "\tRotate Chart Nodes", value=self.data.get('radar_data', {}).get('rotate_node_titles', False),
-                                on_change=toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
-                            ),
-                            ft.Row([
-                                ft.Text(
-                                    "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                                    tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
-                                ),
-                                ft.IconButton(
-                                    ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, 
-                                    mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="subtract"
-                                ),
-                                ft.IconButton(
-                                    ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY, 
-                                    mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="add"
-                                ),
-                            ], spacing=0),
-                            ft.TextField(
-                                value=str(self.data.get('radar_data', {}).get('min_value', 0)),
-                                label="Min Value", expand=True,
-                                on_blur=update_min_max_value,
-                                data="min_value",
-                                input_filter=ft.NumbersOnlyInputFilter(),
-                                margin=ft.Margin.only(top=6, left=10, right=10), 
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                                dense=True
-                            ),
-                            ft.TextField(
-                                value=str(self.data.get('radar_data', {}).get('max_value', 20)),
-                                label="Max Value", expand=True,
-                                on_blur=update_min_max_value,
-                                input_filter=ft.NumbersOnlyInputFilter(),
-                                data="max_value",
-                                margin=ft.Margin.only(top=6, left=10, right=10), 
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                                dense=True
-                            )
-                            
-                            
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this radar chart."
+                    ft.Switch(
+                        True, "\tMake Chart Round", value=self.data.get('radar_data', {}).get('make_chart_round', False),
+                        on_change=toggle_shape, mouse_cursor=ft.MouseCursor.CLICK
                     ),
+                    ft.Switch(
+                        True, "\tShow Interval Labels", value=self.data.get('radar_data', {}).get('show_tick_labels', False),
+                        on_change=update_show_tick_labels, mouse_cursor=ft.MouseCursor.CLICK, 
+                    ),
+                    ft.Switch(
+                        True, "\tRotate Chart Nodes", value=self.data.get('radar_data', {}).get('rotate_node_titles', False),
+                        on_change=toggle_rotate_node_titles, mouse_cursor=ft.MouseCursor.CLICK,
+                    ),
+                    ft.Row([
+                        ft.Text(
+                            "\tInterval Count", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
+                            tooltip="Increase or Decrease the number of lines between the center and outer edge of the chart"
+                        ),
+                        ft.IconButton(
+                            ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, 
+                            mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="subtract"
+                        ),
+                        ft.IconButton(
+                            ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY, 
+                            mouse_cursor=ft.MouseCursor.CLICK, on_click=update_tick_count, data="add"
+                        ),
+                    ], spacing=0),
+                    ft.TextField(
+                        value=str(self.data.get('radar_data', {}).get('min_value', 0)),
+                        label="Min Value", expand=True,
+                        on_blur=update_min_max_value,
+                        data="min_value",
+                        input_filter=ft.NumbersOnlyInputFilter(),
+                        margin=ft.Margin.only(top=6, left=10, right=10), 
+                        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
+                        dense=True
+                    ),
+                    ft.TextField(
+                        value=str(self.data.get('radar_data', {}).get('max_value', 20)),
+                        label="Max Value", expand=True,
+                        on_blur=update_min_max_value,
+                        input_filter=ft.NumbersOnlyInputFilter(),
+                        data="max_value",
+                        margin=ft.Margin.only(top=6, left=10, right=10), 
+                        border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
+                        dense=True
+                    )
                 ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                ),
-            )
+                open_on_tap=True
+            ),
         )
+        
+        
         self.sidebar_notes_label.margin = None
         self.sidebar_body.controls.extend([
             ft.Row([    # Label dataset
