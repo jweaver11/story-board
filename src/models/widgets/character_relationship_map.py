@@ -12,6 +12,7 @@ from styles.menu_option_style import MenuOptionStyle
 from styles.icons import connection_icons
 from styles.colors import colors
 from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
+import flet_shadcn_ui as shad
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class CharacterRelationshipMap(Widget):
@@ -457,8 +458,6 @@ class CharacterRelationshipMap(Widget):
                 data=data,
                 on_enter=self._highlight_icon,
                 on_exit=self._stop_highlight_icon,
-                on_secondary_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
-                on_tap=lambda _: self.widget.story.open_menu(self._get_menu_options()),
                 offset = ft.Offset(-0.5, -0.5),
                 mouse_cursor=ft.MouseCursor.CLICK,
             )
@@ -509,63 +508,66 @@ class CharacterRelationshipMap(Widget):
                         edge.color = color_str
                         edge.draw_connection()
                         edge.update()
+
+            def toggle_new_popover(e: ft.Event):
+                new_popover.open = not new_popover.open
+                self.update()
+            def toggle_color_popover(e: ft.Event):
+                color_popover.open = not color_popover.open
+                self.update()
             
 
             return [
-                 MenuOptionStyle(
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.LINK, self.data.get('color', "primary")), 
-                            ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [MenuOptionStyle(
-                            ft.Row([ft.Icon(icon, self.color)]),
+                new_popover := shad.Popover(
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.LINK, self.data.get('color', "primary"), size=20),
+                        content=ft.Row([ft.Text("Icon"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        on_click=toggle_new_popover,
+                        close_on_click=False,
+                    ),
+                    ft.Column([
+                        shad.MenuItem(
+                            ft.Icon(icon, self.color, size=20), 
                             data=icon_str,
-                            on_click=_new_icon_clicked   
-                        ) for icon_str, icon in connection_icons.items()],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        tooltip="Change this connections icon"
-                    ),
-                    no_padding=True, no_effects=True
+                            on_click=_new_icon_clicked, 
+                        ) for icon_str, icon in connection_icons.items()
+                    ], tight=True, spacing=0, width=100)
                 ),
-                MenuOptionStyle(
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [ft.MenuItemButton(
-                            content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                            on_click=_change_icon_color, close_on_click=True, data=color,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
-                        ) for color in colors],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        tooltip="Change this connections color"
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                color_popover := shad.Popover(
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.COLOR_LENS, self.data.get('color', "primary"), size=20),
+                        content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        on_click=toggle_color_popover,
+                        close_on_click=False,
                     ),
-                    no_padding=True, no_effects=True
+                    ft.Column([
+                        shad.MenuItem(
+                            ft.Icon(ft.Icons.CIRCLE, color, size=20), 
+                            data=color,
+                            on_click=_change_icon_color, 
+                        ) for color in colors
+                    ], tight=True, spacing=0, width=100)
+                ),
+
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(
+                    "Delete",
+                    leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
+                    on_click=_delete_connection,
                 ),
                 
-                MenuOptionStyle(
-                    on_click=_delete_connection,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR,),
-                        ft.Text("Delete", weight=ft.FontWeight.BOLD), 
-                    ]),
-                ),
+                
             ]
                 
         # Highlight the node
         async def _highlight_icon(self, e: ft.PointerEvent):
-            e.control.content.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(0.5, self.color))
+            e.control.content.content.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(0.5, self.color))
             e.control.update()
 
         # Stop highlighting the node
         async def _stop_highlight_icon(self, e: ft.PointerEvent):
-            e.control.content.shadow = None
+            e.control.content.content.shadow = None
             e.control.update()
 
         def build_icon(self):
@@ -576,12 +578,17 @@ class CharacterRelationshipMap(Widget):
 
             self.left = mid_position[0]
             self.top = mid_position[1]
-            self.content = ft.Container(
-                ft.Icon(connection_icons.get(self.icon, ft.Icons.ERROR), self.color, size=30),
-                shape=ft.BoxShape.CIRCLE,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
-                padding=ft.Padding.all(6)
+            self.content = shad.ContextMenu(
+                ft.Container(
+                    ft.Icon(connection_icons.get(self.icon, ft.Icons.ERROR), self.color, size=30),
+                    shape=ft.BoxShape.CIRCLE,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+                    padding=ft.Padding.all(6)
+                ),
+                self._get_menu_options(),
+                open_on_tap=True
             )
+            
 
             
 

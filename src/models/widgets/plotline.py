@@ -18,6 +18,7 @@ from constants import PLOTLINE_PADDING, PLOTLINE_WIDTH, PLOTLINE_HEIGHT
 from styles.colors import colors
 from styles.text_fields import TextField, SingleLineTextField
 from styles.snack_bar import SnackBar
+import flet_shadcn_ui as shad
 
 
 class Plotline(Widget):
@@ -102,7 +103,7 @@ class Plotline(Widget):
                     'tag': "marker",    # Since nothing shown in sidebar, just give it a tag of marker
                     'title': "New Marker",  # Title for our marker
                     'color': "primary",
-                    'position': self.widget.locked_position
+                    'position': self.widget.position
                 }
 
             self.is_dragging: bool = False
@@ -330,78 +331,61 @@ class Plotline(Widget):
             self.plotline_canvas.update()
             self.divisions_stack.update()
 
+        def toggle_new_popover(e=None):
+            new_popover.open = not new_popover.open
+            new_popover.update()
+
         return [
-            MenuOptionStyle(
-                content=ft.SubmenuButton(
-                    ft.Container(
-                        ft.Row([
-                            ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
-                            ft.Text("New", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        padding=ft.Padding.all(8), 
-                        shape=ft.RoundedRectangleBorder(radius=4),
-                        border_radius=ft.BorderRadius.all(4),
+            new_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    content=ft.Row([ft.Text("New"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    on_click=toggle_new_popover,
+                    close_on_click=False,
+                ),
+                ft.Column([
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY, size=20), content="Plot Point",
+                        on_click=self.create_plot_point, 
+                        close_on_click=True,
+                        tooltip="Mark important, short term events as plot points in your story",
                     ),
-                    [
-                        ft.MenuItemButton(      # Documents
-                            "Plot Point", leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY), 
-                            on_click=self.create_plot_point, 
-                            close_on_click=True,
-                            tooltip="Mark important, short term events as plot points in your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        ), 
-                        ft.MenuItemButton(
-                            "Marker", leading=ft.Icon(ft.Icons.FLAG_OUTLINED, ft.Colors.PRIMARY),
-                            on_click=self.create_marker, 
-                            close_on_click=True,
-                            tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        )
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_padding=True, no_effects=True 
-            ),   
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY),
-                    on_click=self.show_info, 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Show this map's info in the sidebar",
-                ),
-                no_effects=True, no_padding=True
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.FLAG_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content="Marker",
+                        on_click=self.create_marker, 
+                        close_on_click=True,
+                        tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
+                    ),
+                ], tight=True, spacing=0, width=230)
+                
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "Show Division Labels", leading=ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, ft.Colors.PRIMARY),
-                    on_click=show_division_labels, 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Whether to show each divisions label or not",
-                ),
-                no_effects=True, no_padding=True
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
+                "Show Info",
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
+                on_click=self.show_info,
+                close_on_click=True,
+                tooltip="Show this map's info in the sidebar"
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "Division", 
-                    leading=ft.Icon(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR),
-                    on_click=edit_division_count, data="remove",
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click",),
-                    tooltip="Show this map's info in the sidebar",
-                ),
-                no_effects=True, no_padding=True
+            shad.MenuItem(
+                "Show Division Labels",
+                leading=ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                on_click=show_division_labels,
+                tooltip="Whether to show each divisions label or not"
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "Division", 
-                    leading=ft.Icon(ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY),
-                    on_click=edit_division_count, data="add",
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click",),
-                    tooltip="Show this map's info in the sidebar",
-                ),
-                no_effects=True, no_padding=True
-            )
+            shad.MenuItem(
+                "Division",
+                leading=ft.Icon(ft.Icons.REMOVE_OUTLINED, ft.Colors.ERROR, size=20),
+                close_on_click=False,
+                on_click=edit_division_count, data="remove",
+            ),
+            shad.MenuItem(
+                "Division",
+                leading=ft.Icon(ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY, size=20),
+                close_on_click=False,
+                on_click=edit_division_count, data="add",
+            ),
         ]
 
     # Simple highlight and stop highlight functions
@@ -469,18 +453,17 @@ class Plotline(Widget):
     async def open_menu(self, e: ft.PointerEvent=None):
         ''' Opens our menu for the options of our related plotline '''
         if self.can_open_menu:
-            self.story.open_menu(self.get_new_event_menu_options())
+            #self.story.open_menu(self.get_new_event_menu_options())
             self.locked_position = self.position
 
 
     async def create_plot_point(self, e: ft.Event=None):
         ''' Creates plot point in data, control and control on event stack'''
-        await self.story.close_menu()
         new_plot_point = PlotlinePlotPoint(
             widget=self, 
             is_new=True, 
             data={
-                'position': self.locked_position, 
+                'position': self.position, 
                 'title': "New Plot Point",
             }
         )
@@ -491,7 +474,6 @@ class Plotline(Widget):
 
     # Creates a marker in data and a control on the event stack. Has no info for sidebar
     async def create_marker(self):
-        await self.story.close_menu()
         new_marker = self.PlotlineMarker(widget=self, is_new=True)
 
         # Update our data, add it to the events stack, and show it in the sidebar
@@ -788,11 +770,17 @@ class Plotline(Widget):
         # Our canvas that 
         self.plotline_canvas = cv.Canvas(
             content=ft.GestureDetector(
-                expand=True, 
-                on_secondary_tap=self.open_menu,
+                shad.ContextMenu(
+                    ft.Container(width=PLOTLINE_WIDTH, height=50, ignore_interactions=True),
+                    items=self.get_new_event_menu_options(),
+                    open_on_tap=True, width=PLOTLINE_WIDTH, height=50,
+                    margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING, vertical=PLOTLINE_HEIGHT / 2 - 25)
+                ),
+                width=PLOTLINE_WIDTH,
+                height=PLOTLINE_HEIGHT, 
                 on_hover=self.hover_plotline_canvas,
                 on_exit=self.stop_highlight_plotline_canvas,
-                on_tap=may_show_sidebar,
+                #on_tap=may_show_sidebar,
                 hover_interval=20,
             ),
             width=PLOTLINE_WIDTH, height=PLOTLINE_HEIGHT,
@@ -886,14 +874,19 @@ class Plotline(Widget):
                     border_radius=4
                 ),
 
+                
+
                 self.plotline_canvas,   # Canvas holding the plotline shapes
+
+                
 
                 # Start, time, and end labels for timeline
                 start_label,
                 time_label,
                 end_label,
 
-                self.plotline_highlight_container,  # Simple container for highlighting the plotline when hovering over it
+                # Simple container for highlighting the plotline when hovering over it
+                self.plotline_highlight_container,
 
                 # Markers and plot point stacks
                 self.marker_stack,

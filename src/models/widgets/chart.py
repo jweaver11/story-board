@@ -1117,7 +1117,7 @@ class Chart(Widget):
                         ],
                         menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
                         style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this bar chart."
+                        tooltip="Adjust the settings for this radar chart."
                     ),
                 ],
                 style=ft.MenuStyle(

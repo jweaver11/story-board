@@ -1,5 +1,5 @@
 '''
-Mini widgets are high complexity components that sit in the widgets content AND can display their info inside the parent widgets sidebar.
+Mini widgets are high complexity components that sit in the widgets content AND can display their notes inside the parent widgets sidebar.
 If it cannot do both, its not a mini widget
 '''
 
@@ -43,13 +43,13 @@ class MiniWidget(ft.GestureDetector):
                 'tag': str(),                           # Default mini widget tag, but should be overwritten by child classes
                 'position': data.get('position', (200, 200)),       # Position of the mini widget on its parents stack
                 'color': data.get('color', "white"),          # Color of the mini widget
-                'info': list(),                          # Info stored about this MW. Child classes expand this  
+                'notes': list(),                          # Notes stored about this MW. Child classes expand this  
             }
 
         # Sidebar ctrls
         self.sidebar_title: SidebarTitleTextField    # Title of our miniwidget in the sidebar
-        self.sidebar_info_label: ft.Row         # Label for our info section in the sidebar
-        self.sidebar_info_column: ft.Column      # Column that holds all our info textfields in
+        self.sidebar_notes_label: ft.Row         # Label for our notes section in the sidebar
+        self.sidebar_notes_column: ft.Column      # Column that holds all our notes textfields in
 
         # Other ctrls
         self.icon: ft.Icon      # Some mw's have icons, so we store it here to change its size and color
@@ -123,14 +123,14 @@ class MiniWidget(ft.GestureDetector):
             self.content.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.5, self.data.get('color'))) #if self.plotline_control.shadow is None else None
             self.update()
 
-    # Hides are shadow unless our info display is visible, then stay highlighted
+    # Hides are shadow unless our notes display is visible, then stay highlighted
     def stop_highlight(self, e=None):
 
         # If we're dragging, keep highlighted
         if self.is_dragging:
             return
 
-        # Stay highlighted if we're showing our info display
+        # Stay highlighted if we're showing our notes display
         if self.widget.visible_mw_id == self.data.get('id', ''):
             return
         if self.content.shadow is not None:
@@ -154,8 +154,8 @@ class MiniWidget(ft.GestureDetector):
         self.widget.visible_mw_id = self.data.get('id', '')     # Update ID
 
         # Update the state of the widget
-        if hasattr(self.widget, 'showing_info'):
-            self.widget.showing_info = False
+        if hasattr(self.widget, 'showing_notes'):
+            self.widget.showing_notes = False
          
         # Applies the update
         if not await self.widget.show_sidebar():
@@ -198,86 +198,86 @@ class MiniWidget(ft.GestureDetector):
     # Set the content of our mini widget
     def build(self):
 
-        # Handles hiding our new info button and focusing our new info textfield
-        async def handle_new_info_clicked(e=None):
-            new_info_button.visible = False
-            new_info_tf.visible = True
-            new_info_tf.value = ""
-            new_info_button.update()
-            new_info_tf.update()
-            await new_info_tf.focus()
+        # Handles hiding our new notes button and focusing our new notes textfield
+        async def handle_new_notes_clicked(e=None):
+            new_notes_button.visible = False
+            new_notes_tf.visible = True
+            new_notes_tf.value = ""
+            new_notes_button.update()
+            new_notes_tf.update()
+            await new_notes_tf.focus()
 
-        # Create a new info in data, then add it to the column
-        async def save_new_info(e: ft.Event[ft.TextField]):
-            self.data.get('info', []).append({'label': e.control.value, 'value': ''})
-            self.update_data(**{'info': self.data.get('info', [])})
-            self.sidebar_info_column.controls.append(
-                create_new_info_ctrl(
-                    info_idx = len(self.data.get('info', [])) - 1,
-                    info_data = self.data.get('info', [])[-1]
+        # Create a new notes in data, then add it to the column
+        async def save_new_notes(e: ft.Event[ft.TextField]):
+            self.data.get('notes', []).append({'label': e.control.value, 'value': ''})
+            self.update_data(**{'notes': self.data.get('notes', [])})
+            self.sidebar_notes_column.controls.append(
+                create_new_notes_ctrl(
+                    notes_idx = len(self.data.get('notes', [])) - 1,
+                    notes_data = self.data.get('notes', [])[-1]
                 )
             )
-            self.sidebar_info_column.update()
+            self.sidebar_notes_column.update()
             await asyncio.sleep(0.05)
             await self.widget.sidebar_body.scroll_to(offset=-1, duration=200)
 
-        # Saves the value of the info
-        def save_info_content(e: ft.Event[ft.TextField]):
-            info_idx = e.control.data
-            if len(self.data.get('info', [])) > info_idx:
-                self.data.get('info', [])[info_idx]['value'] = e.control.value
-                self.update_data(**{'info': self.data.get('info', [])})
+        # Saves the value of the notes
+        def save_notes_content(e: ft.Event[ft.TextField]):
+            notes_idx = e.control.data
+            if len(self.data.get('notes', [])) > notes_idx:
+                self.data.get('notes', [])[notes_idx]['value'] = e.control.value
+                self.update_data(**{'notes': self.data.get('notes', [])})
             
-        # Returns a textfield of the info control
-        def create_new_info_ctrl(info_idx: int, info_data: dict) -> TextField:
+        # Returns a textfield of the notes control
+        def create_new_notes_ctrl(notes_idx: int, notes_data: dict) -> TextField:
             return TextField(
-                info_data.get('value', ''), label=info_data.get('label', ''), data=info_idx, expand=True, on_blur=save_info_content, 
+                notes_data.get('value', ''), label=notes_data.get('label', ''), data=notes_idx, expand=True, on_blur=save_notes_content, 
                 capitalization=ft.TextCapitalization.SENTENCES, multiline=True, dense=True,
-                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_info, mouse_cursor=ft.MouseCursor.CLICK)
+                suffix_icon=ft.IconButton(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, on_click=delete_notes, mouse_cursor=ft.MouseCursor.CLICK)
             )
 
-        # Deletes the info from data and then the column and updates the indices
-        def delete_info(e: ft.Event):
-            info_idx = e.control.parent.data
-            self.data.get('info', []).pop(info_idx)
-            self.update_data(**{'info': self.data.get('info', [])})
-            self.sidebar_info_column.controls.pop(info_idx)
-            self.sidebar_info_column.update()
-            update_info_indices()
+        # Deletes the notes from data and then the column and updates the indices
+        def delete_notes(e: ft.Event):
+            notes_idx = e.control.parent.data
+            self.data.get('notes', []).pop(notes_idx)
+            self.update_data(**{'notes': self.data.get('notes', [])})
+            self.sidebar_notes_column.controls.pop(notes_idx)
+            self.sidebar_notes_column.update()
+            update_notes_indices()
 
-        def handle_new_info_blur(e=None):
-            new_info_button.visible = True
-            new_info_tf.visible = False
-            new_info_button.update()
-            new_info_tf.update()
+        def handle_new_notes_blur(e=None):
+            new_notes_button.visible = True
+            new_notes_tf.visible = False
+            new_notes_button.update()
+            new_notes_tf.update()
 
-        # Updates all our info ctrls (textfields) data to be accurate after an index was deleted
-        def update_info_indices():
-            for idx, ctrl in enumerate(self.sidebar_info_column.controls):
+        # Updates all our notes ctrls (textfields) data to be accurate after an index was deleted
+        def update_notes_indices():
+            for idx, ctrl in enumerate(self.sidebar_notes_column.controls):
                 ctrl.data = idx
 
-        # The label for info with a new info button and textfield
-        self.sidebar_info_label = ft.Row([
-            ft.Text("Info", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
-            new_info_button := ft.IconButton(
+        # The label for notes with a new notes button and textfield
+        self.sidebar_notes_label = ft.Row([
+            ft.Text("Notes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True),
+            new_notes_button := ft.IconButton(
                 ft.Icons.NEW_LABEL_OUTLINED, ft.Colors.PRIMARY, 
-                tooltip="Add Info",
-                on_click=handle_new_info_clicked,
+                tooltip="Add Notes",
+                on_click=handle_new_notes_clicked,
                 mouse_cursor="click"
             ),
-            new_info_tf := ft.TextField(
-                on_submit=save_new_info, visible=False, expand=True,
-                on_blur=handle_new_info_blur, margin=ft.Margin.only(left=4),
+            new_notes_tf := ft.TextField(
+                on_submit=save_new_notes, visible=False, expand=True,
+                on_blur=handle_new_notes_blur, margin=ft.Margin.only(left=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 dense=True, capitalization=ft.TextCapitalization.SENTENCES,
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-                label="New Item Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+                label="New Note Label", label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
             )
             
         ], spacing=0)
 
-        self.sidebar_info_column = ft.Column(
-            [create_new_info_ctrl(idx, value) for idx, value in enumerate(self.data.get('info', []))]
+        self.sidebar_notes_column = ft.Column(
+            [create_new_notes_ctrl(idx, value) for idx, value in enumerate(self.data.get('notes', []))]
         )
 
         self.description_tf = ft.TextField(

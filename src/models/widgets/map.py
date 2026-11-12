@@ -29,6 +29,7 @@ import uuid
 import os
 from PIL import Image, ImageColor
 import utils.drawing as drawing
+import flet_shadcn_ui as shad
 
 
 MAP_WIDTH = 2000
@@ -117,7 +118,6 @@ class Map(Widget):
 
         # Rest of state elements
         self.new_location_position = (200, 200)     # Where new locations go 
-        self.locked_new_location_position = (200, 200)
         self.showing_info: bool = True
 
         self.current_path: cv.Path = None      # The current path being drawn on the canvas, if any
@@ -1038,7 +1038,7 @@ class Map(Widget):
             widget=self,
             is_new=True,
             data={
-                'position': self.locked_new_location_position, 
+                'position': self.new_location_position, 
                 'title': "New Location",
             },
         )
@@ -1057,7 +1057,7 @@ class Map(Widget):
         new_data = {
             'id': new_id,
             'label': "New Label",
-            'position': self.locked_new_location_position,
+            'position': self.new_location_position,
             'color': "#FFFFFF",
             'outline_thickness': 1,
         }
@@ -1225,9 +1225,8 @@ class Map(Widget):
     async def show_info(self, e=None):
 
         # Close menu
-        await self.story.close_menu()
-        if self.showing_info:   # Already showing info, so no need to re-call it
-            return
+        #if self.showing_info:   # Already showing info, so no need to re-call it
+            #return
         
         # Re-build header, body, and footer
         self.sidebar_header.controls = self.create_sidebar_header_ctrls()
@@ -1249,44 +1248,43 @@ class Map(Widget):
     def get_new_item_options(self) -> list[ft.Control]:
 
         # Locks our position at wherever we clicked to open the menu
-        self.locked_new_location_position = self.new_location_position
+
+        def toggle_new_popover(e=None):
+            new_popover.open = not new_popover.open
+            new_popover.update()
 
         return [
-            
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "New Location", leading=ft.Icon(ft.Icons.LOCATION_PIN, ft.Colors.PRIMARY),
-                    on_click=self.create_location, 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+            new_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    content=ft.Row([ft.Text("New"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    on_click=toggle_new_popover,
+                    close_on_click=False,
                 ),
-                no_effects=True, no_padding=True
+                ft.Column([
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                        content="Location",
+                        on_click=self.create_location, 
+                    ),
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content="Label",
+                        on_click=self.create_label, 
+                    ),
+                ], tight=True, spacing=0, width=230)
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "New Label", leading=ft.Icon(ft.Icons.TEXT_FIELDS_OUTLINED, ft.Colors.PRIMARY),
-                    on_click=self.create_label, 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_effects=True, no_padding=True
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
+                content="Show Info",
+                on_click=self.show_info,
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    "Show Info", leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY),
-                    on_click=self.show_info, 
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Show this map's info in the sidebar",
-                ),
-                no_effects=True, no_padding=True
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY, size=20),
+                content=("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing",
+                on_click=self.toggle_draw_mode,
             ),
-            MenuOptionStyle(
-                ft.MenuItemButton(
-                    ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
-                    close_on_click=True, on_click=self.toggle_draw_mode,
-                    leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_effects=True, no_padding=True
-            )
         ]
     
     # Also sets our mouse coordinates for the menu to open at the right place
@@ -1556,6 +1554,10 @@ class Map(Widget):
         )
 
         self.map_controller = ft.GestureDetector(
+            shad.ContextMenu(
+                ft.Container(expand=True, ignore_interactions=True),
+                items=self.get_new_item_options(),
+            ),
             mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
             expand=True,
 
@@ -1566,7 +1568,6 @@ class Map(Widget):
             on_pan_end=self.handle_pan_end,
             
             # Non-drawing event handlers
-            on_secondary_tap=lambda: self.story.open_menu(self.get_new_item_options()),
             on_hover=self.set_mouse_coords,
 
             drag_interval=5,
