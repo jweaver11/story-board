@@ -8,6 +8,8 @@ from styles.text_fields import TextField, UnderlinedTextField, NoLabelTextField
 from styles.menu_option_style import MenuOptionStyle
 import asyncio
 from styles.colors import colors
+import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
     
 
 class Note(Widget):
@@ -45,11 +47,6 @@ class Note(Widget):
 
         if self.page.platform.is_mobile() != True:
             self.padding = ft.Padding.all(10)
-
-        def update_indices():
-            for i, ctrl in enumerate(card_row.controls):
-                ctrl.data = i
-
         
         # Adds our new card to data and our column
         async def handle_create_card(e=None):
@@ -84,13 +81,12 @@ class Note(Widget):
                 if len(self.data['card_data']) > idx:
                     del self.data['card_data'][idx]
                     self.update_data(**{'card_data': self.data['card_data']})
-                    card_row.controls.pop(idx)
+                    card_row.controls = build_card_row()
                     card_row.update()
-                    update_indices()
-                    await self.story.close_menu()
 
             async def handle_color_change(e: ft.Event[ft.Control]):
                 new_color = e.control.data
+                close_color_popover()
                 if len(self.data['card_data']) > idx:
                     self.data['card_data'][idx]['color'] = new_color
                     self.update_data(**{'card_data': self.data['card_data']})
@@ -99,6 +95,7 @@ class Note(Widget):
                     await self.story.close_menu()
 
             async def handle_strikethrough(e: ft.Event[ft.Control]):
+                close_color_popover()
                 if len(self.data['card_data']) > idx:
                     struck = not self.data['card_data'][idx].get('strikethrough', False)
                     self.data['card_data'][idx]['strikethrough'] = struck
@@ -111,7 +108,7 @@ class Note(Widget):
                     await self.story.close_menu()
 
             async def move_card(offset: int):
-                await self.story.close_menu()
+                
                 cards = self.data['card_data']
                 target = idx + offset
                 if offset == 0 or not 0 <= idx < len(cards) or not 0 <= target < len(cards):
@@ -122,7 +119,7 @@ class Note(Widget):
 
                 controls = card_row.controls
                 controls[idx], controls[target] = controls[target], controls[idx]
-                update_indices()
+                card_row.controls = build_card_row()
                 card_row.update()
 
             async def move_up(e=None):
@@ -131,50 +128,56 @@ class Note(Widget):
             async def move_down(e=None):
                 await move_card(1)
 
+            def toggle_color_popover(e=None):
+                color_popover.open = not color_popover.open
+                color_popover.update()
+            def close_color_popover(e=None):
+                color_popover.open = False
+                color_popover.update()
+
+
             return [
-                
-                MenuOptionStyle(
-                    on_click=move_up,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
-                        ft.Text("Move Up", weight=ft.FontWeight.BOLD)
-                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
-                ),
-                MenuOptionStyle(
-                    on_click=move_down,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
-                        ft.Text("Move Down", weight=ft.FontWeight.BOLD)
-                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
-                ),
-                MenuOptionStyle(
-                    on_click=handle_strikethrough,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
-                        ft.Text("Mark Done", weight=ft.FontWeight.BOLD)
-                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
-                ),
-                MenuOptionStyle(
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY), 
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [ft.MenuItemButton(color.capitalize(), style=ft.ButtonStyle(color), on_click=handle_color_change, data=color) for color in colors],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                        tooltip="Change this widget's color"
+                color_popover := shad.Popover(
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        trailing=ft.Icons.ARROW_RIGHT,
+                        on_click=toggle_color_popover,
+                        close_on_click=False,
                     ),
-                    no_padding=True, no_effects=True
+                    ft.Column([
+                        shad.MenuItem(
+                            content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                            on_click=handle_color_change, close_on_click=True, data=color,
+                            expand=True
+                        ) for color in colors
+                    ], tight=True, spacing=0, width=100)
+                ), 
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
+                    content=ft.Text("Move Up", weight=ft.FontWeight.BOLD),
+                    on_click=move_up,
                 ),
-                MenuOptionStyle(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
+                    content=ft.Text("Move Down", weight=ft.FontWeight.BOLD),
+                    on_click=move_down,
+                ),
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
+                    content=ft.Text("Mark Done", weight=ft.FontWeight.BOLD),
+                    on_click=handle_strikethrough,
+                ),
+               
+               
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
+                    content=ft.Text("Delete Card", weight=ft.FontWeight.BOLD),
                     on_click=delete_card,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
-                        ft.Text("Delete Card", weight=ft.FontWeight.BOLD)
-                    ], alignment=ft.MainAxisAlignment.START, spacing=10),
-                )
+                ),
+                
             ]
 
         # Gives us a new textfield for each note card
@@ -191,14 +194,14 @@ class Note(Widget):
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 capitalization=ft.TextCapitalization.SENTENCES,
                 text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
-                suffix_icon=ft.GestureDetector(
-                    ft.IconButton(
-                        ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT, 
-                        on_click=lambda e: self.story.open_menu(get_card_options(e.control.parent.parent.parent.parent.parent.data)),
-                        mouse_cursor=ft.MouseCursor.CLICK,
+                
+                suffix_icon=HighlightButton(
+                    content=shad.ContextMenu(
+                        ft.Icon(ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT),
+                        get_card_options(idx),
+                        open_on_tap=True
                     ),
-                    on_hover=lambda e: self.set_mouse_coords(e),
-                    hover_interval=30,
+                    is_round=True,
                 ),
                 on_blur=save_card_label
             )
@@ -231,16 +234,14 @@ class Note(Widget):
             )
             return card
 
+        def build_card_row() -> list[ft.Control]:
+            return [new_card(idx, card_data) for idx, card_data in enumerate(self.data.get('card_data', []))]
+
         # Column to hold our cards textfields
         card_row = ft.Row(
-            controls=[], 
+            controls=build_card_row(), 
             wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
         )
-
-        # Go through the note data and load the cards
-        for idx, card_data in enumerate(self.data.get('card_data', [])):
-            card_row.controls.append(new_card(idx, card_data))
-
 
         # Button to click to add a new card
         add_card_button = ft.Button(

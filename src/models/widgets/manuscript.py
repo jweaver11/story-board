@@ -43,7 +43,7 @@ class Manuscript(Widget):
                 'show_sidebar': True,
 
                 # The text as json list data that is loaded and saved
-                'manuscript_data': list(),       
+                'manuscript_data': None,       
 
             })  
             ft.TextStyle()
@@ -245,7 +245,7 @@ class Manuscript(Widget):
 
         
         editor_container = ft.Container(
-            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty),
+            ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
             expand=True,
             margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
         )
@@ -264,7 +264,7 @@ class Manuscript(Widget):
                 quill_toolbar, 
                 bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
                 alignment=ft.Alignment.CENTER_LEFT, 
-                padding=ft.Padding.only(left=4)
+                padding=ft.Padding.only(left=4),
             ),
             ft.Divider(2, 2),
             ft.Row([
