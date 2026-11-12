@@ -310,8 +310,8 @@ class PlotlinePlotPoint(MiniWidget):
             relevant_characters_row,
             character_search_bar,
 
-            self.sidebar_info_label,
-            self.sidebar_info_column,
+            self.sidebar_notes_label,
+            self.sidebar_notes_column,
     
             ]
         

@@ -429,11 +429,6 @@ class Plotline(Widget):
 
     # Called when clicking to show our info in the sidebar
     async def show_info(self, e=None):
-
-        # Close menu
-        await self.story.close_menu()
-        if self.showing_info:   # Already showing info, so no need to re-call it
-            return
         
         # Re-build header, body, and footer
         self.sidebar_header.controls = self.create_sidebar_header_ctrls()
@@ -749,12 +744,6 @@ class Plotline(Widget):
                      
     def build(self):
         super().build()
-
-        # When clicking our canvas. If we're in center vertically and not showing sidebar, show sidebar
-        async def may_show_sidebar(e: ft.PointerEvent):
-            if self.can_open_menu:
-                await self.show_info()
-            #print("Open menu")
 
         # Called when we change one of our labels
         def change_label(e: ft.Event[ft.TextField]):
