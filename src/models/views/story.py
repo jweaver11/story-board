@@ -907,7 +907,6 @@ class Story(ft.View):
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
-        from models.app import app
 
         
         if directory_path is None:
@@ -924,9 +923,6 @@ class Story(ft.View):
                 d = {'canvas_data': data} if data is not None else None
                 widget = Canvas(title,  directory_path, self, d, True)
             case "character":
-                if app.settings.data.get('active_character_template', "None") != "None":
-                    data = app.settings.data['character_templates'].get(app.settings.data['active_character_template'], {}).copy()
-                    data = {'character_data': data}
                 widget = Character(title, directory_path, self, data, True)
             case "plotline":
                 widget = Plotline(title, directory_path, self, data, True)
@@ -936,9 +932,6 @@ class Story(ft.View):
             case "character_relationship_map":
                 widget = CharacterRelationshipMap(title, directory_path, self, data, True)
             case "world":
-                if app.settings.data.get('active_world_template', "None") != "None":
-                    data = app.settings.data['world_templates'].get(app.settings.data['active_world_template'], {}).copy()
-                    data = {'world_data': data}
                 widget = World(title, directory_path, self, data, True)
             case "canvas_board":
                 widget = CanvasBoard(title, directory_path, self, data, True)   

@@ -435,7 +435,7 @@ class MenuBar(ft.Container):
                     leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY, size=20),
                     disabled=self.story is None,
                     tooltip="Export widgets from your story into other formats.",
-                    on_click=self.story.handle_export,
+                    on_click=self.story.handle_export if self.story else None,
                 ),
                 shad.MenuItem(
                     "Settings",

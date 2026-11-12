@@ -10,11 +10,12 @@ from models.widget import Widget
 from models.views.story import Story
 from models.app import app
 from utils.safe_string_checker import return_safe_name
-from models.dataclasses.character_template import default_character_template_data_dict
+
 import flet.canvas as cv
 import asyncio
 from styles.text_fields import TextField, NoLabelTextField
 from styles.snack_bar import SnackBar
+from models.dataclasses.character_template import default_character_template_data
 
 
 
@@ -43,9 +44,7 @@ class Character(Widget):
 
                 # Character data
                 'about': "",
-                # If this dict doesn't exist, we create it with our active template data. If we fail to pull that, we use a default template (which has quite a lot)
-                'character_data': app.settings.data.get('character_templates', {}).get(app.settings.data.get('active_character_template', ""), default_character_template_data_dict()) 
-                if data is None or 'character_data' not in data else data['character_data'],
+                'character_data': app.settings.data.get('character_template', default_character_template_data()),
 
                 'charts': {}
             })         

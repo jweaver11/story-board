@@ -85,9 +85,10 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             for story in app.stories.values():
                 # If it matches, set our new story 
                 if story.route == page.route:
-                    app.settings.update_data(**{'page': {'route': story.route}})
-                    app.settings.story = story  # Gives our settings widget the story reference it needs
-                    page.views.append(story)
+                    new_story = Story(story.data.get('title', 'Untitled Story'), story.data)    # Refresh story obj
+                    app.settings.update_data(**{'page': {'route': new_story.route}})
+                    app.settings.story = new_story  # Gives our settings widget the story reference it needs
+                    page.views.append(new_story)
                     page.update() 
                     return
                 

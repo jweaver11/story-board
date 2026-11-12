@@ -7,7 +7,8 @@ from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from styles.text_fields import TextField
 import asyncio
-    
+from models.dataclasses.item_template import default_item_template_data
+
 
 class Item(Widget):
 
@@ -33,19 +34,7 @@ class Item(Widget):
                 'image_base64': str(), 
 
                 # Item data - list of fields with title and string
-                'item_data': [
-                    {'title': "Type", 'content': ""},
-                    {'title': "Rarity", 'content': ""}, 
-                    {'title': "Effects", 'content': ""},
-                    {'title': "Material", 'content': ""},
-                    {'title': "Size", 'content': ""},
-                    {'title': "Weight", 'content': ""},
-                    {'title': "Lore", 'content': ""},
-                    {'title': "Cost", 'content': ""},
-                    {'title': "Locations", 'content': ""},
-                    {'title': "Count", 'content': ""},
-                    {'title': "Notes", 'content': ""},
-                ]
+                'item_data': app.settings.data.get('item_template', default_item_template_data())
             },
         )
 
@@ -65,9 +54,12 @@ class Item(Widget):
         
         # Adds our new field to data and our column
         async def create_field(e=None):
-            self.data['item_data'].append({"title": self.new_field_tf.value, "content": ""})
+            key = self.new_field_tf.value
+            if key in self.data.get('item_data', {}):
+                return
+            self.data['item_data'][self.new_field_tf.value] = ""
             self.update_data(**{'item_data': self.data['item_data']})
-            fields_column.controls.append(new_field_textfield(len(self.data['item_data']) - 1, self.new_field_tf.value, ""))
+            fields_column.controls.append(new_field_textfield(self.new_field_tf.value, ""))
             fields_column.update()
             self.new_field_tf.value = ""
             self.new_field_tf.update()
@@ -77,48 +69,46 @@ class Item(Widget):
             await fields_column.scroll_to(offset=-1, duration=200)
 
         # Deletes a field from data and our column
-        async def delete_field(e: ft.Event):
-            index = e.control.data
-            if len(self.data['item_data']) > index:
-                del self.data['item_data'][index]
+        async def delete_field(e: ft.Event[ft.IconButton]):
+            key = e.control.data
+            if key in self.data.get('item_data', {}):
+                del self.data['item_data'][key]
                 self.update_data(**{'item_data': self.data['item_data']})
-                fields_column.controls.pop(index)
-                fields_column.update()
-
-                # Updates the indices
-                for i, ctrl in enumerate(fields_column.controls):
-                    ctrl.data = i
-                    ctrl.suffix_icon.data = i
+                for ctrl in fields_column.controls:
+                    if ctrl.data == key:
+                        fields_column.controls.remove(ctrl)
+                        fields_column.update()
+                        break
+                
 
         # Saves content when text field is unfocused
-        async def save_field(e):
-            index = e.control.data
-            if len(self.data['item_data']) > index:
-                self.data['item_data'][index]['content'] = e.control.value
+        async def save_field(e: ft.Event[ft.TextField]):
+            key = e.control.data
+            if key in self.data.get('item_data', {}):
+                self.data['item_data'][key] = e.control.value
                 self.update_data(**{'item_data': self.data['item_data']})
 
         # Gives us a new textfield for each note field
-        def new_field_textfield(idx: int, key: str='', value: str='') -> TextField:
+        def new_field_textfield(key: str='', value: str='') -> TextField:
             tf = TextField(
                 value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
                 multiline=True, label=key, dense=True, 
                 on_blur=save_field, 
-                data=idx,
+                data=key,
                 suffix_icon=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                     tooltip=f"Delete field {key}",
                     on_click=delete_field,
-                    mouse_cursor="click", data=idx
+                    mouse_cursor="click", data=key
                 ),
             )
             tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
             return tf
 
         # Go through the note data and load the fields
-        for idx, field in enumerate(self.data.get('item_data', [])):
-            key = field.get('title', '')
-            value = field.get('content', '')
-            fields_column.controls.append(new_field_textfield(idx, key, value))
+        for key, value in self.data.get('item_data', {}).items():
+            
+            fields_column.controls.append(new_field_textfield(key, value))
 
         # Show the textfield to label the new field
         async def _create_new_field_clicked(e):

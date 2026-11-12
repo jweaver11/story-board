@@ -2,7 +2,7 @@
 Default data dict for world data templates 
 '''
 
-def default_world_template_data_dict() -> dict:
+def default_world_template_data() -> dict:
     return  {
         'Locations': {},
         'Lore': {},

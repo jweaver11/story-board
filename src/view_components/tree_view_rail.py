@@ -92,36 +92,9 @@ class ContentRail(ft.Column):
     def get_template_options(self, widget_type: str) -> list[ft.Control]:
         ''' Returns a list of template options when right clicking empty space in the rail '''
 
-        template_label = ft.Text("Templates", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)
-
         template_options = []
 
-        if widget_type == "character":
-            
-            for name, template in app.settings.data.get('character_templates', {}).items():
-                template_options.append(
-                    ft.MenuItemButton(
-                        name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
-                    )
-                )
-            #template_options.insert(0, template_label)
-            #template_options.insert(1, ft.Divider(2, 2))
-
-        # Add add button to bottom that opens the settings to the template section
-        # Add templates label at the top that is disabled
-
-        elif widget_type == "world":
-            for name, template in app.settings.data.get('world_templates', {}).items():
-                template_options.append(
-                    ft.MenuItemButton(
-                        name, data=widget_type, on_click=self.new_item_clicked, 
-                        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
-                    )
-                )
-            #template_options.insert(0, template_label)
-
-        elif widget_type == "chart":
+        if widget_type == "chart":
             template_options = [
                 ft.MenuItemButton(
                     "Bar", data=f"{widget_type}:bar", 
@@ -411,19 +384,17 @@ class ContentRail(ft.Column):
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
                             tooltip="Visualize the connections between the characters in your story"
                         ),
-                        ft.SubmenuButton(
-                            ft.Row([ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), ft.Text("Character", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                            self.get_template_options("character"), 
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Create a new character for your story. Choose from templates or create a default character."
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY), content="Character",
+                            data="character", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Create a new character for your story."
                         ),
-                        ft.SubmenuButton(
-                            ft.Row([ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), ft.Text("World", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
-                            self.get_template_options("world"), 
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Create a new world for your story. Choose from templates or create a default world."
+                        ft.MenuItemButton(
+                            leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY), content="World",
+                            data="world", on_click=self.new_item_clicked, close_on_click=True,
+                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                            tooltip="Create a new world for your story."
                         ),
                         ft.SubmenuButton(
                             ft.Row([ft.Icon(ft.Icons.INSERT_CHART_OUTLINED, ft.Colors.PRIMARY), ft.Text("Chart", color=ft.Colors.ON_SURFACE, expand=True)], expand=True),
@@ -465,7 +436,7 @@ class ContentRail(ft.Column):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY, size=20), content="Character",
                 data="character", on_click=self.new_item_clicked, close_on_click=True,
-                tooltip="Create a new character for your story. Choose from templates or create a default character."
+                tooltip="Create a new character for your story."
             ),
             
             shad.MenuItem(      
@@ -491,7 +462,7 @@ class ContentRail(ft.Column):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY, size=20), content="World",
                 data="world", on_click=self.new_item_clicked, close_on_click=True,
-                tooltip="Create a new world for your story. Choose from templates or create a default world."
+                tooltip="Create a new world for your story."
             ),
             shad.MenuItem(
                 content=ft.Row([

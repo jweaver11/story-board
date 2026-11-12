@@ -91,7 +91,7 @@ class RailFolder(ft.GestureDetector):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.PERSON_OUTLINED, ft.Colors.PRIMARY, size=20), content="Character",
                 data="character", on_click=self.new_item_clicked, close_on_click=True,
-                tooltip="Create a new character for your story. Choose from templates or create a default character."
+                tooltip="Create a new character for your story."
             ),
             
             shad.MenuItem(      
@@ -117,7 +117,7 @@ class RailFolder(ft.GestureDetector):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.PUBLIC_OUTLINED, ft.Colors.PRIMARY, size=20), content="World",
                 data="world", on_click=self.new_item_clicked, close_on_click=True,
-                tooltip="Create a new world for your story. Choose from templates or create a default world."
+                tooltip="Create a new world for your story."
             ),
             shad.MenuItem(
                 content=ft.Row([

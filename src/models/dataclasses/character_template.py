@@ -2,7 +2,7 @@
 Default data dict for character data templates 
 '''
  
-def default_character_template_data_dict() -> dict:
+def default_character_template_data() -> dict:
     return {
 
         #'About': "",

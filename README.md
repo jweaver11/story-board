@@ -20,6 +20,12 @@ Also useful for D&D Campaign tracking.
 - Radar and bar charts for power scaling and changes in physical growth throughout a story's progression
 - Tab system workspace for all widgets in your story
 
+In Settings > Templates, customize the character, world, and item templates used
+for new widgets. Add or remove fields and sections, drag fields or use the
+section arrows to reorder them, or reset each template to its defaults. Existing widgets are not changed.
+Older settings retain their saved templates; the active legacy template (or
+Default when none is active) becomes the editable template.
+
 <p align="center">
   <img src="images/Screenshot%201.png" alt="Screenshot 1 of the StoryBoard app" width="700">
   <img src="images/Screenshot%202.png" alt="Screenshot 2 of the StoryBoard app" width="700">

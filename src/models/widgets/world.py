@@ -13,7 +13,7 @@ from PIL import Image
 from io import BytesIO
 import base64
 from styles.text_fields import TextField, NoLabelTextField
-from models.dataclasses.world_template import default_world_template_data_dict
+from models.dataclasses.world_template import default_world_template_data
 from styles.snack_bar import SnackBar
 import asyncio
 
@@ -46,8 +46,7 @@ class World(Widget):
                 'about': str(),
 
                 # World data
-                'world_data': app.settings.data.get('world_templates', {}).get(app.settings.data.get('active_world_template', ""), default_world_template_data_dict()) 
-                if data is None or 'world_data' not in data else data['world_data'],
+                'world_data': app.settings.data.get('world_template', default_world_template_data()),
             }
         )
  
