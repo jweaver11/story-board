@@ -90,22 +90,6 @@ class Workspace(ft.Container):
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:
 
-        # When renaming, show our textfield and hide our title
-        async def handle_rename(e=None):
-            await self.story.close_menu()
-            edit_title_tf.value = widget.data.get('title', '')
-            edit_title_tf.visible = True
-            tab_title.visible = False
-            tab_gd.update()
-            await edit_title_tf.focus()
-
-        # When done renaming or canceling, hide our textfield and show our title. Make sure title is updated
-        def blur_edit_title_tf(e=None):
-            edit_title_tf.visible = False
-            tab_title.visible = True
-            tab_title.value = widget.data.get('title', '')
-            tab_gd.update()
-
         # Set our icon based on what type of widget we have
         match widget.data.get('tag', ''):
             case "manuscript": icon = ft.Icons.DESCRIPTION_OUTLINED
@@ -136,17 +120,6 @@ class Workspace(ft.Container):
             color=ft.Colors.ON_SURFACE, overflow=ft.TextOverflow.ELLIPSIS, expand=True
         )
 
-        # Textfield for renaming. starts hidden
-        edit_title_tf = ft.TextField(
-            value=widget.data.get('title', 'untitled'),
-            visible=False,
-            on_blur=blur_edit_title_tf,
-            on_submit=widget.submit_rename,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            dense=True, capitalization=ft.TextCapitalization.SENTENCES,
-            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-        )
-
         # Button to remove the widget from the workspace
         hide_widget_button = ft.IconButton(    # Hide widget button on right side of tab
             scale=0.8,
@@ -156,12 +129,9 @@ class Workspace(ft.Container):
             tooltip="Hide",
             mouse_cursor=ft.MouseCursor.CLICK,
         )
-
-        # Gesture Detector for opening menus that holds our tab icon, title, and hide button
-        tab_gd = ft.Row([tab_icon, tab_title, edit_title_tf, hide_widget_button])
             
         # Set the tab itself
-        tab = ft.Tab(label=tab_gd) 
+        tab = ft.Tab(ft.Row([tab_icon, tab_title, hide_widget_button])) 
         return tab
 
     # Removes a widget from the workspace

@@ -259,13 +259,11 @@ class Widget(ft.Container):
                         self.update_data(**{'image_base64': f"{encoded_string}"})
 
                     # Update the image in our widget
-                    self.select_image_button.content.icon = ft.Container(
-                        ft.Image(
-                            src=self.data.get('image_base64', ""),
-                            width=150,
-                            height=150,
-                            fit=ft.BoxFit.FILL,
-                        ), border_radius=4, clip_behavior=ft.ClipBehavior.ANTI_ALIAS
+                    self.select_image_button.content.content.content = ft.Image(
+                        src=self.data.get('image_base64', ""),
+                        width=150,
+                        height=150,
+                        fit=ft.BoxFit.FILL,
                     )
                     self.select_image_button.update()
 
@@ -298,15 +296,12 @@ class Widget(ft.Container):
                     return
 
                 self.update_data(**{'image_base64': snapshot_str})
-                self.select_image_button.content.icon = ft.Container(
-                    ft.Image(
-                        src=self.data.get('image_base64', ""),
-                        width=150,
-                        height=150,
-                        fit=ft.BoxFit.FILL,
-                    ), #shape=ft.BoxShape.CIRCLE, 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-                    border_radius=4
+                
+                self.select_image_button.content.content.content = ft.Image(
+                    src=self.data.get('image_base64', ""),
+                    width=150,
+                    height=150,
+                    fit=ft.BoxFit.FILL,
                 )
                 self.select_image_button.update()
                 
@@ -338,32 +333,27 @@ class Widget(ft.Container):
         async def clear_image(e: ft.Event):
             await self.story.close_menu()   # Close menu
             self.update_data(**{'image_base64': ""})
-            self.select_image_button.content.icon = ft.Icons.IMAGE_OUTLINED
+            self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150)
             self.select_image_button.update()
 
         # Build the options
         return [
-            MenuOptionStyle(
+            
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+                content="Set Canvas",
                 on_click=set_canvas_as_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Set Canvas", weight=ft.FontWeight.BOLD), 
-                ], tooltip="Set a canvas as the image for this widget"),
             ),
-            MenuOptionStyle(
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
+                content="Upload Image",
                 on_click=upload_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Upload Image", weight=ft.FontWeight.BOLD), 
-                ]),
             ),
-            MenuOptionStyle(
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                content="Clear Image",
                 on_click=clear_image,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
-                    ft.Text("Clear Image", weight=ft.FontWeight.BOLD), 
-                ]),
-            ),
+            )
         ]
         
 
@@ -408,7 +398,6 @@ class Widget(ft.Container):
     def get_menu_options(self) -> list[ft.Control]:
 
         async def close_tab(e=None):
-            await self.story.close_menu()
             await self.hide_widget()
 
         # Color, rename, close_tab
@@ -714,25 +703,32 @@ class Widget(ft.Container):
         )   
         self.build_sidebar()
 
-        # Our image button 
-        self.select_image_button = ft.GestureDetector(
-            ft.IconButton(
+        def highlight(e):
+            e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+            e.control.update()
+
+        def unhighlight(e):
+            e.control.content.bgcolor = None
+            e.control.update()
+
+        self.select_image_button = shad.ContextMenu(
+            ft.GestureDetector(
                 ft.Container(
                     ft.Image(
                         src=self.data.get('image_base64', ""),
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
-                    ), 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS
-                ) if self.data.get('image_base64', '') else ft.Icons.IMAGE_OUTLINED, 
-                ft.Colors.PRIMARY, icon_size=150,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
-                tooltip="Upload an Image for this widget", mouse_cursor=ft.MouseCursor.CLICK,
-                on_click=lambda: self.story.open_menu(self.set_widget_image_options()), 
-            ),
-            on_hover=self.set_mouse_coords,
-            hover_interval=100
+                    ) if self.data.get('image_base64', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
+                ), 
+                on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
+            ), 
+            self.set_widget_image_options(),
+            open_on_tap=True,
+            tooltip="Upload an Image for this widget",
         )
+
+
 
         
