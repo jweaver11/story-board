@@ -59,7 +59,7 @@ class Manuscript(Widget):
         await super().save_file()
 
     async def export(self, file_type: str="docx"):
-        manuscript_data = self.data.get('manuscript_data', [])
+        manuscript_data = self.data.get('manuscript_data') or []
         paragraphs = self._parse_manuscript_ops(manuscript_data)
 
         if file_type == "docx":
