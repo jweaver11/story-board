@@ -97,8 +97,6 @@ class Settings(ft.View):
                     },
                     'canvas_board': {
                         'color': "primary",
-                        'sketch_width': 300,    # Default width for preview and sketches for new canvas boards
-                        'sketch_height': 300,   # Default height for preview and sketches for new canvas boards
                     },
                     'map': {
                         'color': "primary",
@@ -544,21 +542,6 @@ class Settings(ft.View):
             e.control.color = new_color
             e.control.update()
 
-        def update_sketch_size(e: ft.Event[ft.TextField]):
-            dimension = e.control.data
-            new_value = int(e.control.value) if e.control.value else None
-            def show_error():
-                self.page.show_dialog(SnackBar("Please enter a number between 200 and 300"))
-                e.control.value = str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get(dimension, 300))
-                e.control.update()
-            if not new_value:
-                show_error()
-                return
-            if new_value < 200 or new_value > 300:
-                show_error()
-                return
-            self.update_data(**{'widget_defaults': {'canvas_board': {dimension: new_value}}})
-
         async def update_map_bg_image(e: ft.Event[ft.Dropdown]):
             new_image = e.control.value
             if new_image == "upload_image":   # Wait for user to pick and image if uploading
@@ -753,22 +736,6 @@ class Settings(ft.View):
                 ),
 
 
-                SettingsTextField(    # Change the default number of divisions for new plotlines
-                    label="Sketch Width",
-                    value=str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width', 300)),
-                    tooltip="The default sketch and preview width for new canvas boards.",
-                    input_filter=ft.NumbersOnlyInputFilter(),
-                    on_blur=update_sketch_size,
-                    data="sketch_width"
-                ),
-                SettingsTextField(    # Change the default number of divisions for new plotlines
-                    label="Sketch Height",
-                    value=str(self.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height', 300)),
-                    tooltip="The default sketch and preview height for new canvas boards.",
-                    input_filter=ft.NumbersOnlyInputFilter(),
-                    on_blur=update_sketch_size,
-                    data="sketch_height"
-                ),
                 ft.Divider(),
 
                 # Map options

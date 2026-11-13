@@ -146,7 +146,7 @@ class Character(Widget):
                             ft.Row([
                                 ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
                                 ft.Button(
-                                    "Delete Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                                    "Delete Section", bgcolor=ft.Colors.SURFACE,
                                     on_click=delete_section, data=section_name,
                                     style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                                 )
@@ -271,7 +271,7 @@ class Character(Widget):
                     ft.Row([
                         ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
                         ft.Button(
-                            "Delete Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                            "Delete Section", bgcolor=ft.Colors.SURFACE,
                             on_click=delete_section, data=section,
                             style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                         )
@@ -359,7 +359,7 @@ class Character(Widget):
                         ft.Row([
                             ft.Text("No fields yet. Click the button above to add one, or\t", italic=True, color=ft.Colors.ON_SURFACE_VARIANT),
                             ft.Button(
-                                "Delete Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                                "Delete Section", bgcolor=ft.Colors.SURFACE,
                                 on_click=delete_section, data=section,
                                 style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)
                             )
@@ -414,19 +414,19 @@ class Character(Widget):
         body.controls.extend(_load_character_data_controls())
 
         new_section_button = ft.Button(
-            "Add Section", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            "Add Section", bgcolor=ft.Colors.SURFACE,
             on_click=add_section_clicked,
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
         )
 
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE
         )
 
         new_field_tf = ft.TextField(
             label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
-            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            on_submit=create_new_field, on_blur=hide_new_field_tf, dense=True, bgcolor=ft.Colors.SURFACE
             #data=section   # Gets set when we click the new field button for a specific section
         )
 

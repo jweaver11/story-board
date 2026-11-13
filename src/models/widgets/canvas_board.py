@@ -17,10 +17,14 @@ from PIL import Image
 from styles.text_fields import TextField
 import utils.drawing as drawing
 import os
+import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
+from styles.colors import colors
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 50
 MAX_UNDO_LIST_TASKS = 30
+SKETCH_SIZE = (500, 500)
 
 
 class CanvasBoard(Widget):
@@ -42,15 +46,13 @@ class CanvasBoard(Widget):
                 'tag': "canvas_board",
                 'color': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('color'),
 
-                # Our row data 
-                'rows': [
+                # Our panels data 
+                'panels': [
                     {
-                        'canvas_id': "",    # ID of the canvas we're attached to, if we're attached to one
-                        'preview_capture': "",    # Base64 string of the preview capture if not attached to canvas
-                        'sketch_capture': "",    # Base64 string of the sketch capture
-                        'description': "",    # Description of the sketch
-                        'height': 300,      # Height of the canvas
-                        'width': 300,       # Width of the canvas
+                        'canvas_id': "",    # ID of the canvas we're attached to, if we're attached to one. This will go grab the bytes of that canvas
+                        'capture': "",    # Base64 string of the capture if not attached to canvas. Use this if no canvas_id is provided
+                        'description': "",    # Description of the panel
+                        'locked': False,    # Whether this panel is locked and cannot be drawn on
                         'dirty': False,      # State tracking - Whether this row's sketch has unsaved changes
                     }
                 ],
@@ -62,19 +64,22 @@ class CanvasBoard(Widget):
         self.state: State = State()     # State model from tracking our drawing state
         self.active_path: cv.Path
 
+        self.panels_row: ft.Row
+        self.canvases_list: list[cv.Canvas] = []
+
     # Overwrite our standard save_file call since we have multiple files
     async def save_file(self):
         # Protect on creation
         #if not self.content:
             #return
 
-        
-
-        for i, row_data in enumerate(self.data.get('rows', [])):
+        for i, panel_data in enumerate(self.data.get('panels', [])):
             # If a change has been made to the row, save that change.
-            if row_data.get('dirty', False) == True:
-                rows_column = self.content.controls[2]
-                canvas: cv.Canvas = rows_column.controls[i].content.controls[1].content.controls[1].content
+            if panel_data.get('dirty', False) == True:
+                canvas: cv.Canvas = self.canvases_list[i]
+                if not isinstance(canvas, cv.Canvas):
+                    print(canvas)
+                    continue
                 try:
                     await self.save_canvas(canvas)
                 except RuntimeError as e:
@@ -93,8 +98,8 @@ class CanvasBoard(Widget):
         if canvas.visible == False:  
             return
 
-        row_idx = canvas.parent.parent.parent.parent.parent.data
-        row_data = self.data.get('rows', [])[row_idx]
+        panel_idx = canvas.data
+        panel_data = self.data.get('panels', [])[panel_idx]
         
                 
         # Clear blend strokes must be captured with the stored image so they can remove
@@ -126,28 +131,30 @@ class CanvasBoard(Widget):
         # A full capture already contains the erase result and must replace the old layer.
         if has_clear_stroke:
             result = Image.open(BytesIO(new_bytes)).convert("RGBA")
-            if result.size != (row_data.get('width'), row_data.get('height')):
-                result = result.resize((row_data.get('width'), row_data.get('height')), Image.Resampling.LANCZOS)
+            if result.size != SKETCH_SIZE:
+                result = result.resize(SKETCH_SIZE, Image.Resampling.LANCZOS)
             output = BytesIO()
             result.save(output, format="PNG")
             combined_bytes = output.getvalue()
             
 
-            row_data['dirty'] = False
-            self.data.get('canvas_data', {}).get('layers', [])[row_idx].update(row_data)
-            self.update_data(**{'rows': self.data.get('rows', [])})
+            panel_data['dirty'] = False
+            self.data.get('canvas_data', {}).get('layers', [])[panel_idx].update(panel_data)
+            self.update_data(**{'panels': self.data.get('panels', [])})
             return combined_bytes
 
         # Load the existing layer capture
-        str_bytes = row_data.get('sketch_capture', None)
+        str_bytes = panel_data.get('capture', None)
         existing_bytes = base64.b64decode(str_bytes.split(",")[1]) if str_bytes else None
         
 
         # If we have an existing capture, composite the new strokes onto it; otherwise, create a new base image
         if existing_bytes:
             base_img = Image.open(BytesIO(existing_bytes)).convert("RGBA")
+            if base_img.size != SKETCH_SIZE:
+                base_img = base_img.resize(SKETCH_SIZE, Image.Resampling.LANCZOS)
         else:
-            base_img = Image.new("RGBA", (row_data.get('width'), row_data.get('height')), (0, 0, 0, 0))
+            base_img = Image.new("RGBA", SKETCH_SIZE, (0, 0, 0, 0))
 
         # Composite the new strokes onto the existing base — base pixels are never re-rendered through Flet
         delta_img = Image.open(BytesIO(new_bytes)).convert("RGBA")
@@ -161,10 +168,10 @@ class CanvasBoard(Widget):
         combined_bytes = output.getvalue()
         str_img = f"data:image/png;base64,{base64.b64encode(combined_bytes).decode('utf-8')}"
 
-        row_data['sketch_capture'] = str_img
-        row_data['dirty'] = False
-        self.data.get('rows', [])[row_idx] = row_data
-        self.update_data(**{'rows': self.data.get('rows', [])})  # Update our data so it saves the new row
+        panel_data['capture'] = str_img
+        panel_data['dirty'] = False
+        self.data.get('panels', [])[panel_idx] = panel_data
+        self.update_data(**{'panels': self.data.get('panels', [])})  # Update our data so it saves the new row
 
         return combined_bytes   # Return our now updated bytes
 
@@ -212,23 +219,24 @@ class CanvasBoard(Widget):
         await self.end_stroke(e)
 
     # Ends the current stroke (cv.Shape) and marks that layer as dirty for saving, and saves if we hit max shape count
-    async def end_stroke(self, e: ft.DragEndEvent):
+    async def end_stroke(self, e: ft.DragEndEvent[ft.Control]):
         """ Saves our paths to our canvas data for storage """
         canvas: cv.Canvas = e.control.parent
         if not canvas.visible:  
             return
 
         # Flag this row as dirty so we know to save it later
-        row_idx = e.control.parent.parent.parent.parent.parent.parent.data
-        self.data.get('rows', [])[row_idx]['dirty'] = True
+        panel_idx = e.control.data
+
+        # Manually flag as dirty so we don't rewrite every single panels src at the end of one stroke
+        self.data.get('panels', [])[panel_idx]['dirty'] = True
         self.needs_file_write = True
-        #self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the new row
         
         
         # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
             self.story.block_page()     # Block page to prevent other events whil we do this one
-            row_data = self.data['rows'][row_idx]
+            panel_data = self.data['panels'][panel_idx]
             await self.save_canvas(canvas)  # Save the current canvas added shapes to its bytes stored in memory
             canvas.shapes.clear()
             #canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
@@ -268,105 +276,81 @@ class CanvasBoard(Widget):
         
         super().build()
 
-        # Called when we click to add a new row at the bottom of our rows
-        async def create_row(e=None):
-            ''' Adds an empty new row to our rows data and reloads the widget '''
+        # Called when we click to add a new row at the bottom of our panels
+        async def create_panel(e=None):
+            ''' Adds an empty new row to our panels data and reloads the widget '''
 
             # Create a new row with default values of each cell
             new_row_dict = {
-                'canvas_id': "",    # ID of the canvas we're attached to, if we're attached to one
-                'preview_capture': "",    # Base64 string of the preview capture
-                'sketch_capture': "",    # Base64 string of the sketch capture
-                'description': "",    # Description of the sketch
-                'height': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_width'),      # Height of the canvas
-                'width': app.settings.data.get('widget_defaults', {}).get('canvas_board', {}).get('sketch_height'),       # Width of the canvas
-                'dirty': False,      # State tracking - Whether this row's sketch has unsaved changes
+                'canvas_id': "",   
+                'capture': "",    
+                'description': "",   
+                'dirty': False,     
             }
             
-            # Add the new row to our rows data
-            self.data['rows'].append(new_row_dict)
-            self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the new row
+            # Add the new row to our panels data
+            self.data['panels'].append(new_row_dict)
+            self.update_data(**{'panels': self.data['panels']})  # Update our data so it saves the new row
 
-            rows_column.controls.append(
-                create_row_ctrl(
-                    len(self.data.get('rows', [])) - 1,
-                    self.data.get('rows', [])[-1]
-                )
-            )
-            rows_column.update()
+            self.panels_row.controls = build_panel_row()
+            self.panels_row.update()
             await asyncio.sleep(0.05)   # Wait a moment for the new row to be added before scrolling to it
-            await rows_column.scroll_to(-1, duration=600)
+            await self.panels_row.parent.scroll_to(-1, duration=600)
+
+        async def check_dirty(panel_idx: int):
+            is_dirty = self.data['panels'][panel_idx].get('dirty', False)
+            if is_dirty == True:
+                # Perform any actions needed when the panel is dirty
+                await self.save_canvas(self.canvases_list[panel_idx])
 
         
-        
+        async def move_panel(e: ft.Event[ft.Control], offset: int):
+                        
+            panels = self.data.get('panels', [])
+            idx = int(e.control.data)
+            await check_dirty(idx)
+            target = idx + offset
+            if offset == 0 or not 0 <= idx < len(panels) or not 0 <= target < len(panels):
+                return
 
-        # Creates a rows row ctrl for the body of our widget
-        def create_row_ctrl(row_idx: int, row_data: dict) -> ft.Container: 
+            panels[idx], panels[target] = panels[target], panels[idx]
+            self.update_data(**{'panels': panels})
 
-            # Update the width of this row sketch in data and in UI
-            def update_width(e: ft.Event[ft.TextField]):
-                new_width = int(e.control.value) if e.control.value else 0
-                row_idx = e.control.parent.parent.parent.parent.data
-                # If new width is not withing size range
-                if new_width < 200 or new_width > 300:
-                    e.control.value = str(row_data.get('width', 300))
-                    size_error_text.parent.visible = True
-                    size_error_text.value = "*Width must be between 200 and 300 pixels*"
-                    e.control.update()
-                    size_error_text.parent.update()
-                    return
+            self.panels_row.controls = build_panel_row()
+            self.panels_row.update()
 
-                # Otherwise it is
-                size_error_text.parent.visible = False
-                self.data['rows'][row_idx]['width'] = new_width
-                self.update_data(**{'rows': self.data['rows']})  # Update our data
-                preview_image.width = new_width
-                sketch_canvas.width = new_width
-                row_ctrl.update()
+        async def move_panel_up(e):
+            await move_panel(e, -1)
 
-            # Update the height of this row sketch in data and in UI
-            def update_height(e: ft.Event[ft.TextField]):
-                new_height = int(e.control.value)
-                row_idx = e.control.parent.parent.parent.parent.data
-                # If new height is not withing size range
-                if new_height < 200 or new_height > 300:
-                    e.control.value = str(row_data.get('height', 300))
-                    size_error_text.parent.visible = True
-                    size_error_text.value = "*Height must be between 200 and 300 pixels*"
-                    e.control.update()
-                    size_error_text.parent.update()
-                    return
+        async def move_panel_down(e):
+            await move_panel(e, 1)
 
-                # Otherwise it is
-                size_error_text.parent.visible = False
-                self.data['rows'][row_idx]['height'] = new_height
-                self.update_data(**{'rows': self.data['rows']})  # Update our data
-                preview_image.height = new_height
-                sketch_canvas.height = new_height
-                row_ctrl.update()
+        # Creates a panels row ctrl for the body of our widget
+        def build_panel_ctrl(panel_idx: int, panel_data: dict) -> ft.Container: 
 
-            # Hides the error text when selecting the checkmark button next to it
-            def hide_error_text(e: ft.Event):
-                size_error_text.parent.visible = False
-                size_error_text.parent.update()
+            def load_image() -> bytes | str:
+                if panel_data.get('canvas_id'):
+                    widget = self.story.get_widget_by_id(panel_data['canvas_id'])
+                    if widget:
+                        return widget.get_snapshot_bytes(quality="medium")
+                return panel_data.get('capture')
 
             # Updates a description for this row control in data
             def update_description(e: ft.Event[ft.TextField]):
                 # Grab index positions and update data
-                row_idx = e.control.parent.parent.parent.data
-                self.data['rows'][row_idx]['description'] = e.control.value
-                self.update_data(**{'rows': self.data['rows']})  # Update our data
+                panel_idx = e.control.data
+                self.data['panels'][panel_idx]['description'] = e.control.value
+                self.update_data(**{'panels': self.data['panels']})  # Update our data
 
-            # Deletes this row from data and removes the row control from the rows_column
-            def delete_row(e: ft.Event[ft.IconButton]):
+            # Deletes this row from data and removes the row control from the panels_column
+            def delete_panel(e: ft.Event[ft.IconButton]):
                 # Update data
-                row_idx = e.control.parent.parent.data
-                self.data['rows'].pop(row_idx)
-                self.update_data(**{'rows': self.data['rows']})  # Update our data
+                panel_idx = e.control.data
+                self.data.get('panels', []).pop(panel_idx)
+                self.update_data(**{'panels': self.data['panels']})  # Update our data
                 # Remove row from UI and update indices
-                rows_column.controls.pop(row_idx)
-                rows_column.update()
-                update_indices() 
+                self.panels_row.controls = build_panel_row()
+                self.panels_row.update()
             def set_canvas_as_image(e: ft.Event[ft.MenuItemButton]):
 
                 # Set the canvas id when selecting a canvas from the radio group
@@ -390,18 +374,16 @@ class CanvasBoard(Widget):
                         self.page.pop_dialog()
                         self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                         return
-                    self.data['rows'][row_idx]['canvas_id'] = canvas_id
-                    self.data['rows'][row_idx]['preview_capture'] = ""
-                    self.update_data(**{'rows': self.data['rows']})  # Update our data
+                    self.data['panels'][panel_idx]['canvas_id'] = canvas_id
+                    self.data['panels'][panel_idx]['capture'] = ""
+                    self.update_data(**{'panels': self.data['panels']})  # Update our data
                     
-                    preview_image.src = snapshot_str
-                    preview_source_selector.content = f"Current Source: {title}"
-                    preview_image.update()
-                    preview_source_selector.update()
+                    self.panels_row.controls = build_panel_row()
+                    self.panels_row.update()
                     
                     self.page.pop_dialog()
 
-                row_idx = e.control.parent.parent.parent.parent.parent.parent.data
+                panel_idx = e.control.data
                 canvas_id: str = None
             
                 dlg = ft.AlertDialog(
@@ -427,7 +409,7 @@ class CanvasBoard(Widget):
 
             # Called when clicking our upload image button 
             async def upload_image(e: ft.Event[ft.MenuItemButton]):
-                row_idx = e.control.parent.parent.parent.parent.parent.parent.data
+                panel_idx = e.control.data
     
                 files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
                 if files:
@@ -446,262 +428,200 @@ class CanvasBoard(Widget):
                             img.save(output, format="PNG")
                             encoded_string = base64.b64encode(output.getvalue()).decode('utf-8')
                             # Save to our data
-                            self.data['rows'][row_idx]['preview_capture'] = f"data:image/{file_path.split('.')[-1]};base64,{encoded_string}"
-                            self.data['rows'][row_idx]['canvas_id'] = ""   # Clear the canvas_id if we uploaded an image
-                            self.update_data(**{'rows': self.data['rows']})  # Update our data
+                            self.data['panels'][panel_idx]['capture'] = f"data:image/{file_path.split('.')[-1]};base64,{encoded_string}"
+                            self.data['panels'][panel_idx]['canvas_id'] = ""   # Clear the canvas_id if we uploaded an image
+                            self.update_data(**{'panels': self.data['panels']})  # Update our data
     
-                        preview_image.src = encoded_string
-                        preview_source_selector.content = "Set Preview Source"
-                        preview_image.update()
-                        preview_source_selector.update()
+                        self.panels_row.controls = build_panel_row()
+                        self.panels_row.update()
     
                     except Exception:
                         pass
 
             # Clears the canvas id and preview cap to set image to placeholder
-            def clear_image(e: ft.Event[ft.MenuItemButton]):
-                row_idx = e.control.parent.parent.parent.parent.parent.parent.data
-                self.data['rows'][row_idx]['preview_capture'] = ""
-                self.data['rows'][row_idx]['canvas_id'] = ""   # Clear the canvas_id if we cleared the image
-                self.update_data(**{'rows': self.data['rows']})  # Update our data
-                preview_image.src = "canvas_bg.png"
-                preview_source_selector.content = "Set Preview Source"
-                preview_image.update()
-                preview_source_selector.update()
+            def clear_canvas(e: ft.Event[ft.MenuItemButton]):
+                panel_idx = e.control.data
+                self.data['panels'][panel_idx]['capture'] = ""
+                self.data['panels'][panel_idx]['canvas_id'] = ""   # Clear the canvas_id if we cleared the image
+                self.update_data(**{'panels': self.data['panels']})  # Update our data
+                self.panels_row.controls = build_panel_row()
+                self.panels_row.update()
 
-            # Set preview capture by canvas_id -> preview_capture -> default image
-            if row_data.get('canvas_id'): preview_capture = self.story.get_widget_by_id(row_data.get('canvas_id')).get_snapshot_string(quality="low")
-            elif row_data.get('preview_capture'): preview_capture = row_data.get('preview_capture', "")
-            else: preview_capture = "canvas_bg.png"
+            # Set preview capture by canvas_id -> capture -> default image
+            if panel_data.get('canvas_id'): capture = self.story.get_widget_by_id(panel_data.get('canvas_id')).get_snapshot_string(quality="low")
+            elif panel_data.get('capture'): capture = panel_data.get('capture', "")
+            else: capture = "canvas_bg.png"
 
-            canvas_title = self.story.get_widget_by_id(row_data.get('canvas_id')).data.get('title', 'Untitled') if row_data.get('canvas_id') else ""
+            def toggle_color_popover(e: ft.Event[ft.Control]):
+                color_popover.open = not color_popover.open
+                color_popover.update()
+
+            async def set_panel_color(e: ft.Event[ft.Control]):
+                color_popover.open = False
+                color_popover.update()
+                color = e.control.data
+                canvas: cv.Canvas = self.canvases_list[panel_idx]
+                canvas.shapes = [cv.Rect(0, 0, SKETCH_SIZE[0], SKETCH_SIZE[1], paint=ft.Paint(color))]
+                canvas.update()
+                await canvas.capture()
+                b: bytes = await canvas.get_capture()
+                await canvas.clear_capture()
+                capture = base64.b64encode(b).decode("utf-8")
+
+                self.data['panels'][panel_idx]['canvas_id'] = ""
+                self.data['panels'][panel_idx]['capture'] = capture
+                self.update_data(**{'panels': self.data['panels']})
+                canvas.update()
+
+            async def toggle_lock_panel(e: ft.Event[ft.Control]):
+                self.data['panels'][panel_idx]['locked'] = not self.data['panels'][panel_idx].get('locked', False)
+                self.update_data(**{'panels': self.data['panels']})
+                self.panels_row.controls = build_panel_row()
+                self.panels_row.update()
+                
+
+            panel_options_cm = ft.Container(
+                bgcolor=ft.Colors.SURFACE, shape=ft.BoxShape.CIRCLE,
+                content=shad.ContextMenu(
+                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
+                    [
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content="Move Up",
+                            on_click=move_panel_up, data=panel_idx
+                        ),
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content="Move Down",
+                            on_click=move_panel_down, data=panel_idx,
+                        ),
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not panel_data.get('locked') else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            content="Lock Panel" if not panel_data.get('locked') else "Unlock Panel",
+                            on_click=toggle_lock_panel, data=panel_idx, tooltip="asdf"
+                        ),
+                        shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem(
+                            "Set Canvas",
+                            leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            on_click=set_canvas_as_image, data=panel_idx
+                        ),
+                        shad.MenuItem(
+                            "Upload Image",
+                            leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            on_click=upload_image, data=panel_idx,
+                        ),
+                        shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                        color_popover := shad.Popover(
+                            shad.MenuItem(
+                                leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                                content=ft.Row([ft.Text("Set Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                trailing=ft.Icons.ARROW_RIGHT,
+                                on_click=toggle_color_popover,
+                                close_on_click=False,
+                            ),
+                            ft.Column([
+                                shad.MenuItem(
+                                    content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                                    on_click=set_panel_color, close_on_click=True, data=color,
+                                    expand=True
+                                ) for color in colors
+                            ] + [shad.MenuItem(
+                            content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
+                            on_click=set_panel_color, close_on_click=True, data="#00000000",
+                            expand=True
+                        )], tight=True, spacing=0, width=100)
+                        ), 
+                        shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem(
+                            "Clear Panel",
+                            leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            on_click=clear_canvas, data=panel_idx
+                        ),
+                        shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem(
+                            "Delete Panel",
+                            leading=ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, size=20),
+                            on_click=delete_panel, data=panel_idx
+                        ),
+                    ],
+                    open_on_tap=True
+                )
+            )
             
-            row_ctrl = ft.Row(
-                vertical_alignment=ft.CrossAxisAlignment.CENTER, 
-                margin=ft.Margin.only(right=20),
-                spacing=20, expand=True,
-                controls=[
-                    ft.Container(
-                        
-                        ft.Column([
-                            ft.MenuBar(
-                                [
-                                    preview_source_selector := ft.SubmenuButton(
-                                        f"Current Source: {canvas_title}" if canvas_title else "Set Preview Source",
-                                        [
-                                            ft.MenuItemButton(
-                                                ft.Text("Set Canvas", weight=ft.FontWeight.BOLD),
-                                                close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
-                                                on_click=set_canvas_as_image,
-                                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                                                
-                                            ),
-                                            ft.MenuItemButton(
-                                                ft.Text("Upload Image", weight=ft.FontWeight.BOLD),
-                                                close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
-                                                on_click=upload_image,
-                                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                                            ),
-                                            ft.MenuItemButton(
-                                                ft.Text("Clear Source", weight=ft.FontWeight.BOLD),
-                                                close_on_click=True,
-                                                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
-                                                on_click=clear_image,
-                                                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                                            ),
-                                        ],
-                                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                        style=ft.ButtonStyle(
-                                            padding=ft.Padding.symmetric(vertical=0, horizontal=6), bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                                            alignment=ft.Alignment.CENTER, mouse_cursor=ft.MouseCursor.CLICK,
-                                            shape=ft.RoundedRectangleBorder(radius=4),
-                                        ),
-                                        tooltip="Set the preview source to a canvas or upload an image.",
-                                    ),
-    
-                                ],
-                                style=ft.MenuStyle(
-                                    bgcolor="transparent", shadow_color="transparent",
-                                    shape=ft.RoundedRectangleBorder(radius=4),
-                                    padding=ft.Padding.all(0)
-                                ),
-                            ),
-                            ft.Container(
-                                preview_image := ft.Image(   # Loads the str of the canvas we're connected to (if one) or loads the uploaded image
-                                    preview_capture,
-                                    width=row_data.get('width', 300), height=row_data.get('height', 300), fit=ft.BoxFit.FILL,
-                                ),
-                                image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
-                            ),
-                        ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                        width=300, alignment=ft.Alignment.BOTTOM_CENTER,
-                        border_radius=ft.BorderRadius.all(4),
-                    ),
-                    
-
-                    #ft.VerticalDivider(),
-                    
-                    ft.Container(   # Container that holds the sketch canvas and undo/redo buttons
-                        ft.Column([
-                            # Undo/Redo Buttons
-                            ft.Row([
-                                ft.IconButton(
-                                    ft.Icons.UNDO, ft.Colors.PRIMARY, tooltip="Undo", mouse_cursor=ft.MouseCursor.CLICK, 
-                                    data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                                    #on_click=self.undo,
-                                ),
-                                ft.IconButton(
-                                    ft.Icons.REDO_OUTLINED, ft.Colors.PRIMARY, tooltip="Redo", mouse_cursor=ft.MouseCursor.CLICK, 
-                                    data=row_idx, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                                    #on_click=self.redo,
-                                ),
-                            ], alignment=ft.MainAxisAlignment.CENTER), 
-                            
-                            # Contianer holding the sketch
-                            ft.Container(
-                                sketch_canvas := cv.Canvas(      # Canvas for drawing on
-                                    content=ft.GestureDetector(
-                                        mouse_cursor=ft.MouseCursor.PRECISE,
-                                        on_pan_start=self.handle_pan_start,
-                                        on_pan_update=self.handle_pan_update,
-                                        on_pan_end=self.handle_pan_end,
-                                        on_tap_up=self.handle_tap,      # Handles so we can add points
-                                        data=row_idx,
-                                        drag_interval=10,
-                                    ),
-                                    width=row_data.get('width', 300), height=row_data.get('height', 300),
-                                    shapes=[cv.Image(row_data.get('sketch_capture', ''), 0, 0, 300, 300)],
-                                ), 
-                                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-                                border_radius=ft.BorderRadius.all(4),
-                                opacity=0.99,
-                            ),
-                            
-                        ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True), 
-                        alignment=ft.Alignment.BOTTOM_CENTER,
-                        width=300, #height=300,
-                    ),
-                    ft.Column([     # Column that holds the width/height textfields and description textfield
-                        ft.Row([
-                            ft.TextField(
-                                str(row_data.get('width')), label="Width", dense=True, width=100, 
-                                input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_width,
-                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                            ), 
-                            ft.TextField(
-                                str(row_data.get('height')), label="Height", dense=True, width=100, 
-                                input_filter=ft.NumbersOnlyInputFilter(), on_blur=update_height,
-                                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                            )
-                        ], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(top=10)),
-                        ft.Row([
-                            size_error_text := ft.Text("", color=ft.Colors.ERROR, size=14, italic=True, weight=ft.FontWeight.W_500),
-                            ft.IconButton(ft.Icons.CHECK_OUTLINED, ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK, on_click=hide_error_text, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST),
-                        ], alignment=ft.MainAxisAlignment.CENTER, visible=False),
-                        
-                        ft.TextField(
-                            str(row_data.get('description', "")), 
-                            dense=True, multiline=True,  
-                            capitalization=ft.TextCapitalization.SENTENCES, smart_dashes_type=True,
-                            data=row_idx,
-                            on_blur=update_description,
-                            expand=True, 
-                            label="Description", 
-                            label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
-                            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=4),
-                        )
-                        
-                    ], expand=True, alignment=ft.MainAxisAlignment.START),
-                    ft.IconButton(
-                        ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 
-                        on_click=delete_row, data=row_idx, tooltip="Delete Row",
-                        mouse_cursor=ft.MouseCursor.CLICK, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
-                    )
-                ]
+            sketch_canvas = cv.Canvas(      # Canvas for drawing on
+                content=ft.GestureDetector(
+                    mouse_cursor=ft.MouseCursor.PRECISE,
+                    on_pan_start=self.handle_pan_start,
+                    on_pan_update=self.handle_pan_update,
+                    on_pan_end=self.handle_pan_end,
+                    on_tap_up=self.handle_tap,      # Handles so we can add points
+                    data=panel_idx,
+                    drag_interval=5,                    
+                ),
+                shapes=[
+                    cv.Image(load_image(), 0, 0, 500, 500)  # Load the src for sketch. Will be tied to a canvas, or set src
+                ],
+                data=panel_idx
+            )
+            self.canvases_list.append(sketch_canvas)
+            description_tf = ft.TextField(
+                str(panel_data.get('description', "")), 
+                dense=True, multiline=True,  
+                capitalization=ft.TextCapitalization.SENTENCES,
+                data=panel_idx, bgcolor=ft.Colors.SURFACE, 
+                on_blur=update_description,
+                width=500, margin=ft.Margin.only(top=10), 
+                label="Description", 
+                suffix_icon=panel_options_cm,
+                label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
+                border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             )
                         
             return ft.Container(
-                row_ctrl, 
-                data=row_idx, #height=350, # Set data and height to 350, for uniform look
-                border=ft.Border.only(bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-                padding=ft.Padding.only(bottom=6), margin=ft.Margin.only(right=30, left=10)
+                ft.Column([
+                    #ft.Row([undo_button, panel_options_cm, redo_button], width=500, alignment=ft.MainAxisAlignment.CENTER),
+                    ft.Container(
+                        sketch_canvas,  
+                        bgcolor=ft.Colors.SURFACE, 
+                        border_radius=6,
+                        width=SKETCH_SIZE[0], height=SKETCH_SIZE[1],
+                        tooltip="Drawing disabled while panel is tied to a canvas" if panel_data.get('canvas_id') else None,
+                        ignore_interactions=True if panel_data.get('locked') else False
+                    ),
+                    description_tf
+                ], spacing=0, tight=True),
+                data=panel_idx, padding=10,
+                border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT)
             )
-        
-        
 
-        # Updates the indices of our rows_column controls to match their new order
-        def update_indices():
-            for idx, ctrl in enumerate(rows_column.controls):
-                ctrl.data = idx
+        def build_panel_row() -> list[ft.Control]:
+            self.canvases_list.clear()
+            ctrls = [build_panel_ctrl(idx, panel_data) for idx, panel_data in enumerate(self.data.get('panels', []))]
+            ctrls.append(
+                ft.IconButton(
+                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 30,
+                    on_click=create_panel,
+                    tooltip="Add Panel",
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    bgcolor=ft.Colors.SURFACE,
+                    margin=ft.Margin.only(left=10)
+                )
+            )
+            return ctrls
 
-        # Handles reordering rows
-        def reorder_rows(e: ft.OnReorderEvent):
-            ''' Reorders our rows data based on the new order of the rows_column controls '''
-           
-            # Update data
-            row_data = self.data['rows'].pop(e.old_index)
-            self.data['rows'].insert(e.new_index, row_data)
-            self.update_data(**{'rows': self.data['rows']})  # Update our data so it saves the new order
-
-            # Update controls and update indices to have new correct index
-            rows_column.controls.insert(e.new_index, rows_column.controls.pop(e.old_index))
-            rows_column.update()
-            update_indices()
-
-        self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_LOWEST
+        self.description_tf.bgcolor = ft.Colors.SURFACE
         self.description_tf.margin = ft.Margin.only(left=6, right=6, bottom=6)
         self.description_tf.label = "Scope"
-        
-        # Labels for our rows data (columns)
-        rows_labels = ft.Row(
-            [
-                ft.Text(
-                    "Preview", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
-                    tooltip="Preview of the canvas or image this sketch is attached to.\nUse for tracking progress or reference."
-                ),
-                ft.Text(
-                    "Sketch", style=ft.TextStyle(weight=ft.FontWeight.BOLD, ),
-                    text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, width=300,
-                    tooltip="Sketch for this panel in the story.\nThis sketch is meant only for simple concept art.\nUse a canvas for more complex sketches."
-                ),
-                ft.Text(
-                    "Details", style=ft.TextStyle(weight=ft.FontWeight.BOLD),
-                    text_align=ft.TextAlign.CENTER, overflow=ft.TextOverflow.ELLIPSIS, expand=True,
-                    tooltip="Details about this sketch, such as what it is, what it represents, or any other notes.\nSize of the sketch can be adjusted here, between 200 and 300 pixels.\nNotice: previews with different aspect ratios may look warped from the preview"
-                ),
-                ft.Button(
-                    "Add Panel", bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
-                    on_click=create_row, 
-                    style=ft.ButtonStyle( mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
-                )  
-            ], spacing=20, margin=ft.Margin.only(left=10))
-        
-        # Column that holds our rows data
-        rows_column = ft.ReorderableListView(
-            [create_row_ctrl(idx, row_data) for idx, row_data in enumerate(self.data.get('rows', []))], 
-            scroll=ft.ScrollMode.AUTO, expand=True, on_reorder=reorder_rows
-        )
 
+        self.panels_row = ft.Row(build_panel_row(), spacing=0, run_spacing=0, expand=True, wrap=True)
+        
         # Body of the tab, which is the content of flet container
         body = ft.Column(
-            expand=True, scroll="none", spacing=0,
+            expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             controls=[                 
-                
-                rows_labels,
-                ft.Divider(2, 2),
-                        
-                rows_column,
-                
-                ft.Row([
-                    self.description_tf,
-                    
-                ], spacing=0)
-
+                ft.Column([self.panels_row], spacing=0, expand=True, scroll=ft.ScrollMode.AUTO),
+                ft.Row([self.description_tf], spacing=0)
             ])
     
         self.content = body
@@ -709,3 +629,4 @@ class CanvasBoard(Widget):
             
 
 
+# TODO: Set color as background.

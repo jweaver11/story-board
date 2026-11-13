@@ -222,7 +222,7 @@ class ComicPreview(Widget):
                             placeholder_fade_out_animation=ft.Animation(50)
                         ),
                         delete_button := ft.IconButton(
-                            ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, tooltip="Remove panel from preview?",
+                            ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, bgcolor=ft.Colors.SURFACE, tooltip="Remove panel from preview?",
                             opacity=0, scale=1.2, data=idx, on_click=remove_panel, mouse_cursor="click",
                             animate_opacity=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                         ),

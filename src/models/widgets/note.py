@@ -252,7 +252,7 @@ class Note(Widget):
             tooltip="Add a new card to your note.", 
             on_click=handle_create_card, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            bgcolor=ft.Colors.SURFACE
         )
 
         

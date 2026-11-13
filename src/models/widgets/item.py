@@ -133,7 +133,7 @@ class Item(Widget):
             tooltip="Add a new field to your note.", 
             on_click=_create_new_field_clicked, 
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            bgcolor=ft.Colors.SURFACE
         )
 
         self.new_field_tf = ft.TextField(
@@ -141,7 +141,7 @@ class Item(Widget):
             capitalization=ft.TextCapitalization.WORDS,
             on_blur=_hide_new_field_tf, 
             on_submit=create_field, visible=False, autofocus=True,
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            bgcolor=ft.Colors.SURFACE
         ) 
 
         

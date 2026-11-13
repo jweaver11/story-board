@@ -48,7 +48,7 @@ class CanvasRail(ft.Container):
             padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST
+            bgcolor=ft.Colors.SURFACE
         )
 
 
@@ -1301,7 +1301,7 @@ class CanvasRail(ft.Container):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0)),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.TOP_RIGHT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    bgcolor=ft.Colors.SURFACE, 
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
                 ),
@@ -1318,7 +1318,7 @@ class CanvasRail(ft.Container):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.CENTER_RIGHT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                    bgcolor=ft.Colors.SURFACE, 
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
                 ),
@@ -1334,7 +1334,7 @@ class CanvasRail(ft.Container):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.CENTER_RIGHT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                    bgcolor=ft.Colors.SURFACE,
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
                 ),
@@ -1350,7 +1350,7 @@ class CanvasRail(ft.Container):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=0),),
                 menu_style=ft.MenuStyle(
                     alignment=ft.Alignment.CENTER_RIGHT,
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+                    bgcolor=ft.Colors.SURFACE,
                     shape=ft.RoundedRectangleBorder(radius=4),
                     padding=ft.Padding.all(0)
                 ),
@@ -1857,7 +1857,7 @@ class CanvasRail(ft.Container):
             ),
             menu_style=ft.MenuStyle(
                 alignment=ft.Alignment.TOP_RIGHT,
-                bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
+                bgcolor=ft.Colors.SURFACE, 
                 shape=ft.RoundedRectangleBorder(radius=4),
                 padding=ft.Padding.all(0)
             ),
