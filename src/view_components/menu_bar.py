@@ -5,7 +5,6 @@ Class for our menubar, which will hold our file options, drawing controls, and s
 import flet as ft
 from models.app import app
 from models.views.story import Story
-from styles.snack_bar import SnackBar
 from styles.text_fields import TextField
 from flet_color_pickers import ColorPicker
 import math
@@ -250,10 +249,9 @@ class MenuBar(ft.Container):
                 if app.is_cloud_authenticated == True:
                     try:
                         await story.save_file()
-                        if await asyncio.to_thread(google_drive.push_story_if_in_cloud, story.data.get('directory_path')):
-                            ft.context.page.show_dialog(SnackBar("Renamed in Google Drive too."))
-                    except Exception as ex:
-                        ft.context.page.show_dialog(SnackBar(f"Renamed locally, but the cloud copy was not updated: {google_drive.describe_error(ex)}"))
+                        await asyncio.to_thread(google_drive.push_story_if_in_cloud, story.data.get('directory_path'))
+                    except Exception as e:
+                        print("Renamed locally, but failed to update cloud copy: ", e)
 
             title_tf = ft.TextField(
                 value=self.story.data.get('title', ''),
@@ -336,7 +334,7 @@ class MenuBar(ft.Container):
                     await asyncio.sleep(0.2)
 
                     if not delete_cloud:
-                        ft.context.page.show_dialog(SnackBar(f"{title} deleted successfully."))
+                        ft.context.page.show_dialog(shad.Toast(f"{title} deleted successfully.", variant=shad.ToastVariant.DESTRUCTIVE))
                         await ft.context.page.push_route("/")
                         return
 
@@ -344,13 +342,13 @@ class MenuBar(ft.Container):
                     async def delete_cloud_copy():
                         try:
                             await asyncio.to_thread(google_drive.delete_story, story_id)
-                            page.show_dialog(SnackBar(f"{title} deleted successfully (also removed from Google Drive)."))
+                            page.show_dialog(shad.Toast(f"{title} deleted successfully (also removed from Google Drive).", variant=shad.ToastVariant.DESTRUCTIVE))
                         except Exception as ex:
-                            page.show_dialog(SnackBar(f"{title} deleted locally, but the cloud copy could not be deleted: {google_drive.describe_error(ex)}"))
+                            page.show_dialog(shad.Toast(f"{title} deleted locally, but the cloud copy could not be deleted: {google_drive.describe_error(ex)}", variant=shad.ToastVariant.DESTRUCTIVE))
                     page.run_task(delete_cloud_copy)
 
                 except Exception as e:
-                    ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
+                    print(f"Error deleting story: {e}")
                 await ft.context.page.push_route("/")
                 page.update()
 
@@ -451,14 +449,14 @@ class MenuBar(ft.Container):
             if app.is_cloud_authenticated == True:
                 return
             try:
-                ft.context.page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+                ft.context.page.show_dialog(shad.Toast("Opening browser to connect your Google account..."))
                 await asyncio.to_thread(google_drive.authenticate)
                 app.is_cloud_authenticated = True
-                ft.context.page.show_dialog(SnackBar("Google account connected."))
+                ft.context.page.show_dialog(shad.Toast("Google account connected."))
                 set_cloud_button()
                 self.cloud_button.update()
             except Exception as ex:
-                ft.context.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                ft.context.page.show_dialog(shad.Toast(google_drive.describe_error(ex), variant=shad.ToastVariant.DESTRUCTIVE))
             #finally:
                 #set_is_connecting(False)
 
@@ -478,9 +476,9 @@ class MenuBar(ft.Container):
                     app.settings.story = None
                     await app.load_previous_story(ft.context.page)
 
-                ft.context.page.show_dialog(SnackBar(f"{done_text} ({count - 1} files)"))
+                ft.context.page.show_dialog(shad.Toast(f"{done_text} ({count - 1} files)"))
             except Exception as ex:
-                ft.context.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                ft.context.page.show_dialog(shad.Toast(google_drive.describe_error(ex), variant=shad.ToastVariant.DESTRUCTIVE))
                 if restart_after:
                     await ft.context.page.push_route("/")
             #finally:
@@ -502,7 +500,7 @@ class MenuBar(ft.Container):
 
         def handle_push_clicked(e=None):
             if self.story is None:
-                ft.context.page.show_dialog(SnackBar("No story is open to push."))
+                ft.context.page.show_dialog(shad.Toast("No story is open to push."))
                 return
             story = self.story
             async def push_action():
@@ -540,7 +538,7 @@ class MenuBar(ft.Container):
 
         def handle_pull_clicked(e=None):
             if self.story is None:
-                ft.context.page.show_dialog(SnackBar("No story is open to pull."))
+                ft.context.page.show_dialog(shad.Toast("No story is open to pull."))
                 return
             story_id = self.story.data.get('id')
             async def pull_action():

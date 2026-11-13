@@ -145,7 +145,7 @@ class Story(ft.View):
         
         # Handle errors
         except Exception as e:
-            self.page.show_dialog(SnackBar(f"Error saving story data: {e}"))
+            self.page.show_dialog(shad.Toast(f"Error saving story data: {e}", variant=shad.ToastVariant.DESTRUCTIVE))
 
     # Get widget object by its unique ID.
     def get_widget_by_id(self, id: str) -> ft.Control:
@@ -528,109 +528,7 @@ class Story(ft.View):
                             
                     # Handle errors if the path is wrong
                     except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
-                        print(f"Error loading content from {filename}: {e}")
-
-    async def import_folder_clicked(self, e: ft.Event):
-        self.block_page()
-        directory_path = e.control.data or self.data.get('content_directory_path', '')
-
-        try:
-            folder_path = await ft.FilePicker().get_directory_path()
-            if not folder_path:
-                return
-
-            folder_name = os.path.basename(os.path.normpath(folder_path))
-            uploaded_path = os.path.join(directory_path, folder_name)
-
-            # Copy the selected folder into the story's target directory.
-            os.makedirs(directory_path, exist_ok=True)
-            shutil.copytree(folder_path, uploaded_path, dirs_exist_ok=True)
-
-            # Store every copied folder so its metadata can be edited from the rail.
-            for dirpath, _, _ in os.walk(uploaded_path):
-                await self.create_folder(
-                    name=os.path.basename(os.path.normpath(dirpath)),
-                    directory_path=os.path.dirname(dirpath),
-                    update=False,
-                    full_path=dirpath,
-                )
-
-            await self.save_file()
-
-            # Point imported widgets at their copied locations before loading them.
-            for dirpath, _, filenames in os.walk(uploaded_path):
-                for filename in filenames:
-                    if not filename.lower().endswith('.json'):
-                        continue
-
-                    file_path = os.path.join(dirpath, filename)
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            widget_data = json.load(f)
-
-                        if 'tag' not in widget_data or 'id' not in widget_data:
-                            continue
-
-                        widget_data['directory_path'] = dirpath
-                        widget_data['visible'] = False      # Hide all the widgets so they don't flood the workspace
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            json.dump(widget_data, f, indent=4)
-                    except (json.JSONDecodeError, OSError, TypeError) as error:
-                        print(f"Error importing content from {file_path}: {error}")
-
-            self.load_widgets()
-            self.tree_view_rail.reload_rail()
-        except OSError as error:
-            self.page.show_dialog(SnackBar(f"Error importing folder: {error}"))
-        finally:
-            self.unblock_page()
-
-        
-
-
-    async def import_files_clicked(self, e: ft.Event):
-        self.block_page()
-        directory_path = e.control.data or self.data.get('content_directory_path', '')
-
-        try:
-            files = await ft.FilePicker().pick_files(
-                allow_multiple=True,
-                allowed_extensions=["json"],
-            )
-            if not files:
-                return
-
-            os.makedirs(directory_path, exist_ok=True)
-
-            for selected_file in files:
-                destination_path = os.path.join(
-                    directory_path,
-                    os.path.basename(selected_file.path),
-                )
-
-                try:
-                    shutil.copy2(selected_file.path, destination_path)
-
-                    with open(destination_path, 'r', encoding='utf-8') as f:
-                        widget_data = json.load(f)
-
-                    if 'tag' not in widget_data or 'id' not in widget_data:
-                        os.remove(destination_path)
-                        continue
-
-                    widget_data['directory_path'] = directory_path
-                    widget_data['visible'] = False
-                    with open(destination_path, 'w', encoding='utf-8') as f:
-                        json.dump(widget_data, f, indent=4)
-                except (json.JSONDecodeError, OSError, TypeError) as error:
-                    print(f"Error importing widget file {selected_file.path}: {error}")
-
-            self.load_widgets()
-            self.tree_view_rail.reload_rail()
-        except OSError as error:
-            self.page.show_dialog(SnackBar(f"Error importing files: {error}"))
-        finally:
-            self.unblock_page()
+                        print(f"Error loading content from {filename}: {e}") 
 
     # Opens the dialog to export
     async def handle_export(self, e=ft.Event[ft.Button]):
@@ -814,7 +712,7 @@ class Story(ft.View):
             case "plot_chart":
                 widget = PlotChart(title, directory_path, self, data, True)
             case _:
-                self.page.show_dialog(SnackBar(f"Error creating widget {title}: Invalid tag {tag}"))
+                print(f"Error creating widget {title}: Invalid tag {tag}")
 
         # Force a file write for newly created widgets
         if widget is not None:
@@ -970,7 +868,7 @@ class Story(ft.View):
                 )
                 
             case _:
-                self.page.show_dialog(SnackBar(f"Error rebuilding widget {widget.title}: Invalid tag {tag}"))
+                print(f"Error rebuilding widget {widget.data.get('title')}: Invalid tag {tag}")
 
         
 

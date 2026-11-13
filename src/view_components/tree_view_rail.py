@@ -130,7 +130,7 @@ class ContentRail(ft.Column):
         widget = self.story.get_widget_by_id(draggable.data)
 
         if widget is None:
-            self.page.show_dialog(SnackBar("Error, file not found."))
+            print("Error, file not found.")
             return
 
         self.page.run_task(widget.move_file, new_directory)
@@ -141,7 +141,7 @@ class ContentRail(ft.Column):
         
         # Prevent moving a folder into itself or its children
         if new_directory.startswith(folder.full_path):
-            self.page.show_dialog(SnackBar("Cannot move a folder into itself or its subfolders"))
+            self.page.show_dialog(shad.Toast("Cannot move a folder into itself or its subfolders", variant=shad.ToastVariant.DESTRUCTIVE))
             return
         
         # Prevent moving a folder to its current location
@@ -164,7 +164,7 @@ class ContentRail(ft.Column):
             self.story.tree_view_rail.reload_rail()
             
         except Exception as ex:
-            self.page.show_dialog(SnackBar(f"Error moving folder: {str(ex)}"))
+            print(f"Error moving folder: {str(ex)}")
 
 
     # Called when new category button or menu option is clicked

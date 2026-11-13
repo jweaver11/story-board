@@ -6,7 +6,7 @@ import os
 import flet_shadcn_ui as shad
 
 
-def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> ft.AlertDialog:
+def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) -> shad.Dialog:
     ''' Creates a new alert dialog for the canvas '''
 
     if directory_path is None:
@@ -51,8 +51,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         create_button.update()
         error_text.update()
 
-        #print("Canvas data updated: ", canvas_data)
-
         return True
         
 
@@ -87,7 +85,6 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         create_button.update()
         error_text.update()
 
-        #print("Canvas data updated: ", canvas_data)
         return True
 
     # When we select one of our template boxes. Updates data and UI to reflect
@@ -101,9 +98,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         height_textfield.value = str(data.get('height', "")) if data.get('height') is not None else ""
 
         # Update our data we will pass into creating the canvas based on selected template
-        canvas_data.update(data)
-        print("Canvas data updated: ", canvas_data)
-        
+        canvas_data.update(data)        
 
         # Reset the rest of the templates borders
         for control in template_controls:
@@ -156,9 +151,8 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         value=str(1080),label="Height", data="height", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
         max_length=4, on_change=check_height
     )  
-    title_textfield = ft.TextField(
+    title_textfield = shad.Input(
         label="Title", data="title", autofocus=True, on_submit=create_canvas,
-        capitalization=ft.TextCapitalization.WORDS, margin=ft.Margin.only(top=6)
     )
     error_text = ft.Text("", visible=False, color=ft.Colors.ERROR, size=14, italic=True, weight=ft.FontWeight.W_500)
 
@@ -230,41 +224,17 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
             scroll=ft.ScrollMode.AUTO,
             controls=[
                 title_textfield,
-                ft.Divider(),
-                
-                    
-                ft.Column(
-                    alignment=ft.MainAxisAlignment.CENTER, 
-                    controls=[
-                        ft.Text("Custom Size:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE, text_align=ft.TextAlign.RIGHT, width=88),
+                ft.Row(
+                    [
+                        ft.Text("Custom Size:", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                         width_textfield,
                         height_textfield,
-                        error_text
-                    ], tight=True),
+                        
+                    ], wrap=True, margin=ft.Margin.only(top=6)),
+                error_text,
                 
-                ft.Divider(),
-                ft.Text("Common Resolutions", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM, text_align=ft.TextAlign.RIGHT),
-                
-                ft.Row([
-                    ft.Column(
-                        alignment=ft.MainAxisAlignment.CENTER, tight=True,
-                        controls=[
-                        ft.Row([
-                            template_controls[0],
-                            template_controls[1],
-                            template_controls[2],
-                        ]),
-                        template_controls[3],
-                    
-                    ]),
-                    template_controls[4],
-                    template_controls[5],
-                    template_controls[6],
-                    template_controls[7],
-                    template_controls[8],
-                ]),  
-
-               
+                ft.Text("Common Resolutions", weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.TITLE_MEDIUM),
+                ft.Row(template_controls, wrap=True, expand=True),  
             ])
         
     )
