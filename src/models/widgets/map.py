@@ -1382,8 +1382,8 @@ class Map(Widget):
                 on_click=self.show_info,
             ),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content=("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing",
+                leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('draw_mode', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
+                content="Lock Map" if not self.data.get('draw_mode') else "Unlock Map",
                 on_click=self.toggle_draw_mode,
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
@@ -1433,14 +1433,12 @@ class Map(Widget):
 
     
     async def toggle_draw_mode(self, e=None):
-        await self.story.close_menu()   # Close menu
+        
         new_draw_mode = not self.data.get('draw_mode', False)
         self.update_data(**{'draw_mode': new_draw_mode})
-        if self.showing_info:
-            self.sidebar_draw_mode_toggle_button.content = ("Disable" if new_draw_mode else "Enable") + " Drawing"
-            self.sidebar_draw_mode_toggle_button.leading = ft.Icon(ft.Icons.EDIT_OUTLINED if new_draw_mode else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY)
-            self.sidebar_draw_mode_toggle_button.update()
+        
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
+        self.map_controller.content.items = self.get_new_item_options()
         self.map_controller.update()
 
     # Creates our header controls for the sidebar, including our settings button
@@ -1467,12 +1465,7 @@ class Map(Widget):
 
         ctrls: list = super().create_sidebar_header_ctrls()
 
-        self.sidebar_draw_mode_toggle_button = ft.MenuItemButton(
-            ("Disable" if self.data.get('draw_mode') else "Enable") + " Drawing", 
-            close_on_click=True, on_click=self.toggle_draw_mode,
-            leading=ft.Icon(ft.Icons.EDIT_OUTLINED if self.data.get('draw_mode', False) else ft.Icons.EDIT_OFF_OUTLINED, ft.Colors.PRIMARY),
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-        )
+       
 
         ctrls.extend([
             self.undo_button,
