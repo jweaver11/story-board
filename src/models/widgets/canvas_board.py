@@ -104,7 +104,7 @@ class CanvasBoard(Widget):
         str_capture = base64.b64encode(capture).decode("utf-8")
         panel_idx = canvas.data
 
-        self.data.get('panels', [])[panel_idx]['dirty'] = True
+        self.data.get('panels', [])[panel_idx]['dirty'] = False
         self.data.get('panels', [])[panel_idx]['capture'] = str_capture
 
         canvas.shapes = [cv.Image(capture, 0, 0, SKETCH_SIZE[0], SKETCH_SIZE[1])]
