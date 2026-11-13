@@ -22,7 +22,7 @@ from styles.highlight_button import HighlightButton
 from styles.colors import colors
 
 MINIMUM_SEGMENT_DISTANCE = 2
-MAX_SHAPES_BEFORE_CAPTURE = 50
+MAX_SHAPES_BEFORE_CAPTURE = 5
 MAX_UNDO_LIST_TASKS = 30
 SKETCH_SIZE = (500, 500)
 
@@ -72,18 +72,19 @@ class CanvasBoard(Widget):
         # Protect on creation
         #if not self.content:
             #return
-
+        
         for i, panel_data in enumerate(self.data.get('panels', [])):
             # If a change has been made to the row, save that change.
             if panel_data.get('dirty', False) == True:
+                if i >= len(self.canvases_list):
+                    continue
                 canvas: cv.Canvas = self.canvases_list[i]
                 if not isinstance(canvas, cv.Canvas):
-                    print(canvas)
                     continue
                 try:
                     await self.save_canvas(canvas)
                 except RuntimeError as e:
-                    print(f"Error saving row {i}: {e}")
+                    print(f"Error saving panel index: {i}: {e}")
                     return
                 self.needs_file_write = True    # Mark our widget as dirty if we saved anything
 
@@ -95,85 +96,23 @@ class CanvasBoard(Widget):
         """ Saves our paths to our canvas data for storage """
         
         # Protect bad calls
-        if canvas.visible == False:  
+        if canvas.visible == False or not isinstance(canvas, cv.Canvas):  
             return
-
-        panel_idx = canvas.data
-        panel_data = self.data.get('panels', [])[panel_idx]
-        
-                
-        # Clear blend strokes must be captured with the stored image so they can remove
-        # pixels from the existing layer instead of being alpha-composited on top of it.
-        shapes = list(canvas.shapes)
-        base_is_stored_image = shapes and isinstance(shapes[0], cv.Image) and shapes[0].data    # Marked as loaded
-        new_strokes = shapes[1:] if base_is_stored_image else shapes
-        has_clear_stroke = any(
-            str(getattr(getattr(shape, 'paint', None), 'blend_mode', '')).lower().endswith('clear')
-            for shape in new_strokes
-        )
-        capture_shapes = shapes if has_clear_stroke else new_strokes
-
-        # Capture the appropriate layer content, then restore the original shapes to the canvas
-        canvas.shapes[:] = capture_shapes
-        canvas.update()
 
         await canvas.capture()
-        new_bytes = await canvas.get_capture()
+        capture = await canvas.get_capture()
         await canvas.clear_capture()
-        canvas.shapes[:] = shapes  # Restore the original shapes to the canvas
+
+        str_capture = base64.b64encode(capture).decode("utf-8")
+        panel_idx = canvas.data
+
+        self.data.get('panels', [])[panel_idx]['dirty'] = True
+        self.data.get('panels', [])[panel_idx]['capture'] = str_capture
+
+        canvas.shapes = [cv.Image(capture, 0, 0, SKETCH_SIZE[0], SKETCH_SIZE[1])]
         canvas.update()
 
-        # Error capturing new strokes (should be impossible)
-        if not new_bytes:
-            self.page.show_dialog(SnackBar(f"Error capturing new strokes for sketch."))
-            return
-
-        # A full capture already contains the erase result and must replace the old layer.
-        if has_clear_stroke:
-            result = Image.open(BytesIO(new_bytes)).convert("RGBA")
-            if result.size != SKETCH_SIZE:
-                result = result.resize(SKETCH_SIZE, Image.Resampling.LANCZOS)
-            output = BytesIO()
-            result.save(output, format="PNG")
-            combined_bytes = output.getvalue()
-            
-
-            panel_data['dirty'] = False
-            self.data.get('canvas_data', {}).get('layers', [])[panel_idx].update(panel_data)
-            self.update_data(**{'panels': self.data.get('panels', [])})
-            return combined_bytes
-
-        # Load the existing layer capture
-        str_bytes = panel_data.get('capture', None)
-        existing_bytes = base64.b64decode(str_bytes.split(",")[1]) if str_bytes else None
-        
-
-        # If we have an existing capture, composite the new strokes onto it; otherwise, create a new base image
-        if existing_bytes:
-            base_img = Image.open(BytesIO(existing_bytes)).convert("RGBA")
-            if base_img.size != SKETCH_SIZE:
-                base_img = base_img.resize(SKETCH_SIZE, Image.Resampling.LANCZOS)
-        else:
-            base_img = Image.new("RGBA", SKETCH_SIZE, (0, 0, 0, 0))
-
-        # Composite the new strokes onto the existing base — base pixels are never re-rendered through Flet
-        delta_img = Image.open(BytesIO(new_bytes)).convert("RGBA")
-        if delta_img.size != base_img.size: # Handle size errors (should be impossible)
-            delta_img = delta_img.resize(base_img.size, Image.Resampling.LANCZOS)
-
-        # Merge the two images together and add them to our in memory cache for the next save
-        result = Image.alpha_composite(base_img, delta_img)
-        output = BytesIO()
-        result.save(output, format="PNG")
-        combined_bytes = output.getvalue()
-        str_img = f"data:image/png;base64,{base64.b64encode(combined_bytes).decode('utf-8')}"
-
-        panel_data['capture'] = str_img
-        panel_data['dirty'] = False
-        self.data.get('panels', [])[panel_idx] = panel_data
-        self.update_data(**{'panels': self.data.get('panels', [])})  # Update our data so it saves the new row
-
-        return combined_bytes   # Return our now updated bytes
+        return capture   # Return our now updated bytes
 
 
     async def add_point(self, e: ft.TapEvent):
@@ -222,8 +161,6 @@ class CanvasBoard(Widget):
     async def end_stroke(self, e: ft.DragEndEvent[ft.Control]):
         """ Saves our paths to our canvas data for storage """
         canvas: cv.Canvas = e.control.parent
-        if not canvas.visible:  
-            return
 
         # Flag this row as dirty so we know to save it later
         panel_idx = e.control.data
@@ -235,41 +172,8 @@ class CanvasBoard(Widget):
         
         # If we have too many shapes on the canvas, flatten them into the layer's PNG file
         if len(canvas.shapes) > MAX_SHAPES_BEFORE_CAPTURE:
-            self.story.block_page()     # Block page to prevent other events whil we do this one
-            panel_data = self.data['panels'][panel_idx]
             await self.save_canvas(canvas)  # Save the current canvas added shapes to its bytes stored in memory
-            canvas.shapes.clear()
-            #canvas.shapes.append(cv.Image(self.layer_bytes.get(layer_id), 0, 0, self.CANVAS_WIDTH, self.CANVAS_HEIGHT, data=layer_id))
-            canvas.update()
-            self.story.unblock_page()   # Unblock page
-            self.state.undo_list.clear()
-            #self.undo_button.disabled = True
-            #self.undo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            #self.undo_button.update()
-            self.state.redo_list.clear()
-            #self.redo_button.disabled = True
-            #self.redo_button.icon_color = ft.Colors.OUTLINE_VARIANT
-            #self.redo_button.update()
-        else:
-            pass
-            #self.add_undo_task({
-                #'task_type': 'path_stroke',
-                #'layer_id': layer_data.get('name', ''),
-                #'data': self.current_path if self.current_path else self.current_tool
-            #})
-
-        # Add stroke to undo list
-        #if self.current_path is not None:
-        
-
-        # Else add shape/text
-        #else:
-            #self.add_undo_task({
-                #'task_type': 'tool',
-                #'layer_id': layer_data.get('name', ''),
-                #'data': self.current_tool
-            #})
-
+            
     
     def build(self):
         
@@ -613,6 +517,8 @@ class CanvasBoard(Widget):
         self.description_tf.bgcolor = ft.Colors.SURFACE
         self.description_tf.margin = ft.Margin.only(left=6, right=6, bottom=6)
         self.description_tf.label = "Scope"
+        self.description_tf.hint_text = "What parts of your story this Canvas Board covers..."
+        self.description_tf.hint_style = ft.TextStyle(italic=True)
 
         self.panels_row = ft.Row(build_panel_row(), spacing=0, run_spacing=0, expand=True, wrap=True)
         
@@ -627,6 +533,3 @@ class CanvasBoard(Widget):
         self.content = body
        
             
-
-
-# TODO: Set color as background.

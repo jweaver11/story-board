@@ -391,6 +391,8 @@ class Widget(ft.Container):
         self.update_data(**{'visible': False})
         if self.data.get('tag', '') == "canvas" or self.data.get('tag', '') == "manuscript" or self.data.get('tag', '') == "map" or self.data.get('tag', '') == "canvas_board":    # Widgets that must be rendered to save
             await self.save_file() 
+            if self.data.get('tag', '') == "canvas_board":
+                self.canvases_list.clear()  # Remove stale canvas references
         await self.story.workspace.remove_widget_from_workspace(self)
         
 
