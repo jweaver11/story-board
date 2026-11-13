@@ -26,6 +26,8 @@ import uuid
 import os
 from PIL import Image, ImageColor
 import utils.drawing as drawing
+import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
 
 MINIMUM_SEGMENT_DISTANCE = 2
 MAX_SHAPES_BEFORE_CAPTURE = 50
@@ -999,12 +1001,10 @@ class Canvas(Widget):
         self.add_undo_task(task)    # Add the task we just redid to the undo list
 
     # Sets either an image or a color as the content of a layer
-    async def set_layer_content(self, e: ft.Event):
-
-        await self.story.close_menu()
+    async def set_layer_content(self, e: ft.Event[ft.Control]):
 
         content_type = e.control.data
-        layer_idx = e.control.parent.parent.parent.data
+        layer_idx = e.control.parent.parent.data
         layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name', '')
 
         # Set a color as the background
@@ -1061,11 +1061,10 @@ class Canvas(Widget):
                     self.page.pop_dialog()
 
     # Sets the blur of a layers
-    async def set_layer_blur(self, e: ft.Event):
-        await self.story.close_menu()
+    async def set_layer_blur(self, e: ft.Event[ft.Control]):
 
-        layer_name = e.control.parent.parent.parent.parent.data
-        layer_idx = e.control.parent.parent.parent.data
+        layer_name = e.control.parent.parent.parent.data
+        layer_idx = e.control.parent.parent.data
         layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['name']
         layer_id = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['id']
         capture = None
@@ -1301,7 +1300,7 @@ class Canvas(Widget):
             await title_tf.focus()
 
         # Updates the data after changing a title in the textfield
-        async def update_layer_name(e: ft.Event):
+        async def update_layer_name(e: ft.Event[ft.TextField]):
             layer_idx = e.control.parent.parent.data    # List tile data
             old_name = title_text.value
             new_name = e.control.value
@@ -1337,13 +1336,13 @@ class Canvas(Widget):
             title_tf.update()
             title_text.update()
 
-        async def delete_layer(e: ft.Event):
+        async def delete_layer(e: ft.Event[ft.Control]):
             # Prevent deleting the last layer
             if len(self.data.get('canvas_data', {}).get('layers', [])) <= 1:
                 return
 
             # Remove from data
-            layer_idx = e.control.parent.parent.parent.data
+            layer_idx = e.control.parent.parent.data
             layer_name = self.data.get('canvas_data', {}).get('layers', [])[layer_idx].get('name')
             self.data.get('canvas_data', {}).get('layers', []).pop(layer_idx)
 
@@ -1410,67 +1409,47 @@ class Canvas(Widget):
                 content_padding=ft.Padding.only(left=20, right=30) if self.active_layer_idx == idx and visible == True else ft.Padding.only(left=10, right=30),
                 shape=ft.RoundedRectangleBorder(radius=4), 
                 tooltip="Click to select this layer",
-                trailing=ft.MenuBar(
+                trailing=shad.ContextMenu(
+                    HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
                     [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        [
-                            ft.MenuItemButton(      # Rename layer button
-                                "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
-                                focus_on_hover=False,
-                                on_click=rename_layer_clicked, 
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(      # Set layer as an image button
-                                "Upload Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY), 
-                                on_click=self.set_layer_content, 
-                                tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
-                                "Layer must be visible to set image", 
-                                data="image",
-                                disabled=not visible, focus_on_hover=False,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(      # Set layer blur button
-                                "Set Blur", leading=ft.Icon(ft.Icons.BLUR_ON_OUTLINED, ft.Colors.PRIMARY), 
-                                on_click=self.set_layer_blur, 
-                                tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
-                                "Will NOT effect any future content drawn on this layer" if visible else
-                                "Layer must be visible to set image", 
-                                data=name, focus_on_hover=False,
-                                disabled=not visible,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(      # Set layer as a color button
-                                "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY),
-                                on_click=self.set_layer_content, 
-                                tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
-                                "Layer must be visible to set color",
-                                data="color", focus_on_hover=False,
-                                disabled=not visible,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(      # Delete layer button
-                                "Delete", leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR),  
-                                focus_on_hover=False,
-                                tooltip="Delete this layer. This action cannot be undone.",
-                                on_click=delete_layer,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            )
-                        ],
-                            
-                        
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                    ),
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
+                        shad.MenuItem(
+                            "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                            on_click=rename_layer_clicked, 
+                        ),
+                        shad.MenuItem(
+                            "Upload Image", leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                            on_click=self.set_layer_content, 
+                            tooltip="Upload an image for this layer. This will overwrite any drawings on the layer currently." if visible else
+                            "Layer must be visible to set image", 
+                            data="image",
+                            disabled=not visible, 
+                        ),
+                        shad.MenuItem(
+                            "Set Blur", leading=ft.Icon(ft.Icons.BLUR_ON_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                            on_click=self.set_layer_blur, 
+                            tooltip="Set the blur only for existing content on this layer. Useful for backgrounds and effects. " \
+                            "Will NOT effect any future content drawn on this layer" if visible else
+                            "Layer must be visible to set image", 
+                            data=name,
+                            disabled=not visible,
+                        ),
+                        shad.MenuItem(
+                            "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                            on_click=self.set_layer_content, 
+                            tooltip="Set this layer to a solid color. This will overwrite any drawings on the layer currently." if visible else
+                            "Layer must be visible to set color",
+                            data="color",
+                            disabled=not visible,
+                        ),
+                        shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem(
+                            "Delete", leading=ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, size=20),
+                            on_click=delete_layer,
+                            tooltip="Delete this layer. This action cannot be undone.",
+                        )
+                    ],
+                    open_on_tap=True
                 ),
-            ),
-                    
-                
             ), 
             data=name
         )
@@ -1661,14 +1640,7 @@ class Canvas(Widget):
              
 
         self.sidebar_body.controls.extend([
-            ft.Text(
-                spans=[
-                    ft.TextSpan("Width: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
-                    ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('width', ''))} pixels\n", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14)),
-                    ft.TextSpan("Height: ", ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),),
-                    ft.TextSpan(f"{str(self.data.get('canvas_data', {}).get('height', ''))} pixels", ft.TextStyle(italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=14))
-                ]
-            ),
+            
             
             ft.Row([    # Layer Label
                 ft.Text(f"Layers", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), color=ft.Colors.PRIMARY), 
