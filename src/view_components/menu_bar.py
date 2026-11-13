@@ -76,21 +76,17 @@ class MenuBar(ft.Container):
             
     
             # Create a reference to the text field so we can access its value
-            story_title_field = ft.TextField(
+            story_title_field = shad.Input(
                 label="Story Title",
-                autofocus=True, capitalization=ft.TextCapitalization.WORDS,
+                autofocus=True,
                 on_submit=submit_new_story,
             )
         
             # The dialog that will pop up whenever the new story button is clicked
-            dlg = ft.AlertDialog(
+            dlg = shad.Dialog(
     
                 # Title of our dialog
-                title=ft.Text(
-                    "Create New Story", 
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                ),
+                title="Create New Story", 
     
                 # Main content is text box for user to input story title
                 content=story_title_field,
@@ -107,9 +103,6 @@ class MenuBar(ft.Container):
             # Open our dialog in the overlay
             ft.context.page.show_dialog(dlg)
 
-        
-    
-    
         # Called when file -> open is clicked
         async def handle_open_story(e=None):
             ''' Opens a dialog to open an existing story '''
@@ -127,42 +120,31 @@ class MenuBar(ft.Container):
                 open_button.disabled = False
                 open_button.style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")
                 open_button.update()
-                cloud_warning.visible = selected_story.startswith("cloud:")
-                cloud_warning.update()
+                
 
             cloud_stories = []
-            cloud_warning = ft.Text(
-                "Warning: Opening a cloud story will overwrite the local version on this device, if one exists.",
-                visible=False, italic=True, color=ft.Colors.ERROR, size=12, width=300,
-            )
-            cloud_column = ft.Column(tight=True, controls=[])
+            
+            #cloud_column = ft.Column(tight=True, controls=[], visible=app.is_cloud_authenticated)
     
             # Returns a list of all story titles available to open
             def get_stories_list() -> ft.Control:
                 ''' Returns a list of all story titles available to open '''
-    
-                # List of our story choices
                 
     
                 # Set style for our options
-                style = ft.TextStyle(
-                    size=14,
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                )
-                ctrls = [ft.Text("Local Stories", style=style)]
+                
+                ctrls = []
                 
     
                 # Use something better than radio in future, but for now this works
                 for story in app.stories.values():
-                    ctrls.append(ft.Radio(expand=False, value=f"local:{story.data.get('id')}", label=story.data.get('title'), label_style=style, mouse_cursor=ft.MouseCursor.CLICK))
+                    ctrls.append(shad.Radio(value=f"local:{story.data.get('id')}", label=story.data.get('title')))
 
-                if app.is_cloud_authenticated == True:
-                    ctrls.append(ft.Divider())
-                    ctrls.append(ft.Text("Cloud Stories", style=style))
-                    cloud_column.controls = [ft.ProgressRing(width=24, height=24, stroke_width=3)]
-                    ctrls.append(cloud_column)
-                    ctrls.append(cloud_warning)
+                #ctrls.append(shad.Separator(ft.Margin.symmetric(vertical=8)))
+                ctrls.append(ft.Text("Cloud Stories", color=ft.Colors.ON_SURFACE, margin=ft.Margin.only(top=10), weight=ft.FontWeight.W_500))
+                ctrls.append(ft.Text("Connect to Google Drive to access your cloud stories.", italic=True, visible=not app.is_cloud_authenticated))
+                ctrls.append(ft.ProgressRing(width=24, height=24, stroke_width=3, visible=app.is_cloud_authenticated))
+                
     
                 return ctrls
 
@@ -170,28 +152,34 @@ class MenuBar(ft.Container):
                 ''' Fills in the cloud section once the metadata has been read, so the dialog itself opens immediately '''
                 nonlocal cloud_stories
                 style = ft.TextStyle(size=14, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD)
+                ctrls = []
                 try:
                     # Only reads each cloud story's metadata file, not the whole cloud
                     cloud_stories = await asyncio.to_thread(google_drive.list_cloud_stories)
                 except Exception as ex:
-                    cloud_column.controls = [ft.Text(google_drive.describe_error(ex), color=ft.Colors.ERROR, size=12)]
+                    ctrls = [ft.Text(google_drive.describe_error(ex), color=ft.Colors.ERROR, size=12)]
                     try:
-                        cloud_column.update()
+                        stories_list.items.extend(ctrls)
+                        stories_list.update()
                     except Exception:
                         pass
                     return
 
                 if not cloud_stories:
-                    cloud_column.controls = [ft.Text("No stories found in the cloud.", color=ft.Colors.OUTLINE, size=12)]
+                    ctrls = [ft.Text("No stories found in the cloud.", color=ft.Colors.OUTLINE, size=12)]
                 else:
-                    cloud_column.controls = [
-                        ft.Radio(
-                            expand=False, value=f"cloud:{s['id']}", label_style=style, mouse_cursor=ft.MouseCursor.CLICK,
+                    ctrls = [
+                        shad.Radio(
+                            value=f"cloud:{s['id']}", 
                             label=s['title'],
                         ) for s in cloud_stories
                     ]
                 try:
-                    cloud_column.update()
+                    stories_list.items.extend(ctrls)
+                    for ctrl in stories_list.items:
+                        if isinstance(ctrl, ft.ProgressRing):
+                            ctrl.visible = False
+                    stories_list.update()
                 except Exception:
                     pass    # Dialog was closed before the cloud finished loading
     
@@ -227,20 +215,18 @@ class MenuBar(ft.Container):
 
     
             open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
+
+            stories_list = shad.RadioGroup(
+                label="Stories on this device",
+                items=get_stories_list(),
+                on_change=change_selected_story
+            )
     
             # Our alert dialog that pops up when file -> open is clicked
-            dlg = ft.AlertDialog(
-                title=ft.Text(
-                    "What story would you like to open?",
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                alignment=ft.Alignment.CENTER,
-                title_padding=ft.Padding.all(25),
-                content=ft.RadioGroup(
-                    content=ft.Column(scroll=ft.ScrollMode.AUTO, expand=False, tight=True, controls=get_stories_list()),
-                    on_change=change_selected_story
-                ),
+            dlg = shad.Dialog(
+                title="Select Story to open",
+                description="Opening a story from the cloud will overwrite the local version if it exists.",
+                content=stories_list,
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
                     open_button,
@@ -274,30 +260,31 @@ class MenuBar(ft.Container):
                 autofocus=True, capitalization=ft.TextCapitalization.WORDS,
                 on_submit=rename_story,
             )
+            title_tf = shad.Input(
+                value=self.story.data.get('title', ''),
+                autofocus=True, #capitalization=ft.TextCapitalization.WORDS,
+                on_submit=rename_story,
+            )
 
             rename_controls = [title_tf]
             if app.is_cloud_authenticated == True:
                 rename_controls.append(ft.Text(
                     "If this story is saved in your Google Drive, the cloud copy will be renamed too.",
-                    italic=True, size=12, color=ft.Colors.ERROR,
+                    italic=True, size=12, color=ft.Colors.OUTLINE,
                 ))
 
-            dlg = ft.AlertDialog(
+            dlg = shad.Dialog(
                 
                 # Title of our dialog
-                title=ft.Text(
-                    f"Rename {self.story.data.get('title', '')}", 
-                    color=ft.Colors.ON_SURFACE,
-                    weight=ft.FontWeight.BOLD,
-                ),
-    
+                title=f"Rename {self.story.data.get('title', '')}", 
+                    
                 # Main content is text box for user to input story title
                 content=ft.Column(tight=True, width=320, controls=rename_controls),
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton("Rename", on_click=rename_story,style=ft.ButtonStyle(mouse_cursor="click")),
+                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    ft.TextButton("Rename", on_click=rename_story, style=ft.ButtonStyle(mouse_cursor="click")),
                 ],
             )
     
@@ -366,25 +353,21 @@ class MenuBar(ft.Container):
                     ft.context.page.show_dialog(SnackBar(f"Error deleting story: {e}"))
                 await ft.context.page.push_route("/")
                 page.update()
-                
 
-            delete_text = "Are you sure you want to delete this story? This action cannot be undone!"
+            delete_from_cloud_switch = shad.Switch(
+                label="Delete from cloud as well",
+                value=app.is_cloud_authenticated == True,
+                visible=app.is_cloud_authenticated == True,
+            )
 
-            dlg = ft.AlertDialog(
-                title=ft.Text(f"Delete {self.story.data.get('title', 'Story')}?", weight=ft.FontWeight.BOLD),
-                content=ft.Column([
-                    ft.Text(delete_text),
-                    delete_from_cloud_switch := ft.Switch(
-                        label="Delete from cloud as well",
-                        value=app.is_cloud_authenticated == True,
-                        visible=app.is_cloud_authenticated == True,
-                    )
-                ], tight=True),
+            dlg = shad.Dialog(
+                title=f"Delete {self.story.data.get('title', 'Story')}?",
+                description="Are you sure you want to delete this story? This action cannot be undone!",
+                content=delete_from_cloud_switch,
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton("DELETE FOREVER", on_click=confirm_delete,style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
+                    ft.TextButton(f"Delete '{self.story.data.get('title', 'Story')}'", on_click=confirm_delete, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
                 ],
-                actions_alignment=ft.MainAxisAlignment.END,
             )
             ft.context.page.show_dialog(dlg)
             

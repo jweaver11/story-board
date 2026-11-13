@@ -18,6 +18,7 @@ import uuid
 from styles.colors import dark_gradient
 from concurrent.futures import ThreadPoolExecutor
 import time
+import flet_shadcn_ui as shad
 
  
 class Story(ft.View):
@@ -640,181 +641,55 @@ class Story(ft.View):
             if not folder_path:
                 return
 
-            selected_files = [
-                path for path, checkbox in item_checkboxes.items()
-                if os.path.isfile(path) and checkbox.value
-            ]
+            widget_ids = []
+            for ctrl in widgets_column.controls:
+                if isinstance(ctrl, shad.Checkbox):
+                    if ctrl.value:
+                        widget_ids.append(ctrl.data)
 
-            for source_path in selected_files:
-                try:
-                    with open(source_path, "r", encoding="utf-8") as source_file:
-                        file_data = json.load(source_file)
-                except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            for widget_id in widget_ids:
+                widget = self.get_widget_by_id(widget_id)
+                if not widget:
                     continue
 
-                widget_type = file_data.get("tag", "")
-                widget_id = file_data.get("id", "")
-                export_file_type = wd_data.get(widget_type, {}).get("export_file_type", ".json")
-                relative_directory = os.path.relpath(os.path.dirname(source_path), source_path_root)
+                tag = widget.data.get("tag", "")
+                title = widget.data.get("title", "")
 
-                destination_directory = os.path.join(
-                    folder_path,
-                    "" if relative_directory == "." else relative_directory,
-                )
-                os.makedirs(destination_directory, exist_ok=True)
+                export_file_type = app.settings.data.get('widget_defaults', {}).get(tag, {}).get('export_file_type', '')
+                destination_path = os.path.join(folder_path, f"{title}_{widget_id}{export_file_type}")
 
-                destination_name = os.path.splitext(os.path.basename(source_path))[0]
-                destination_path = os.path.join(
-                    destination_directory,
-                    f"{destination_name}{export_file_type}",
-                )
+                # Canvas/png files
+                if export_file_type == ".png":
 
-                # Standard json export
-                if export_file_type == ".json":
-                    with open(destination_path, "w", encoding="utf-8") as destination_file:
-                        json.dump(file_data, destination_file, indent=4)
-
-                elif export_file_type == ".png":
-
-                    if widget_id:
-                        widget = self.get_widget_by_id(widget_id)
-                        if not widget:
-                            continue
-
-                        # Canvas gets it own image from its layers 
-                        if widget_type == "canvas":
-                            if hasattr(widget, "get_snapshot_bytes"):
-                                snapshot_bytes = widget.get_snapshot_bytes()
-                                if snapshot_bytes:
+                    # Canvas gets it own image from its layers
+                    if tag == "canvas":
+                        if hasattr(widget, "get_snapshot_bytes"):
+                            snapshot_bytes = widget.get_snapshot_bytes()
+                            if snapshot_bytes:
+                                try:
                                     with open(destination_path, "wb") as destination_file:
                                         destination_file.write(snapshot_bytes)
+                                except Exception as e:
+                                    print(f"Error exporting {widget.data.get('title')}: {e}")
 
-                        # Other widgets have to screenshot for export
-                        else:
-                            pass
-
-
+                # Manuscripts
                 elif export_file_type == ".docx" or export_file_type == ".pdf" or export_file_type == ".txt":
-                    widget = self.get_widget_by_id(widget_id)
-                    if not widget:
-                        continue
+                    
                     if hasattr(widget, "export"):
                         data = await widget.export(export_file_type.lstrip("."))
                         if data is None:
                             continue
                         mode, encoding = ("w", "utf-8") if isinstance(data, str) else ("wb", None)
-                        with open(destination_path, mode, encoding=encoding) as destination_file:
-                            destination_file.write(data)
+                        try:
+                            with open(destination_path, mode, encoding=encoding) as destination_file:
+                                destination_file.write(data)
+                        except Exception as e:
+                            print(f"Error exporting {widget.data.get('title')}: {e}")
                 
 
             self.page.pop_dialog()
 
-        def load_directory_controls() -> list[ft.Control]:
-            story_dir_path = self.data.get("directory_path")
-            nonlocal source_path_root, item_checkboxes
-            source_path_root = os.path.abspath(
-                os.path.normpath(self.data.get("content_directory_path", story_dir_path))
-            )
-            requested_path = os.path.normcase(os.path.normpath(initial_path)) if initial_path else ""
-            item_checkboxes.clear()
-
-            def normalize(path: str) -> str:
-                return os.path.normcase(os.path.normpath(path))
-
-            def is_initially_selected(path: str) -> bool:
-                normalized_path = normalize(path)
-                return bool(requested_path) and (
-                    normalized_path == requested_path
-                    or normalized_path.startswith(requested_path + os.sep)
-                )
-
-            def set_branch_value(path: str, value: bool):
-                normalized_path = normalize(path)
-                for item_path, checkbox in item_checkboxes.items():
-                    if item_path == normalized_path or item_path.startswith(normalized_path + os.sep):
-                        checkbox.value = value
-                        checkbox.update()
-
-            def on_item_change(e: ft.Event[ft.Checkbox]):
-                item_path = normalize(e.control.data)
-                set_branch_value(item_path, bool(e.control.value))
-
-            def build_directory_controls(directory_path: str) -> list[ft.Control]:
-                controls: list[ft.Control] = []
-                try:
-                    entries = sorted(
-                        os.scandir(directory_path),
-                        key=lambda entry: (not entry.is_dir(), entry.name.casefold()),
-                    )
-                except OSError:
-                    return controls
-
-                for entry in entries:
-                    entry_path = normalize(entry.path)
-                    selected = is_initially_selected(entry.path)
-                    entry_title = entry.name
-                    if entry.is_file():
-                        try:
-                            with open(entry.path, "r", encoding="utf-8") as source_file:
-                                file_data = json.load(source_file)
-                            entry_title = file_data.get("title") or entry.name
-                        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-                            pass
-                        if not isinstance(entry_title, str):
-                            entry_title = str(entry_title)
-
-                    checkbox = ft.Checkbox(
-                        value=selected,
-                        data=entry.path,
-                        on_change=on_item_change,
-                    )
-                    item_checkboxes[entry_path] = checkbox
-
-                    if entry.is_dir():
-                        controls.append(
-                            ft.ExpansionTile(
-                                title=ft.Row([
-                                    checkbox,
-                                    ft.Text(entry.name, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                                ], spacing=4),
-                                expanded=True,
-                                dense=True,
-                                tile_padding=ft.Padding.only(left=0, right=0),
-                                controls_padding=ft.Padding.only(left=20, right=0),
-                                controls=build_directory_controls(entry.path),
-                            )
-                        )
-                    else:
-                        controls.append(
-                            ft.Row([
-                                checkbox,
-                                ft.Text(entry_title, overflow=ft.TextOverflow.ELLIPSIS, expand=True),
-                            ], spacing=4)
-                        )
-
-                return controls
-
-            root_checkbox = ft.Checkbox(
-                value=is_initially_selected(source_path_root),
-                data=source_path_root,
-                on_change=on_item_change,
-            )
-            item_checkboxes[normalize(source_path_root)] = root_checkbox
-            return [
-                ft.ExpansionTile(
-                    title=ft.Row([
-                        root_checkbox,
-                        ft.Text(os.path.basename(source_path_root), expand=True),
-                    ], spacing=4),
-                    expanded=True,
-                    dense=True,
-                    tile_padding=ft.Padding.only(left=0, right=0),
-                    controls_padding=ft.Padding.only(left=20, right=0),
-                    controls=build_directory_controls(source_path_root),
-                )
-            ]
-
-        def set_widget_default_type(e: ft.Event[ft.Dropdown]):
+        def set_widget_default_type(e: ft.Event[shad.Select]):
             widget_type = e.control.data
             new_export_file_type = e.data
             
@@ -833,59 +708,54 @@ class Story(ft.View):
         if active_widget and hasattr(active_widget, "save_file"):
             await active_widget.save_file() # Make sure widget is saved
         
-        source_path_root = ""
-        item_checkboxes: dict[str, ft.Checkbox] = {}
-        column = ft.Column(load_directory_controls(), tight=True)
+        #source_path_root = ""
+        
 
         wd_data = app.settings.data.get('widget_defaults', {})
 
-        manuscript_default_dd = ft.Dropdown(
-            value=wd_data.get('manuscript', {}).get('export_file_type'),
-            text=wd_data.get('manuscript', {}).get('export_file_type'),
-            #label="Manuscript Export File Type", 
-            data="manuscript", content_padding=0,
-            bgcolor=ft.Colors.SURFACE,
-            fill_color=ft.Colors.SURFACE, filled=True,
-            menu_style=ft.MenuStyle(ft.Alignment.BOTTOM_CENTER, padding=0),
-            border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-            dense=True, width=100, on_select=set_widget_default_type,
-            options=[
-                ft.DropdownOption(".docx"),
-                ft.DropdownOption(".pdf"),
-                ft.DropdownOption(".txt"),
-            ]
-        )
-        
-
-        row = ft.Row([
-            ft.Column([
-                ft.Row([
-                    ft.Text(
-                        spans=[
-                            ft.TextSpan("Manuscripts - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
-                        ]
-                    ),
-                    manuscript_default_dd
-                ], spacing=0),
-                ft.Text(
-                    spans=[
-                        ft.TextSpan("Canvases - ", ft.TextStyle(weight=ft.FontWeight.BOLD)),
-                        ft.TextSpan(".png")
-                    ]
-                ),
-            ], expand=True),
+        widget_export_options = ft.Row([
+            
+            shad.Select(
+                value=wd_data.get('manuscript', {}).get('export_file_type'),
+                label="Manuscript", data="manuscript",
+                width=100, on_change=set_widget_default_type,
+                options=[
+                    shad.SelectOption(".docx"),
+                    shad.SelectOption(".pdf"),
+                    shad.SelectOption(".txt"),
+                ]
+            ),
+            shad.Select(
+                value=wd_data.get('canvas', {}).get('export_file_type'),
+                label="Canvas", data="canvas",
+                width=100, on_change=set_widget_default_type,
+                options=[
+                    shad.SelectOption(".png"),
+                    
+                ]
+            )
             
         ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=30)
+
+        
+
+        widgets_column = ft.Column([
+            shad.Checkbox(
+                label=widget.data.get('title'),
+                data=widget.data.get('id'),
+            ) for widget in self.widgets.values() if widget.data.get('tag') == "canvas" or widget.data.get('tag') == "manuscript"
+        ])
          
-        dlg = ft.AlertDialog(
+        dlg = shad.Dialog(
             title="Export Manager",
+            description="Select the widgets to export, and which formats to use for each.",
             content=ft.Column([
-                row,
-                ft.Divider(),
-            ] + [column], tight=True, scroll=ft.ScrollMode.AUTO),
+                widget_export_options,
+                widgets_column
+            ], tight=True, scroll=ft.ScrollMode.AUTO),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                ft.TextButton("Export", on_click=export_confirmed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY))
+                export_button := ft.TextButton("Export", on_click=export_confirmed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY))
             ]
         )
 
@@ -1161,11 +1031,13 @@ class Story(ft.View):
 
     # Blocks the page from interacting while intense loading is being done
     def block_page(self, e=None):
+        return
         self.blocker.visible = True
         self.blocker.update()
 
     # Unblocks page interactions
     def unblock_page(self, e=None):
+        return
         self.blocker.visible = False
         self.blocker.update()
 
