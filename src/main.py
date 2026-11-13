@@ -16,6 +16,8 @@ import asyncio
 # Remove auto updates so we can improve performance
 ft.context.disable_auto_update()
 
+# Test commit
+
 # Main function
 async def main(page: ft.Page):
      
