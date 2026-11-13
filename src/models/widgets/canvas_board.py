@@ -21,9 +21,7 @@ import flet_shadcn_ui as shad
 from styles.highlight_button import HighlightButton
 from styles.colors import colors
 
-MINIMUM_SEGMENT_DISTANCE = 2
-MAX_SHAPES_BEFORE_CAPTURE = 5
-MAX_UNDO_LIST_TASKS = 30
+MAX_SHAPES_BEFORE_CAPTURE = 30
 SKETCH_SIZE = (500, 500)
 
 
