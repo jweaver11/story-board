@@ -139,262 +139,161 @@ class MapLocation(MiniWidget):
         if self.widget.visible_mw_id == self.data.get('id', ''):
             await self.widget.show_notes()
 
-    # Called when color button is clicked
-    def get_color_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available colors for icon changing '''
-
-        # Changes our color in data and the UI to reflect
-        async def change_color(e: ft.Event[ft.MenuItemButton]):
-            await self.widget.story.close_menu()
-            self.update_data(**{'color': e.control.data})
-            self.icon.color = e.control.data
-            self.update()
-            if self.widget.visible_mw_id == self.data.get('id', ''):
-                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-                self.widget.sidebar_header.update()
-
-        return [
-            ft.MenuItemButton(
-                content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                on_click=change_color, close_on_click=True,
-                data=color,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-            ) for color in colors
-        ]
-
-    def get_label_color_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available colors for icon changing '''
-        async def change_label_color(e: ft.Event[ft.MenuItemButton]):
-            await self.widget.story.close_menu()
-            self.update_data(**{'label_color': e.control.data})
-            self.map_label_tf.color = e.control.data
-            self.map_label_tf.update()
-            if self.widget.visible_mw_id == self.data.get('id', ''):
-                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-                self.widget.sidebar_header.update()
-
-        return [
-            ft.MenuItemButton(
-                content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                on_click=change_label_color, close_on_click=True,
-                data=color,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-            ) for color in colors
-        ]
-
-    # Handles changing the outline thickness of our label text
-    async def change_outline_thickness(self, e: ft.Event[ft.MenuItemButton]):
-        # Update data
-        await self.widget.story.close_menu()
-        self.update_data(**{'text_outline_thickness': int(e.control.content)})
-        # Update our text field style
-        self.map_label_tf.text_style.shadow = TextShadow(thickness=int(e.control.content))
-        self.map_label_tf.update()
-        if self.widget.visible_mw_id == self.data.get('id', ''):
-            self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-            self.widget.sidebar_header.update()
-
-    def get_icon_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available icons for icon changing '''
-        async def change_icon(e: ft.Event[ft.MenuItemButton]):
-            await self.widget.story.close_menu()
-            self.update_data(**{'icon': e.control.data})
-            self.icon.icon = location_icons.get(e.control.data, ft.Icons.LOCATION_PIN)
-            self.update()
-            if self.widget.visible_mw_id == self.data.get('id', ''):
-                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-                self.widget.sidebar_header.update()
-        return [
-            ft.MenuItemButton(
-                ft.Icon(icon, self.data.get('color', "primary")),
-                on_click=change_icon, close_on_click=True,
-                data=icon_str,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-            ) for icon_str, icon in location_icons.items()
-        ]
-
     
-        if self.widget.visible_mw_id == self.data.get('id', ''):
-            self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-            self.widget.sidebar_header.update()
         
     # Gets our menu options for the location
     def get_menu_options(self) -> list[ft.Control]:
 
+        def get_label_color_options() -> list[ft.Control]:
+            ''' Returns a list of all available colors for icon changing '''
+            async def change_label_color(e: ft.Event[ft.MenuItemButton]):
+                close_popovers()
+                self.content.items = self.get_menu_options()
+                self.update_data(**{'label_color': e.control.data})
+                self.map_label_tf.color = e.control.data
+                self.map_label_tf.update()
+                if self.widget.visible_mw_id == self.data.get('id', ''):
+                    self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
+                    self.widget.sidebar_header.update()
+    
+            return [
+                shad.MenuItem(
+                    content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                    on_click=change_label_color, data=color,
+                ) for color in colors
+            ]
+        # Called when color button is clicked
+        def get_color_options() -> list[ft.Control]:
+            ''' Returns a list of all available colors for icon changing '''
+    
+            # Changes our color in data and the UI to reflect
+            async def change_color(e: ft.Event[ft.MenuItemButton]):
+                close_popovers()
+                self.content.items = self.get_menu_options()
+                self.update_data(**{'color': e.control.data})
+                self.icon.color = e.control.data
+                self.update()
+                if self.widget.visible_mw_id == self.data.get('id', ''):
+                    self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
+                    self.widget.sidebar_header.update()
+    
+            return [
+                shad.MenuItem(
+                    content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                    on_click=change_color, data=color,
+                ) for color in colors
+            ]
+        def get_icon_options() -> list[ft.Control]:
+            ''' Returns a list of all available icons for icon changing '''
+            async def change_icon(e: ft.Event[ft.MenuItemButton]):
+                self.content.items = self.get_menu_options()
+                self.update_data(**{'icon': e.control.data})
+                self.icon.icon = location_icons.get(e.control.data, ft.Icons.LOCATION_PIN)
+                self.update()
+                if self.widget.visible_mw_id == self.data.get('id', ''):
+                    self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
+                    self.widget.sidebar_header.update()
+            return [
+                shad.MenuItem(
+                    ft.Icon(icon, self.data.get('color', "primary")),
+                    on_click=change_icon, data=icon_str,
+                ) for icon_str, icon in location_icons.items()
+            ]
+
+
+        def toggle_size_popover(e: ft.Event[ft.MenuItemButton]):
+            size_popover.open = not size_popover.open
+            size_popover.update()
+        def toggle_icon_color_popover(e: ft.Event[ft.MenuItemButton]):
+            icon_color_popover.open = not icon_color_popover.open
+            icon_color_popover.update()
+        def toggle_label_color_popover(e: ft.Event[ft.MenuItemButton]):
+            label_color_popover.open = not label_color_popover.open
+            label_color_popover.update()
+        def toggle_icon_popover(e: ft.Event[ft.MenuItemButton]):
+            icon_popover.open = not icon_popover.open
+            icon_popover.update()
+
+        def close_popovers():
+            size_popover.open = False
+            icon_color_popover.open = False
+            label_color_popover.open = False
+            icon_popover.open = False
+            size_popover.update()
+            icon_color_popover.update()
+            label_color_popover.update()
+            icon_popover.update()
             
         return [
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('label_color', "primary")), 
-                        ft.Text("Label Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_label_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this locations color"
+           
+            label_color_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('label_color', ft.Colors.PRIMARY), size=20),
+                    content=ft.Row([ft.Text("Label Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    trailing=ft.Icons.ARROW_RIGHT,
+                    on_click=toggle_label_color_popover,
+                    close_on_click=False,
                 ),
-                no_padding=True, no_effects=True
-            ),
+                ft.Column(
+                    get_label_color_options(),
+                    tight=True, spacing=0, width=100,),
+                on_dismiss=close_popovers
+            ), 
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+
+            icon_color_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY), size=20),
+                    content=ft.Row([ft.Text("Icon Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    trailing=ft.Icons.ARROW_RIGHT,
+                    on_click=toggle_icon_color_popover,
+                    close_on_click=False,
+                ),
+                ft.Column(
+                    get_color_options(),
+                 tight=True, spacing=0, width=100,),
+                on_dismiss=close_popovers
+            ), 
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+
+            icon_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(location_icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', "primary"), size=20),
+                    content=ft.Row([ft.Text("Icon"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    trailing=ft.Icons.ARROW_RIGHT,
+                    on_click=toggle_icon_popover,
+                    close_on_click=False,
+                ),
+                ft.Column(
+                    get_icon_options(),
+                    tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO,
+                ),
+                on_dismiss=close_popovers
+            ), 
             
-            #MenuOptionStyle(        # Text outline thickness
-                #ft.SubmenuButton(
-                    #ft.Row([
-                        #ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.data.get('label_color', "primary")), 
-                        #ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
-                        #ft.Icon(ft.Icons.ARROW_RIGHT),
-                    #], expand=True),
-                    #[
-                        #ft.MenuItemButton(
-                            #str(i), on_click=self.change_outline_thickness, close_on_click=True, 
-                            #style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
-                        #) for i in range(4)], 
-                    #menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    #style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                #),
-                #no_effects=True, no_padding=True
-            #),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(location_icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', "primary")), 
-                        ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_icon_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this locations icon on the map"
+            
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+            size_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary"), size=20),
+                    content=ft.Row([ft.Text("Size"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    on_click=toggle_size_popover, close_on_click=False
                 ),
-                no_padding=True, no_effects=True
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Icon Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this locations color"
-                ),
-                no_padding=True, no_effects=True
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
-                        ft.Text("Icon Size", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    [
-                        ft.MenuItemButton(
-                            size, data=size, close_on_click=True,
-                            on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                        ) for size in ("Small", "Medium", "Large", "Beefy")
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_padding=True, no_effects=True
-            ),
-
-            MenuOptionStyle(
+                ft.Column([
+                    shad.MenuItem(
+                        size, data=size, close_on_click=True,
+                        on_click=self.set_icon_size,
+                    ) for size in ("Small", "Medium", "Large", "Beefy")
+                ], tight=True, spacing=0, width=80,),
+                on_dismiss=close_popovers
+            ), 
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
                 on_click=self.handle_delete,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text(f"Delete {self.data.get('title')}", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
-            )
+                leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
+                content=f"Delete {self.data.get('title')}",
+            ),
         ]
-
-    # Return a list of header controls
-    def create_sidebar_header_ctrls(self) -> list[ft.Control]:
-        ctrls: list = super().create_sidebar_header_ctrls()
-        return ctrls
-
-        # TODO: Figure out map_id if needed and how to impliment if connection to a different map
-        # Set preview to read the description of the location right below the image
-        
-
-        ctrls.append(
-            ft.MenuBar(
-                [
-                    ft.SubmenuButton(
-                        ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
-                        [
-                            ft.SubmenuButton(
-                                "Label Color",
-                                self.get_label_color_options(),
-                                leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('label_color', "primary")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                                style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.SubmenuButton(
-                                "Label Outline Size",
-                                [
-                                    ft.MenuItemButton(
-                                        str(i), on_click=self.change_outline_thickness, close_on_click=True, 
-                                        style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
-                                    ) for i in range(4)
-                                ], 
-                                leading=ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.data.get('label_color', "primary")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                                style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                            ft.SubmenuButton(
-                                "Icon",
-                                self.get_icon_options(), 
-                                leading=ft.Icon(location_icons.get(self.data.get('icon'), ft.Icons.LOCATION_PIN), self.data.get('color', "primary")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                                style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                tooltip="Change this locations icon on the map"
-                            ),
-                            ft.SubmenuButton(
-                                "Icon Color",
-                                self.get_color_options(),
-                                leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                                style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                                tooltip="Change this locations color"
-                            ),
-                            ft.SubmenuButton(
-                                f"Icon Size: {self.data.get('icon_size', "Small")}",
-                                [
-                                    ft.MenuItemButton(
-                                        size, data=size, close_on_click=True,
-                                        on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                                    ) for size in ("Small", "Medium", "Large", "Beefy")
-                                ],
-                                tooltip="Adjust the spacing between panels in the preview display.",
-                                leading=ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
-                                menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                                style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                            ),
-                            ft.MenuItemButton(
-                                f"Delete {self.data.get('title')}", leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR), 
-                                close_on_click=True,
-                                on_click=self.handle_delete,
-                                tooltip="Delete this location",
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            ),
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.BOTTOM_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                        style=ft.ButtonStyle(padding=ft.Padding.all(0), shape=ft.CircleBorder(), alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                        tooltip="Adjust the settings for this map"
-                    ),
-                ],
-                style=ft.MenuStyle(
-                    bgcolor="transparent", shadow_color="transparent",
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.all(0)
-                )
-            ) 
-        )
-        return ctrls
 
     # Options when setting the image of a widget. Either upload, set a canvas, or clear image
     def set_mw_image_options(self) -> list[ft.Control]:
@@ -503,8 +402,9 @@ class MapLocation(MiniWidget):
                 content="Upload Image",
                 on_click=upload_image,
             ),
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.ERROR),
                 content="Clear Image",
                 on_click=clear_image,
             )
@@ -599,33 +499,34 @@ class MapLocation(MiniWidget):
         
 
         # Set our content in a column with label on top
-        self.content = ft.Column([
-            ft.GestureDetector(     # Allows us to drag from our tf and still use it by focusing it
-                ft.Container(self.map_label_tf, ignore_interactions=True, border_radius=4),
-                on_pan_start=start_drag,
-                on_pan_update=self.move_location, 
-                on_pan_end=self.save_position,
-                on_double_tap=self.handle_rename,
-                on_tap=self.handle_rename,
-                on_enter=self.highlight, on_exit=self.stop_highlight,
-                on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
-                mouse_cursor=ft.MouseCursor.TEXT,
-            ),
-            ft.Row([        # Constrain icon size to not fit our whole width
-                ft.GestureDetector(     # GD that holds our icon and allows us to drag
-                    ft.Container(self.icon, shape=ft.BoxShape.CIRCLE),    # Stick in container so we can apply shadows
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                    on_enter=self.highlight, on_exit=self.stop_highlight,
+        self.content = shad.ContextMenu(
+            ft.Column([
+                ft.GestureDetector(     # Allows us to drag from our tf and still use it by focusing it
+                    ft.Container(self.map_label_tf, ignore_interactions=True, border_radius=4),
                     on_pan_start=start_drag,
                     on_pan_update=self.move_location, 
                     on_pan_end=self.save_position,
-                    drag_interval=20, 
-                    expand=False,
-                    on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
-                    on_tap=self.show_mini_widget,
-                )
-            ], tight=True, expand=False),   # End row constrainment
-        ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=False, spacing=0)
+                    on_double_tap=self.handle_rename,
+                    on_tap=self.handle_rename,
+                    on_enter=self.highlight, on_exit=self.stop_highlight,
+                    mouse_cursor=ft.MouseCursor.TEXT,
+                ),
+                ft.Row([        # Constrain icon size to not fit our whole width
+                    ft.GestureDetector(     # GD that holds our icon and allows us to drag
+                        ft.Container(self.icon, shape=ft.BoxShape.CIRCLE),    # Stick in container so we can apply shadows
+                        mouse_cursor=ft.MouseCursor.CLICK,
+                        on_enter=self.highlight, on_exit=self.stop_highlight,
+                        on_pan_start=start_drag,
+                        on_pan_update=self.move_location, 
+                        on_pan_end=self.save_position,
+                        drag_interval=20, 
+                        expand=False,
+                        on_tap=self.show_mini_widget,
+                    )
+                ], tight=True, expand=False),   # End row constrainment
+            ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=False, spacing=0),
+            self.get_menu_options()
+        )
 
 
         self.image_preview = ft.Image(

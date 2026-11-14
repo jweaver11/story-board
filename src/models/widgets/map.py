@@ -152,24 +152,26 @@ class Map(Widget):
 
             # State
             self.is_dragging = False
+
+            self.label_tf: ft.TextField = ft.TextField(value=self.label, expand=True)
             
             super().__init__(
                 left=self.position[0],  # Give us our position
                 top=self.position[1],
                 width=150, 
                 animate_position=ft.Animation(200, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                on_secondary_tap=lambda: self.widget.story.open_menu(self.get_label_options()),
                 on_pan_start=self.start_drag,
                 on_pan_update=self.move_label,
                 on_pan_end=self.save_position,
-                on_double_tap=self.focus_tf,
-                on_tap_up=self.focus_tf,
+                
                 on_enter=self.highlight,
                 on_exit=self.stop_highlight,
-                hover_interval=20, 
+                hover_interval=20, drag_interval=20,
                 on_hover=self.widget.set_mouse_coords,
                 mouse_cursor=ft.MouseCursor.CLICK,
             )
+
+            
 
         # Highlight the label
         def highlight(self, e=None):
@@ -186,7 +188,6 @@ class Map(Widget):
         # Update state and close any open menus
         async def start_drag(self, e=None):
             self.is_dragging = True
-            await self.widget.story.close_menu()
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_label(self, e: ft.DragUpdateEvent):
@@ -219,93 +220,61 @@ class Map(Widget):
         def get_label_options(self) -> list[MenuOptionStyle]:
 
             # Changes our label text color in data, on our tf, and updates
-            async def change_label_color(e: ft.Event[ft.MenuItemButton]):
-                await self.widget.story.close_menu()
+            def change_label_color(e: ft.Event[ft.MenuItemButton]):
+                close_popovers()
                 self.color = e.control.data
                 self.widget.update_data(**{'labels': {self.id: {'color': self.color}}})
                 self.label_tf.color = self.color
                 self.update()
 
             # Handles deleteing a label
-            async def handle_delete(e: ft.Event[ft.Button]):
-                await self.widget.story.close_menu()
+            def handle_delete(e: ft.Event[ft.Button]):
+                close_popovers()
                 self.widget.data.get('labels', {}).pop(self.id, None)
                 self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
                 self.widget.label_stack.controls.remove(self)
                 self.widget.label_stack.update()
 
-            # Handles changing the outline thickness of our label text
-            async def change_outline_thickness(e: ft.Event[ft.MenuItemButton]):
-                # Update data
-                await self.widget.story.close_menu()
-                self.outline_thickness = int(e.control.content)
-                self.widget.update_data(**{'labels': {self.id: {'outline_thickness': self.outline_thickness}}})
-                # Update our text field style
-                self.label_tf.text_style.shadow = TextShadow(thickness=self.outline_thickness)
-                self.update()
+            def toggle_color_popover(e=None):
+                color_popover.open = not color_popover.open
+                color_popover.update()
+            def close_popovers(e=None):
+                color_popover.open = False
+                color_popover.update()
 
             return [
-                MenuOptionStyle(        # Edit label text
-                    ft.MenuItemButton(
-                        ft.Text("Edit Label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color),
-                        on_click=self.focus_tf,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
+                color_popover := shad.Popover(
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        trailing=ft.Icons.ARROW_RIGHT,
+                        on_click=toggle_color_popover,
+                        close_on_click=False,
                     ),
-                    no_effects=True, no_padding=True
+                    ft.Column([
+                        shad.MenuItem(
+                            content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                            on_click=change_label_color, close_on_click=True, data=color,
+                            expand=True
+                        ) for color in colors
+                    ], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
+                    on_dismiss=close_popovers
+                ), 
+                shad.Separator(ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(        # Edit label text
+                    "Rename",
+                    leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color, size=20),
+                    on_click=self.label_tf.focus,
                 ),
-                MenuOptionStyle(            # Change label color
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.color), 
-                            ft.Text("Label Color", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        [
-                            ft.MenuItemButton(
-                                content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                                on_click=change_label_color, close_on_click=True, data=color,
-                                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                            ) for color in colors
-                        ],
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    no_padding=True, no_effects=True
-                ),
-
-                #MenuOptionStyle(        # Text outline thickness
-                    #ft.SubmenuButton(
-                        #ft.Row([
-                            #ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, self.color), 
-                            #ft.Text("Label Outline Size", weight=ft.FontWeight.BOLD, expand=True),
-                            #ft.Icon(ft.Icons.ARROW_RIGHT),
-                       # ], expand=True),
-                        #[
-                            #ft.MenuItemButton(
-                                #str(i), on_click=change_outline_thickness, close_on_click=True, 
-                               # style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4))
-                           # ) for i in range(4)
-                        #], 
-                        #menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                       # style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    #),
-                   # no_effects=True, no_padding=True
-                #),
-                MenuOptionStyle(        # Delete label
-                    ft.MenuItemButton(
-                        ft.Text(f"Delete label", weight=ft.FontWeight.BOLD, expand=True), leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR),
-                        on_click=handle_delete, data={"icon": "location_pin"},
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    ),
-                    no_effects=True, no_padding=True
-                ),
+                shad.Separator(ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(        # Delete label
+                    "Delete label", 
+                    leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, size=20),
+                    on_click=handle_delete, data={"icon": "location_pin"},
+                )
             ]
         
-        # Focuses our textfield for editing
-        async def focus_tf(self, e=None):
-            await self.widget.story.close_menu()
-            await self.label_tf.focus()
-            self.label_tf.update()
+        
 
         # Build our label control
         def build(self):
@@ -335,7 +304,14 @@ class Map(Widget):
             )
 
             # Set our labels content
-            self.content = ft.Container(self.label_tf, ignore_interactions=True, border_radius=4)    # Let Gesture Detector handle all interactions
+            self.content = shad.ContextMenu(
+                ft.Container(self.label_tf, ignore_interactions=True, border_radius=4),
+                self.get_label_options(),
+            )
+
+            self.on_double_tap = self.label_tf.focus
+                
+            
 
 
     async def hide_widget(self, e=None):
