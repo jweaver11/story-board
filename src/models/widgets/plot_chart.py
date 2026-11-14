@@ -324,6 +324,20 @@ class PlotChart(Widget):
                 expand=True, 
             )
 
+            if False == True:   # Shad option if i want it later
+                self.title_tf = ft.TextField(
+                    value=self.data.get('label', ''),
+                    on_blur=_save_title,
+                    text_align=ft.TextAlign.CENTER,
+                    expand=True, 
+                    dense=True,
+                    border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                    text_style=ft.TextStyle(size=14),
+                    multiline=True,
+                    content_padding=ft.Padding.all(0),
+                    capitalization=ft.TextCapitalization.SENTENCES,
+                )
+
             # Our nodes content. Column with label, divider, description text field, and connection points
             self.content = shad.ContextMenu(
                 ft.Container(
@@ -370,6 +384,52 @@ class PlotChart(Widget):
                     border_radius=8, 
                     padding=ft.Padding.all(8),
                     alignment=ft.Alignment.TOP_CENTER,
+                ),
+                self.node_menu_options(),
+            )
+
+            return  # Shad option if i want it later
+            self.content = shad.ContextMenu(
+                shad.Card(
+                    padding=8,
+                    title=ft.GestureDetector(
+                        ft.Container(self.title_tf, ignore_interactions=True, expand=True),
+                        on_pan_start=self.widget.story.close_menu,
+                        on_pan_update=self.move_node,
+                        on_pan_end=self.save_position,
+                        mouse_cursor=ft.MouseCursor.MOVE,
+                        drag_interval=20,
+                        on_double_tap=self.rename_clicked,
+                    ),
+                    description=shad.Separator(ft.Margin.symmetric(vertical=4)),
+                    content=self.description_ctrl,
+                    footer=ft.Row([
+                        ft.GestureDetector(
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                            mouse_cursor=ft.MouseCursor.PRECISE,
+                            data={'id': self.data.get('id'), 'side': "left"},                            
+                            on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
+                            on_pan_start=start_new_edge,   # Show line to follow mouse
+                            on_pan_update=_update_line,   # Update line to follow mouse
+                            on_pan_end=_create_new_edge,  
+                            on_exit=_stop_highlight_node, 
+                            drag_interval=20, 
+                        ),
+                        ft.GestureDetector(
+                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                            mouse_cursor=ft.MouseCursor.PRECISE,
+                            data={'id': self.data.get('id'), 'side': "right"},                        
+                            on_enter=_highlight_node,  
+                            on_pan_start=start_new_edge,   
+                            on_pan_update=_update_line,   
+                            on_pan_end=_create_new_edge,  
+                            on_exit=_stop_highlight_node,  
+                            drag_interval=20,
+                        ),
+                        
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    
+                    
                 ),
                 self.node_menu_options(),
             )
