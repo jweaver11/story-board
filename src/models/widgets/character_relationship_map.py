@@ -633,7 +633,7 @@ class CharacterRelationshipMap(Widget):
             bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
         )
 
-        def toggle_char_on_map(e: ft.Event[ft.Checkbox]):
+        def toggle_char_on_map(e: ft.Event[shad.Checkbox]):
             char_id = e.control.data.get('id')
             value = e.control.value
             new_position = (self.add_char_position[0] + 200, self.add_char_position[1])  # Add a new character to the map at a position offset from the last added character
@@ -680,13 +680,11 @@ class CharacterRelationshipMap(Widget):
                 #image = widget.data.get('image_base64')
 
                 self.character_bank.controls.append(
-                    ft.Checkbox(
-                        label=ft.Text(widget.data.get('title', ''), overflow=ft.TextOverflow.ELLIPSIS, max_lines=1, expand=True, width=100),
+                    shad.Checkbox(
+                        label=widget.data.get('title', ''),
                         value=value,
-                        label_style=ft.TextStyle(overflow=ft.TextOverflow.ELLIPSIS),
                         data=widget.data,
                         on_change=toggle_char_on_map, 
-                        expand=True
                     )
                 )
 

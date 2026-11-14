@@ -1287,15 +1287,15 @@ class Map(Widget):
 
             canvas_id: str = None
         
-            dlg = ft.AlertDialog(
-                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
-                content=ft.RadioGroup(
-                    ft.Column([
-                        ft.Radio(
+            dlg = shad.Dialog(
+                title="Set a Canvas as Image",
+                content=shad.RadioGroup(
+                    [
+                        shad.Radio(
                             label=widget.data.get('title', 'Untitled'),
-                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
-                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
-                    ),
+                            value=id, 
+                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
+                    ],
                     on_change=select_canvas
                 ),
                 actions=[
@@ -1373,7 +1373,7 @@ class Map(Widget):
                         content="Label",
                         on_click=self.create_label, 
                     ),
-                ], tight=True, spacing=0, width=100)
+                ], tight=True, spacing=0, width=120)
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(

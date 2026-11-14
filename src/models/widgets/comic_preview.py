@@ -106,14 +106,14 @@ class ComicPreview(Widget):
 
             canvas_options = [
                 ft.Row([
-                    ft.Checkbox(label=widget.data.get('title'), value=False),
+                    shad.Checkbox(label=widget.data.get('title')),
                     ft.Image(src=widget.get_snapshot_bytes("low"), width=192, height=108)
                 ], data=widget_id)
                 for widget_id, widget in self.story.widgets.items() if widget.data.get('tag') == 'canvas'
             ]
 
-            dlg = ft.AlertDialog(
-                title=ft.Text("Select Included Canvases"),
+            dlg = shad.Dialog(
+                title="Select Included Canvases",
                 content=ft.Column(
                     canvas_options,
                     tight=True,
@@ -121,7 +121,7 @@ class ComicPreview(Widget):
                 ),
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                    ft.TextButton("Add Selected", on_click=save_selections, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    ft.TextButton("Add Canvases", on_click=save_selections, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
                 ]
             )
             self.story.page.show_dialog(dlg)

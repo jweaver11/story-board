@@ -11,6 +11,7 @@ import uuid
 from styles.text_fields import TextField
 from styles.snack_bar import SnackBar
 from styles.menu_option_style import MenuOptionStyle
+import flet_shadcn_ui as shad
 
 MANUSCRIPT_WIDTH = 820
 MANUSCRIPT_HEIGHT = 1060
@@ -207,26 +208,30 @@ class Manuscript(Widget):
                 if "insert" in block:
                     if isinstance(block["insert"], str):    # Protect against page breaks
                         word_count += len(block["insert"].split())
-            self.story.open_menu([ft.Text(f"Word Count: {word_count}", margin=ft.Margin.only(left=6, right=6, top=10, bottom=10))])
+            word_count_button.popover = word_count_control(f"Word Count: {word_count}")
+            #word_count_button.open = False
+            word_count_button.update()
+
+        def word_count_control(word_count: str=""):
+            return ft.Text(word_count)
 
         # Mark us dirty after keystroke changes so we can track unsaved changes
         def mark_dirty(e=None):
             if self.dirty == False:
                 self.dirty = True
 
+        def toggle_word_count_popover():
+            word_count_button.open = not word_count_button.open
+            word_count_button.update()
+
 
         super().build() # Parent constructor
 
         # Word count button
-        word_count_button = ft.IconButton(
-            icon=ft.CupertinoIcons.TEXTFORMAT_SIZE, icon_color=ft.Colors.ON_SURFACE,
-            tooltip="Word Count", 
-            on_click=get_word_count,
-            bgcolor=ft.Colors.TRANSPARENT,
-            highlight_color=ft.Colors.TRANSPARENT,
-            hover_color=ft.Colors.TRANSPARENT,
-            padding=ft.Padding.all(0),
-            size_constraints=ft.BoxConstraints(min_width=0, min_height=0),
+        
+        word_count_button = shad.Popover(
+            ft.Icon(ft.CupertinoIcons.TEXTFORMAT_SIZE, ft.Colors.ON_SURFACE),
+            word_count_control(),
         )
             
         
@@ -234,7 +239,7 @@ class Manuscript(Widget):
         quill_toolbar = FletQuillToolbar(
             controller_id=self.data.get('id', None),
             expand=True,
-            toolbar_buttons=[ft.GestureDetector(word_count_button, on_hover=self.set_mouse_coords, hover_interval=50)]
+            toolbar_buttons=[ft.GestureDetector(word_count_button, on_enter=get_word_count, on_tap=toggle_word_count_popover)]
         )  # Toolbar
         self.quill_editor = FletQuillEditor(    # Editor
             controller_id=self.data.get('id', None),

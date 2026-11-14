@@ -1135,13 +1135,14 @@ class Canvas(Widget):
             self.page.show_dialog(shad.Toast("Error finding layer capture for blur", variant=shad.ToastVariant.DESTRUCTIVE))
             return
 
-        dlg = ft.AlertDialog(
-            ft.Column([
+        dlg = shad.Dialog(
+            content=ft.Column([
                 preview_canvas, 
                 blur_strength_slider,
-                ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD)
+                ft.Text("Adjust Blur Strength", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
             title=f"Set Blur for {layer_name}",
+            description="Set a blur effect over the selected layer",
             actions=[
                 ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                 ft.TextButton("Apply", on_click=apply_blur, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),

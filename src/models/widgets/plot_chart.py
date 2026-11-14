@@ -80,7 +80,6 @@ class PlotChart(Widget):
                 width=150, data=data,
                 offset=ft.Offset(0, -1),
                 animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                on_secondary_tap=self.open_menu,
                 on_hover=self.widget.set_mouse_coords,
             )
 
@@ -117,48 +116,27 @@ class PlotChart(Widget):
             self.widget.set_mouse_coords(e) # Reset the menu position 
 
         async def rename_clicked(self, e=None):
-            await self.widget.story.close_menu()
             await self.title_tf.focus()
 
         # Opens a menu with our options when right clicking a node
-        async def open_menu(self, e=None):
-            menu_options = [
-                MenuOptionStyle(
+        def node_menu_options(self) -> list[shad.MenuItem]:
+            
+            return [
+                 
+                shad.MenuItem(
                     on_click=self.rename_clicked,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', '#FFFFFF')),
-                        ft.Text(
-                            "Edit Label", 
-                            weight=ft.FontWeight.BOLD, 
-                            
-                        ), 
-                    ]),
+                    content="Rename", 
+                    leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
                     data=self.data.get('id', ''),
                 ),
-                MenuOptionStyle(
-                    ft.SubmenuButton(
-                        ft.Row([
-                            ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', '#FFFFFF')), 
-                            ft.Text("Color", weight=ft.FontWeight.BOLD, expand=True),
-                            ft.Icon(ft.Icons.ARROW_RIGHT),
-                        ], expand=True),
-                        self.get_color_options(), 
-                        menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                        style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click"),
-                        tooltip="Change this widget's color"
-                    ),
-                    no_padding=True, no_effects=True
-                ),
-                MenuOptionStyle(
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(
                     on_click=self.delete_clicked,
-                    content=ft.Row([
-                        ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                        ft.Text("Delete", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                    ]),
+                    content="Delete",
+                    leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
                 )
             ] 
 
-            self.widget.story.open_menu(menu_options)
 
         # Handles deleting the node
         async def delete_clicked(self, e: ft.Event):
@@ -184,41 +162,6 @@ class PlotChart(Widget):
             await self.widget.story.close_menu()
             self.widget.update()
 
-        def get_color_options(self) -> list[ft.Control]:
-            ''' Returns a list of all available colors for icon changing '''
-
-            # Called when a color option is clicked on popup menu to change icon color
-            async def _change_icon_color(e: ft.Event):
-                ''' Passes in our kwargs to the widget, and applies the updates '''
-                color = e.control.data
-
-                for node in self.widget.data.get('nodes', []):
-                    if node.get('id') == self.data.get('id'):
-                        node['color'] = color
-                        break
-                self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
-
-                self.content.content.controls[3].controls[0].content.content.color = color
-                self.content.content.controls[3].controls[1].content.content.color = color
-                self.update()
-                    
-                await self.widget.story.close_menu()
-
-            # List for our colors when formatted
-            color_controls = [] 
-
-            # Create our controls for our color options
-            for color in colors:
-                color_controls.append(
-                    ft.MenuItemButton(
-                        content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                        on_click=_change_icon_color, close_on_click=True, data=color,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), mouse_cursor="click")
-                    )
-                )
-
-            return color_controls
-
         # Builds our node
         def build(self):
             
@@ -229,7 +172,7 @@ class PlotChart(Widget):
                     #self.widget.target_side = e.control.data.get('side')
 
                 # Visual highlight
-                e.control.content.shadow = ft.BoxShadow(10, 20, ft.Colors.with_opacity(0.25, self.data.get('color', '#FFFFFF')))
+                e.control.content.shadow = ft.BoxShadow(10, 20, ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE))
                 e.control.update()
             async def _stop_highlight_node(e: ft.PointerEvent):
                 # Reset state trackers
@@ -393,51 +336,53 @@ class PlotChart(Widget):
             )
 
             # Our nodes content. Column with label, divider, description text field, and connection points
-            self.content = ft.Container(
-                ft.Column([
-                    ft.GestureDetector(
-                        ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                        on_pan_start=self.widget.story.close_menu,
-                        on_pan_update=self.move_node,
-                        on_pan_end=self.save_position,
-                        mouse_cursor=ft.MouseCursor.MOVE,
-                        drag_interval=20,
-                        on_double_tap=self.rename_clicked,
-                    ),
-                    ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
-                    self.description_ctrl,
-                    ft.Row([
+            self.content = shad.ContextMenu(
+                ft.Container(
+                    ft.Column([
                         ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color'), scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                            mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'id': self.data.get('id'), 'side': "left"},                            
-                            on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
-                            on_pan_start=start_new_edge,   # Show line to follow mouse
-                            on_pan_update=_update_line,   # Update line to follow mouse
-                            on_pan_end=_create_new_edge,  
-                            on_exit=_stop_highlight_node, 
-                            drag_interval=20, 
-                        ),
-                        ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, self.data.get('color'), scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                            mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'id': self.data.get('id'), 'side': "right"},                        
-                            on_enter=_highlight_node,  
-                            on_pan_start=start_new_edge,   
-                            on_pan_update=_update_line,   
-                            on_pan_end=_create_new_edge,  
-                            on_exit=_stop_highlight_node,  
+                            ft.Container(self.title_tf, ignore_interactions=True, expand=True),
+                            on_pan_start=self.widget.story.close_menu,
+                            on_pan_update=self.move_node,
+                            on_pan_end=self.save_position,
+                            mouse_cursor=ft.MouseCursor.MOVE,
                             drag_interval=20,
+                            on_double_tap=self.rename_clicked,
                         ),
-                        
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                expand=True, shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                
-                border_radius=8, 
-                padding=ft.Padding.all(8),
-                alignment=ft.Alignment.TOP_CENTER,
+                        ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
+                        self.description_ctrl,
+                        ft.Row([
+                            ft.GestureDetector(
+                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                                mouse_cursor=ft.MouseCursor.PRECISE,
+                                data={'id': self.data.get('id'), 'side': "left"},                            
+                                on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
+                                on_pan_start=start_new_edge,   # Show line to follow mouse
+                                on_pan_update=_update_line,   # Update line to follow mouse
+                                on_pan_end=_create_new_edge,  
+                                on_exit=_stop_highlight_node, 
+                                drag_interval=20, 
+                            ),
+                            ft.GestureDetector(
+                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
+                                mouse_cursor=ft.MouseCursor.PRECISE,
+                                data={'id': self.data.get('id'), 'side': "right"},                        
+                                on_enter=_highlight_node,  
+                                on_pan_start=start_new_edge,   
+                                on_pan_update=_update_line,   
+                                on_pan_end=_create_new_edge,  
+                                on_exit=_stop_highlight_node,  
+                                drag_interval=20,
+                            ),
+                            
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+                    expand=True, shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    border_radius=8, 
+                    padding=ft.Padding.all(8),
+                    alignment=ft.Alignment.TOP_CENTER,
+                ),
+                self.node_menu_options(),
             )
                 
         
@@ -556,7 +501,6 @@ class PlotChart(Widget):
             'id': str(uuid.uuid4()),
             'label': node_label, 
             'position': self.new_node_position, 
-            'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('node_color'), 
             'description': ""
         })
         self.update_data(**{'nodes': self.data['nodes']})
@@ -673,6 +617,7 @@ class PlotChart(Widget):
                     mouse_cursor=ft.MouseCursor.CLICK,
                     on_click=self.create_node,
                     data="sidebar",
+                    visible=False
                 ),
             ], spacing=0),
 
@@ -684,18 +629,11 @@ class PlotChart(Widget):
 
         ])
             
-        
             
         # Add our nodes and edges to the stack/canvas
         for node_data in self.data.get('nodes', []):
-            self.node_stack.controls.append(
-                self.Node(
-                    self, 
-                    node_data
-                )
-            )
+            self.node_stack.controls.append(self.Node(self, node_data))
 
-        
 
         # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
@@ -722,17 +660,19 @@ class PlotChart(Widget):
         # Set up our main conent
         self.content = ft.Stack([
             shad.ContextMenu(
-                iv,
+                ft.Container(width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
                 get_new_node_menu_options(),
                 open_on_long_press=True,
                 expand=True
             ),
+            ft.TransparentPointer(iv),
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
 
         #self.page.run_task(self.iv.pan, -FIXED_STACK_WIDTH / 4, -FIXED_STACK_HEIGHT / 4, 0)  # Center the view on the stack
     
