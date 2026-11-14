@@ -334,6 +334,9 @@ class Plotline(Widget):
         def toggle_new_popover(e=None):
             new_popover.open = not new_popover.open
             new_popover.update()
+        def close_popovers(e=None):
+            new_popover.open = False
+            new_popover.update()
 
         return [
             new_popover := shad.Popover(
@@ -345,7 +348,7 @@ class Plotline(Widget):
                 ),
                 ft.Column([
                     shad.MenuItem(
-                        leading=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, ft.Colors.PRIMARY, size=20), content="Plot Point",
+                        leading=ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.PRIMARY, size=20), content="Plot Point",
                         on_click=self.create_plot_point, 
                         close_on_click=True,
                         tooltip="Mark important, short term events as plot points in your story",
@@ -357,8 +360,8 @@ class Plotline(Widget):
                         close_on_click=True,
                         tooltip="Create simple markers on the plotline for events or notes to help visualize the flow of your story",
                     ),
-                ], tight=True, spacing=0, width=230)
-                
+                ], tight=True, spacing=0, width=120),
+                on_dismiss=close_popovers
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
@@ -616,30 +619,7 @@ class Plotline(Widget):
             capitalization=ft.TextCapitalization.WORDS,
         )
 
-        # Grab all our events (plot points and markers) and sort them by their position on the plotline
-        events_list = []
-        for pp in self.data.get('mini_widgets_data', {}).values():
-            events_list.append({
-                'id': pp.get('id', ''),
-                'title': pp.get('title', ''), 
-                'position': pp.get('position', (0, 0)), 
-                'tag': "plot_point",
-                'description': pp.get('description', '')
-            })
-        for marker in self.data.get('markers', {}).values():
-            events_list.append({
-                'title': marker.get('title', ''), 
-                'position': marker.get('position', (0, 0)), 
-                'tag': "marker"
-            })
-
-        events_list.sort(key=lambda x: x.get('position', (0, 0))[0])  # Sort by position on the plotline
-
-        self.events_column = ft.Column(
-            [ft.Row(height=1)] +    # Force expansion right if empty, otherwise does nothing
-            [create_event_ctrl(event_data) for event_data in events_list], 
-            spacing=0, tight=True
-        )
+        
         
 
         return [
@@ -648,16 +628,6 @@ class Plotline(Widget):
                 
                 relevant_characters_row,
                 character_search_bar,
-
-                ft.Text(f"Events", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16), selectable=True, margin=ft.Margin.only(bottom=4)), 
-
-                ft.Container(
-                    self.events_column,
-                    border_radius=4, 
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                    padding=ft.Padding.all(8)
-                ),
-
                 
                 self.sidebar_notes_label,
                 self.sidebar_notes_column,

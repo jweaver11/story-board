@@ -1373,7 +1373,8 @@ class Map(Widget):
                         content="Label",
                         on_click=self.create_label, 
                     ),
-                ], tight=True, spacing=0, width=120)
+                ], tight=True, spacing=0, width=120),
+                on_dismiss=close_popovers
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
@@ -1391,7 +1392,7 @@ class Map(Widget):
                 shad.MenuItem(
                     content=ft.Row([ft.Text("Background"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     leading=ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=20),
-                    on_click=toggle_bg_popover, close_on_click=False,
+                    on_click=toggle_bg_popover, close_on_click=False, 
                 ),
                 ft.Column([
                     shad.MenuItem(      
@@ -1422,7 +1423,7 @@ class Map(Widget):
                     ), 
                     
                 ], tight=True, width=150),
-                
+                on_dismiss=close_popovers
             )
         ]
     

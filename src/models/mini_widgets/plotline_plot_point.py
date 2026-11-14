@@ -11,6 +11,7 @@ from styles.icons import icons
 from styles.menu_option_style import MenuOptionStyle
 from models.app import app
 from styles.colors import colors
+import flet_shadcn_ui as shad
 
 # Plotpoint mini widget object that appear on plotlines and arcs
 class PlotlinePlotPoint(MiniWidget):
@@ -65,104 +66,79 @@ class PlotlinePlotPoint(MiniWidget):
         self.widget.plot_point_stack.update()
         if self.widget.visible_mw_id == self.data.get('id', ''):
             await self.widget.show_info()
-    
 
-    def get_icon_options(self) -> list[ft.Control]:
-        ''' Returns a list of all available icons for icon changing '''
-        async def change_icon(e: ft.Event[ft.MenuItemButton]):
-            await self.widget.story.close_menu()
+
+    def get_menu_options(self) -> list[shad.MenuItem]:
+        
+    
+        # Changes our color in data and the UI to reflect
+        def handle_color_change(e: ft.Event[shad.MenuItem]):
+            close_popovers()
+            self.update_data(**{'color': e.control.data})
+            self.icon.color = e.control.data
+            self.icon.update()
+            self.content.items = self.get_menu_options()
+
+        def handle_icon_change(e: ft.Event[shad.MenuItem]):
+            close_popovers()
             self.update_data(**{'icon': e.control.data})
-            self.icon.icon = icons.get(e.control.data, ft.Icons.LOCATION_PIN)
+            self.icon.icon = icons.get(e.control.data, ft.Icons.CIRCLE)
             self.update()
-            if self.widget.visible_mw_id == self.data.get('id', ''):
-                self.widget.sidebar_header.controls = self.create_sidebar_header_ctrls()    # Rebuild our header if we're shown in sidebar
-                self.widget.sidebar_header.update()
-        return [
-            ft.MenuItemButton(
-                ft.Icon(icon, self.data.get('color', "primary")),
-                on_click=change_icon, close_on_click=True,
-                data=icon_str,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-            ) for icon_str, icon in icons.items()
-        ]
-
-
-    def get_menu_options(self) -> list[ft.Control]:
-        # Called when color button is clicked
-        def get_color_options() -> list[ft.Control]:
-            ''' Returns a list of all available colors for icon changing '''
-    
-            # Changes our color in data and the UI to reflect
-            async def change_color(e: ft.Event[ft.MenuItemButton]):
-                await self.widget.story.close_menu()
-                self.update_data(**{'color': e.control.data})
-                self.icon.color = e.control.data
-                self.icon.update()
                 
-    
-            return [
-                ft.MenuItemButton(
-                    content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                    on_click=change_color, close_on_click=True,
-                    data=color,
-                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                ) for color in colors
-            ]
+            
+            
+        def toggle_color_popover(e=None):
+            color_popover.open = not color_popover.open
+            color_popover.update()
+        def toggle_icon_popover(e=None):
+            icon_popover.open = not icon_popover.open
+            icon_popover.update()
+        def close_popovers(e=None):
+            color_popover.open = False
+            icon_popover.open = False
+            icon_popover.update()
+            color_popover.update()
         return [
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(icons.get(self.data.get('icon'), ft.Icons.CIRCLE), self.data.get('color', "primary")), 
-                        ft.Text("Icon", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    self.get_icon_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this locations icon on the map"
+            color_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary"), size=20),
+                    content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    trailing=ft.Icons.ARROW_RIGHT,
+                    on_click=toggle_color_popover,
+                    close_on_click=False,
                 ),
-                no_padding=True, no_effects=True
+                ft.Column([
+                    shad.MenuItem(
+                        content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                        on_click=handle_color_change, data=color,
+                        expand=True
+                    ) for color in colors
+                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO),
+                on_dismiss=close_popovers
+            ), 
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            icon_popover := shad.Popover(
+                shad.MenuItem(
+                    leading=ft.Icon(icons.get(self.data.get('icon'), ft.Icons.CIRCLE), self.data.get('color', "primary"), size=20),
+                    content=ft.Row([ft.Text("Icon"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    on_click=toggle_icon_popover,
+                    close_on_click=False,
+                ),
+                ft.Column([
+                    shad.MenuItem(
+                        content=ft.Icon(icon, color=self.data.get('color', "primary"), size=20),
+                        on_click=handle_icon_change, data=icon_str,
+                    ) for icon_str, icon in icons.items()
+                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO, expand=True),
+                on_dismiss=close_popovers, expand=True
             ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.PHOTO_SIZE_SELECT_SMALL_OUTLINED, self.data.get('color', "primary")),
-                        ft.Text("Icon Size", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    [
-                        ft.MenuItemButton(
-                            size, data=size, close_on_click=True,
-                            on_click=self.set_icon_size, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                        ) for size in ("Small", "Medium", "Large", "Beefy")
-                    ],
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                ),
-                no_padding=True, no_effects=True
-            ),
-            MenuOptionStyle(
-                ft.SubmenuButton(
-                    ft.Row([
-                        ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                        ft.Text("Plot Point Color", weight=ft.FontWeight.BOLD, expand=True),
-                        ft.Icon(ft.Icons.ARROW_RIGHT),
-                    ], expand=True),
-                    get_color_options(), 
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                    style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                    tooltip="Change this markers color"
-                ),
-                no_padding=True, no_effects=True
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
+                on_click=self.handle_delete,
+                content=f"Delete {self.data.get('title')}",
+                leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
             ),
             
-            MenuOptionStyle(
-                on_click=self.handle_delete,
-                content=ft.Row([
-                    ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR),
-                    ft.Text(f"Delete {self.data.get('title')}", weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, expand=True),
-                ]),
-            )
         ]
 
     # Make sure to unhighlight any highlighted plot points when we close our mini widget
@@ -318,8 +294,8 @@ class PlotlinePlotPoint(MiniWidget):
 
     # Called when hovering over our plot point to show the slider
     def highlight(self, e=None):
-        if self.content.controls[0].shadow is None:
-            self.content.controls[0].shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.5, self.data.get('color'))) #if self.plotline_control.shadow is None else None
+        if self.highlight_container.shadow is None:
+            self.highlight_container.shadow = ft.BoxShadow(20, 40, ft.Colors.with_opacity(.5, self.data.get('color'))) #if self.plotline_control.shadow is None else None
             self.update()
 
     # Hides are shadow unless our info display is visible, then stay highlighted
@@ -332,14 +308,9 @@ class PlotlinePlotPoint(MiniWidget):
         # Stay highlighted if we're showing our info display
         if self.widget.visible_mw_id == self.data.get('id', ''):
             return
-        if self.content.controls[0].shadow is not None:
-            self.content.controls[0].shadow = None
+        if self.highlight_container.shadow is not None:
+            self.highlight_container.shadow = None
             self.update()
-
-    async def set_icon_size(self, e: ft.Event[ft.MenuItemButton]):
-        await super().set_icon_size(e)
-        self.top = PLOTLINE_HEIGHT / 2 - self.icon.size / 2
-        self.update()
 
     def update_rename(self, e: ft.Event[ft.TextField]):
         new_title = e.control.value
@@ -430,26 +401,31 @@ class PlotlinePlotPoint(MiniWidget):
         
 
         self.description_tf.on_change = update_description
-        
+
+        self.highlight_container = ft.Container(
+            ft.GestureDetector(
+                self.icon, 
+                on_enter=self.highlight, on_exit=self.stop_highlight, 
+                on_pan_start=self.widget.story.close_menu,
+                on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
+                on_tap=self.show_mini_widget,
+                mouse_cursor=ft.MouseCursor.CLICK
+            ),
+            shape=ft.BoxShape.CIRCLE, 
+        )
     
         # Our container that is our plot point on the plotline, and contains our gesture detector for hovering and right clicking
         self.content = ft.Column([
-            ft.Container(
-                ft.GestureDetector(
-                    self.icon, 
-                    on_enter=self.highlight, on_exit=self.stop_highlight, 
-                    on_pan_start=self.widget.story.close_menu,
-                    on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
-                    on_secondary_tap=lambda: self.widget.story.open_menu(self.get_menu_options()),
-                    on_tap=self.show_mini_widget,
-                    mouse_cursor=ft.MouseCursor.CLICK
-                ),
-                shape=ft.BoxShape.CIRCLE, 
+            shad.ContextMenu(
+                self.highlight_container,
+                self.get_menu_options(),
+                open_on_tap=True
             ),
             ft.Container(expand=True, width=1, bgcolor=ft.Colors.ON_SURFACE_VARIANT, height=PLOTLINE_HEIGHT / 8, margin=ft.Margin.only(top=10)),
             self.plotline_title_tf,
             self.plotline_description_tf
         ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.START)
+            
 
 
 

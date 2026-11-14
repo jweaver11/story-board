@@ -412,7 +412,8 @@ class ComicPreview(Widget):
                             content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
                             on_click=set_preview_background_color, close_on_click=True, data="#00000000",
                             expand=True
-                        )], tight=True, spacing=0, width=100)
+                        )], tight=True, spacing=0, width=100),
+                        on_dismiss=close_popovers
                     ), 
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     preview_spacing_popover := shad.Popover(
@@ -428,7 +429,8 @@ class ComicPreview(Widget):
                                 on_click=adjust_spacing, close_on_click=True, data=i,
                                 expand=True
                             ) for i in range(0, 21) if i % 2 == 0
-                        ], tight=True, spacing=0, width=100)
+                        ], tight=True, spacing=0, width=100),
+                        on_dismiss=close_popovers
                     ),
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     preview_scaling_popover := shad.Popover(
@@ -444,7 +446,8 @@ class ComicPreview(Widget):
                                 on_click=adjust_scaling, close_on_click=True, data=i,
                                 expand=True
                             ) for i in range(1, 6)
-                        ], tight=True, spacing=0, width=100)
+                        ], tight=True, spacing=0, width=100),
+                        on_dismiss=close_popovers
                     ),
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     image_filter_popover := shad.Popover(
@@ -460,7 +463,8 @@ class ComicPreview(Widget):
                                 data=quality,
                                 on_click=set_filter_quality, 
                             ) for quality in ("low", "medium", "high")
-                        ], tight=True, spacing=0, width=100)
+                        ], tight=True, spacing=0, width=100),
+                        on_dismiss=close_popovers
                     ),
                 ],
                 open_on_tap=True

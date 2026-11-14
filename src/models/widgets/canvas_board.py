@@ -354,6 +354,10 @@ class CanvasBoard(Widget):
                 color_popover.open = not color_popover.open
                 color_popover.update()
 
+            def close_popovers(e=None):
+                color_popover.open = False
+                color_popover.update()
+
             async def set_panel_color(e: ft.Event[ft.Control]):
                 color_popover.open = False
                 color_popover.update()
@@ -424,11 +428,12 @@ class CanvasBoard(Widget):
                                     on_click=set_panel_color, close_on_click=True, data=color,
                                     expand=True
                                 ) for color in colors
-                            ] + [shad.MenuItem(
-                            content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
-                            on_click=set_panel_color, close_on_click=True, data="#00000000",
-                            expand=True
-                        )], tight=True, spacing=0, width=100)
+                                ] + [shad.MenuItem(
+                                content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
+                                on_click=set_panel_color, close_on_click=True, data="#00000000",
+                                expand=True
+                            )], tight=True, spacing=0, width=100),
+                            on_dismiss=close_popovers
                         ), 
                         shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                         shad.MenuItem(

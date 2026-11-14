@@ -86,7 +86,7 @@ class Note(Widget):
 
             async def handle_color_change(e: ft.Event[ft.Control]):
                 new_color = e.control.data
-                close_color_popover()
+                close_popovers()
                 if len(self.data['card_data']) > idx:
                     self.data['card_data'][idx]['color'] = new_color
                     self.update_data(**{'card_data': self.data['card_data']})
@@ -95,7 +95,7 @@ class Note(Widget):
                     await self.story.close_menu()
 
             async def handle_strikethrough(e: ft.Event[ft.Control]):
-                close_color_popover()
+                close_popovers()
                 if len(self.data['card_data']) > idx:
                     struck = not self.data['card_data'][idx].get('strikethrough', False)
                     self.data['card_data'][idx]['strikethrough'] = struck
@@ -131,7 +131,7 @@ class Note(Widget):
             def toggle_color_popover(e=None):
                 color_popover.open = not color_popover.open
                 color_popover.update()
-            def close_color_popover(e=None):
+            def close_popovers(e=None):
                 color_popover.open = False
                 color_popover.update()
 
@@ -151,7 +151,8 @@ class Note(Widget):
                             on_click=handle_color_change, close_on_click=True, data=color,
                             expand=True
                         ) for color in colors
-                    ], tight=True, spacing=0, width=100)
+                    ], tight=True, spacing=0, width=100),
+                    on_dismiss=close_popovers
                 ), 
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(

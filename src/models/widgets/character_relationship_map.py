@@ -515,7 +515,11 @@ class CharacterRelationshipMap(Widget):
             def toggle_color_popover(e: ft.Event):
                 color_popover.open = not color_popover.open
                 self.update()
-            
+            def close_popovers(e=None):
+                new_popover.open = False
+                color_popover.open = False
+                new_popover.update()
+                color_popover.update()
 
             return [
                 new_popover := shad.Popover(
@@ -531,7 +535,8 @@ class CharacterRelationshipMap(Widget):
                             data=icon_str,
                             on_click=_new_icon_clicked, 
                         ) for icon_str, icon in connection_icons.items()
-                    ], tight=True, spacing=0, width=100)
+                    ], tight=True, spacing=0, width=100),
+                    on_dismiss=close_popovers
                 ),
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 color_popover := shad.Popover(
@@ -547,7 +552,8 @@ class CharacterRelationshipMap(Widget):
                             data=color,
                             on_click=_change_icon_color, 
                         ) for color in colors
-                    ], tight=True, spacing=0, width=100)
+                    ], tight=True, spacing=0, width=100),
+                    on_dismiss=close_popovers
                 ),
 
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
