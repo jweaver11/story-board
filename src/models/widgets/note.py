@@ -52,7 +52,7 @@ class Note(Widget):
         async def handle_create_card(e=None):
             self.data['card_data'].append({"label": '', "value": "", 'color': "white"})
             self.update_data(**{'card_data': self.data['card_data']})
-            card_row.controls.append(new_card(len(self.data['card_data']) - 1, self.data['card_data'][-1]))
+            card_row.controls = build_card_row()
             card_row.update()
             await asyncio.sleep(0.02)
             await card_row.parent.scroll_to(offset=-1, duration=200)
@@ -238,7 +238,15 @@ class Note(Widget):
             return card
 
         def build_card_row() -> list[ft.Control]:
-            return [new_card(idx, card_data) for idx, card_data in enumerate(self.data.get('card_data', []))]
+            return [
+                new_card(idx, card_data) for idx, card_data in enumerate(self.data.get('card_data', []))
+            ] + [
+                shad.Button(
+                    ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                    bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                    on_click=handle_create_card, size=shad.ButtonSize.SM
+                )
+            ]
 
         # Column to hold our cards textfields
         card_row = ft.Row(
@@ -246,22 +254,5 @@ class Note(Widget):
             wrap=True, alignment=ft.MainAxisAlignment.START, expand=True,
         )
 
-        # Button to click to add a new card
-        add_card_button = ft.Button(
-            "Add Card", 
-            #icon=ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, icon_color=ft.Colors.PRIMARY,
-            tooltip="Add a new card to your note.", 
-            on_click=handle_create_card, 
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
-            bgcolor=ft.Colors.SURFACE
-        )
-
         
-        #self.content = ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO)
-
-        self.content = ft.Stack([
-            ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO),
-            ft.Column([
-                add_card_button, 
-            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
-        ], alignment=ft.Alignment.TOP_LEFT, expand=True)
+        self.content = ft.Column([card_row], expand=True, alignment=ft.MainAxisAlignment.START, scroll=ft.ScrollMode.AUTO)

@@ -87,28 +87,6 @@ class ContentRail(ft.Column):
             ),
         )
         
-
-    # Returns a list of template options
-    def get_template_options(self, widget_type: str) -> list[ft.Control]:
-        ''' Returns a list of template options when right clicking empty space in the rail '''
-
-        template_options = []
-
-        if widget_type == "chart":
-            template_options = [
-                ft.MenuItemButton(
-                    "Bar", data=f"{widget_type}:bar", 
-                    on_click=self.new_item_clicked, leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
-                ),
-                ft.MenuItemButton(
-                    "Radar", data=f"{widget_type}:radar", 
-                    on_click=self.new_item_clicked, leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY),
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4))
-                ),
-            ]
-
-        return template_options
     
     # Called when a widget is dragged and dropped into this directory
     def move_widget_file(self, e: ft.DragTargetEvent, new_directory: str):
