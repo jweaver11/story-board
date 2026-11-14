@@ -429,8 +429,7 @@ class Widget(ft.Container):
         self.update_data(**{'title': name})   # Update our data with the new title and key
         await self.save_file()  # Force a file save
                 
-        if self.story.data.get("selected_rail", "content") != "canvas":
-            self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the name change
+        self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the name change
 
         if self.data.get('visible', False) == True:
             await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
@@ -442,7 +441,7 @@ class Widget(ft.Container):
         ''' Returns a list of all available colors for icon changing '''
 
         # Called when a color option is clicked on popup menu to change icon color
-        async def _change_icon_color(e=None):
+        async def _change_icon_color(e: ft.Event[ft.Control]):
             ''' Passes in our kwargs to the widget, and applies the updates '''
             color = e.control.data
 
@@ -453,9 +452,7 @@ class Widget(ft.Container):
             if self.data.get('visible', False) == True:
                 await self.story.workspace.update_widget_tab_color(self.data.get('index'), self.data.get('color'))  # Update the color of the tab in the workspace if we're visible
                 
-            if self.story.data.get("selected_rail", "content") != "canvas":
-                self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the color change
-            await self.story.close_menu()
+            self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the color change
 
         # List for our colors when formatted
         color_controls = [] 

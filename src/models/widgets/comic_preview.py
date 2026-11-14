@@ -379,7 +379,7 @@ class ComicPreview(Widget):
                         tooltip="Refresh panels connected to Canvases that may be outdated",
                         on_click=handle_refresh_panels,
                     ),
-                    toggle_preview_direction_button := shad.MenuItem(
+                    shad.MenuItem(
                         "Swap Preview Direction",
                         leading=ft.Icon(
                             ft.Icons.SWAP_VERT if self.data.get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 

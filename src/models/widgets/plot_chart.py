@@ -231,7 +231,7 @@ class PlotChart(Widget):
                             
                         self.widget.update_data(**{'edges': self.widget.data.get('edges', [])})
                         self.widget.update()
-                        return  
+                        return   
 
                 # Save new edget to data with source, target, start, end, and default color
                 self.widget.data['edges'].append({
@@ -287,8 +287,7 @@ class PlotChart(Widget):
                 line.y2 = e.global_position.y
                 self.page.overlay[-1].update()
 
-            def _update_title(e: ft.Event[ft.TextField]):
-                new_title = e.control.value
+            
                 
 
             def _save_title(e: ft.Event[ft.TextField]):
@@ -320,7 +319,6 @@ class PlotChart(Widget):
 
             self.title_tf = NoLabelTextField(
                 value=self.data.get('label', ''),
-                on_change=_update_title,
                 on_blur=_save_title,
                 text_align=ft.TextAlign.CENTER,
                 expand=True, 
@@ -547,6 +545,8 @@ class PlotChart(Widget):
 
         # Stack that holdes our nodes
         self.node_stack = ft.Stack([], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT)
+
+        self.sidebar_notes_label.margin = None
 
         # Info container on the right to show details of our edges and nodes
         self.sidebar_body.controls.extend([
