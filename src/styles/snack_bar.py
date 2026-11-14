@@ -1,8 +1,8 @@
 import flet as ft
-import flet_shadcn_ui as shad
+
 
 # Give uniform styling to our snack bars
-class SnackBar(shad.Toast):
+class SnackBar(ft.SnackBar):
 
     # Constructor
     def __init__(self, error_text: str, duration: int=None):

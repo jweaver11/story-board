@@ -288,24 +288,20 @@ class CanvasBoard(Widget):
                 panel_idx = e.control.data
                 canvas_id: str = None
             
-                dlg = ft.AlertDialog(
-                    title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
-                    content=ft.RadioGroup(
-                        ft.Column([
-                            ft.Radio(
+                dlg = shad.Dialog(
+                    title="Set a Canvas as Image",
+                    content=shad.RadioGroup(
+                        [
+                            shad.Radio(
                                 label=widget.data.get('title', 'Untitled'),
-                                value=id, mouse_cursor=ft.MouseCursor.CLICK,
+                                value=id, 
                             ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
-                            ],
-                            tight=True,
-                            scroll=ft.ScrollMode.AUTO,
-                        ),
+                        ],
                         on_change=select_canvas
                     ),
                     actions=[
                         ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                        ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),
-                    ]
+                        ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
                 )
                 self.page.show_dialog(dlg)
 

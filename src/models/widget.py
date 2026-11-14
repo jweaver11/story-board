@@ -309,16 +309,16 @@ class Widget(ft.Container):
 
             canvas_id: str = None
 
-            dlg = ft.AlertDialog(
-                title=ft.Text("Set a Canvas as Image", weight=ft.FontWeight.BOLD),
-                content=ft.RadioGroup(
-                    ft.Column([
-                        ft.Radio(
+            dlg = shad.Dialog(
+                title="Set a Canvas as Image",
+                content=shad.RadioGroup(
+                    [
+                        shad.Radio(
                             label=widget.data.get('title', 'Untitled'),
-                            value=id, mouse_cursor=ft.MouseCursor.CLICK,
-                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"],
-                        tight=True
-                    ),
+                            value=id, 
+                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
+                    ],
+                        
                     on_change=select_canvas
                 ),
                 actions=[
@@ -326,8 +326,6 @@ class Widget(ft.Container):
                     ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
             )
             self.page.show_dialog(dlg)
-
-            await self.story.close_menu()   # Close menu
 
         # Resets our image to nothing and our button to the placeholder
         async def clear_image(e: ft.Event):
@@ -487,22 +485,18 @@ class Widget(ft.Container):
             if self.data.get('visible', False) == True:
                 await self.story.workspace.remove_widget_from_workspace(self)  # Remove ourselves from the workspace if we were visible
 
-            e.page.pop_dialog()
+            ft.context.page.pop_dialog()
 
         # Append an overlay to confirm the deletion
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Are you sure you want to delete {self.data.get('title', '')} forever? This cannot be undone!", weight=ft.FontWeight.BOLD),
-            alignment=ft.Alignment.CENTER,
-            title_padding=ft.Padding.all(25),
+        dlg = shad.Dialog(
+            title=f"Are you sure you want to delete {self.data.get('title', '')} forever? This cannot be undone!",
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: e.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
-                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                ft.TextButton(f"Delete '{self.data.get('title', '')}'", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.RED, mouse_cursor="click")),
             ]
         )
 
-        self.story.close_menu_instant()
-
-        e.page.show_dialog(dlg)
+        ft.context.page.show_dialog(dlg)
         
 
     # Called when mouse hovers over the map

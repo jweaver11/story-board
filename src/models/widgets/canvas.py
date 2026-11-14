@@ -1026,15 +1026,16 @@ class Canvas(Widget):
 
             color_picker = ColorPicker(
                 self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                on_color_change=_color_change
+                on_color_change=_color_change,
             )
-            dlg = ft.AlertDialog(
-                ft.Column([color_picker], tight=True, expand=False),
+            dlg = shad.Dialog(
+                content=color_picker,
                 title=f"Set {layer_id} to a Color",
+                description="This will overwrite its current content",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda _: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
-                ]
+                ], expand=True
             )
             self.page.show_dialog(dlg)
 
@@ -1070,7 +1071,7 @@ class Canvas(Widget):
         capture = None
         capture = self.data.get('canvas_data', {}).get('layers', [])[layer_idx]['capture']
         if not capture:
-            self.page.show_dialog(SnackBar("Layer must have existing content to set blur"))
+            self.page.show_dialog(shad.Toast("Layer must have existing content to set blur", variant=shad.ToastVariant.DESTRUCTIVE))
             return
 
         # Updates the visual canvas with new blur amount
@@ -1131,7 +1132,7 @@ class Canvas(Widget):
             )
             
         if active_preview_image is None:
-            self.page.show_dialog(SnackBar("Error finding layer capture for blur"))
+            self.page.show_dialog(shad.Toast("Error finding layer capture for blur", variant=shad.ToastVariant.DESTRUCTIVE))
             return
 
         dlg = ft.AlertDialog(
@@ -1307,7 +1308,7 @@ class Canvas(Widget):
             
             for layer in self.data.get('canvas_data', {}).get('layers', []):   # Update the name in the layer data
                 if layer.get('name') == new_name:
-                    self.page.show_dialog(SnackBar("Layer name already exists. Layer was not renamed"))
+                    self.page.show_dialog(shad.Toast("Layer name already exists. Layer was not renamed", variant=shad.ToastVariant.DESTRUCTIVE))
                     return
                 
             # Update the name of the layer in the canvas data

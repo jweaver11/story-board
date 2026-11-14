@@ -215,23 +215,12 @@ class RailFolder(ft.GestureDetector):
                 content=f"Rename {self.title}", 
                 on_click=self.rename_clicked,
             ),
-            # Export folder option
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content=f"Export {self.title}",
-                on_click=self.story.handle_export,
-                data=self.full_path,
-            ),
-            
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20), 
                 content="Delete", 
                 on_click=self._delete_clicked,
             ),
-            
-            
-            
         ]
         
 
@@ -369,11 +358,9 @@ class RailFolder(ft.GestureDetector):
                 text_field.update()
                 
         # Our text field that our functions use for renaming and referencing
-        text_field = ft.TextField(
-            value=self.title, expand=True, dense=True,
+        text_field = shad.Input(
+            value=self.title, 
             autofocus=True, 
-            capitalization=ft.TextCapitalization.WORDS,
-            text_size=14, text_style=self.text_style,
             on_submit=_submit_name,
             on_change=_name_check, 
         )
@@ -438,7 +425,7 @@ class RailFolder(ft.GestureDetector):
             title=f"Are you sure you want to delete folder '{self.title}' forever?",
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
-                ft.TextButton("Delete", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),
+                ft.TextButton(f"Delete {self.title}", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),
             ]
         )
         self.page.show_dialog(dlg)

@@ -146,6 +146,7 @@ class RailFile(ft.GestureDetector):
                 leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
                 content=f"Export {self.widget.data.get('title')}", data=file_path,
                 on_click=self.widget.story.handle_export,
+                visible=self.widget.data.get('tag', '') == 'canvas' or self.widget.data.get('tag', '') == 'manuscript',
             ),   
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
