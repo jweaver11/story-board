@@ -159,8 +159,8 @@ class Story(ft.View):
         if directory_path is None:
             directory_path = self.data.get('content_directory_path', '')
 
-        if directory_path in self.data.get('folders', {}):
-            return
+        #if directory_path in self.data.get('folders', {}):
+            #return
 
         try:
 
@@ -173,6 +173,9 @@ class Story(ft.View):
             else:
                 folder_path = os.path.normpath(full_path)
                 name = os.path.basename(folder_path)
+
+            if folder_path in self.data.get('folders', {}):
+                return
 
             # Make the folder in our storage if it doesn't already exist
             os.makedirs(folder_path, exist_ok=True) 

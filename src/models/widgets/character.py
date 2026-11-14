@@ -38,15 +38,9 @@ class Character(Widget):
                 # Widget data
                 'tag': "character",
                 'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
- 
-                # State and view data
-                'image_base64': str(),    # Saves our icon as img64 string 
 
-                # Character data
-                'about': "",
                 'character_data': app.settings.data.get('character_template', default_character_template_data()),
 
-                'charts': {}
             })         
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -376,30 +370,13 @@ class Character(Widget):
 
         
 
-        about_section = ft.Column([
-            ft.Row([
-                ft.Text(f"About", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),
-                
-            ], spacing=0),
-            ft.TextField(
-                self.data.get('about', ""), on_blur=lambda e: self.update_data(**{"about": e.control.value}), expand=True, 
-                dense=True, capitalization=ft.TextCapitalization.SENTENCES, multiline=True,
-                #border_color=ft.Colors.OUTLINE_VARIANT, 
-                margin=ft.Margin.only(right=10),
-                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), #border_radius=4,
-                content_padding=ft.Padding.all(6), min_lines=3, cursor_color=ft.Colors.PRIMARY
-            )
-            
-        ], expand=True, spacing=0, alignment=ft.MainAxisAlignment.CENTER)
-
         # Adjust our description text field to match the theme outside of a sidebar
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
         #self.description_tf.focused_border_color = ft.Colors.PRIMARY
         
-        # Header that holds our image, edit mode button, and about section
+        # Header that holds our image, edit mode button
         header = ft.Row([
             self.select_image_button,
-            #about_section
             self.description_tf
         ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
 

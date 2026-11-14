@@ -239,44 +239,39 @@ class RailFolder(ft.GestureDetector):
     async def new_item_clicked(self, e: ft.Event[ft.Control]):
         ''' Shows the textfield for creating new item. Requires what type of item (folder, chapter, note, etc.) '''
 
-        tag = e.control.data
+        tag = str(e.control.data)
         
         if tag == "canvas":
             self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story, self.full_path))
             return
-                        
-        self.new_item_textfield = ft.TextField(  
-            hint_text="Sub-folder Name",          
-            on_submit=self.submit_new_item,               # Called when enter is pressed
+
+        async def submit_new_item(e=None):
+            self.page.pop_dialog()
+            name = input_ctrl.value
+
+            if tag == "folder":
+                await self.story.create_folder(directory_path=self.full_path, name=name)
+            else:
+                await self.story.create_widget(directory_path=self.full_path, title=name, tag=tag)
+
+        title = tag.capitalize().replace("_", " ") + " Name"
+
+        input_ctrl = shad.Input(  
+            on_submit=submit_new_item,               # Called when enter is pressed
             autofocus=True,
-            capitalization=ft.TextCapitalization.SENTENCES,
             data=tag,
-            text_style=self.text_style,
-            dense=True
         )
 
         dlg = shad.Dialog(
-            title=self.new_item_textfield.hint_text, 
-            content=self.new_item_textfield,
+            title=title, 
+            content=input_ctrl,
             actions=[
                 ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Submit", on_click=self.submit_new_item, style=ft.ButtonStyle(mouse_cursor="click")),
+                ft.TextButton("Submit", on_click=submit_new_item, style=ft.ButtonStyle(mouse_cursor="click")),
             ]
         )
         
         self.page.show_dialog(dlg)
-  
-            
-    async def submit_new_item(self, e):
-
-        title = self.new_item_textfield.value
-        tag = self.new_item_textfield.data
-
-        self.page.pop_dialog()
-        if tag == "folder":
-            await self.story.create_folder(directory_path=self.full_path, name=title)
-        else:
-            await self.story.create_widget(directory_path=self.full_path, title=title, tag=tag)
     
 
     # Called when rename button is clicked
