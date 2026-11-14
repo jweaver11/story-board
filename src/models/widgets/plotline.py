@@ -172,79 +172,70 @@ class Plotline(Widget):
                     self.widget.sidebar_body.update()
                 
 
-            def get_menu_options() -> list[ft.Control]:
+            def get_menu_options() -> list[shad.MenuItem]:
 
                 # Called when rename button is clicked
                 async def handle_rename(e: ft.Event):
-                    await self.widget.story.close_menu()
+                    close_popovers()
                     await title_tf.focus()
-
-                # Called when color button is clicked
-                def get_color_options() -> list[ft.Control]:
-                    ''' Returns a list of all available colors for icon changing '''
             
-                    # Changes our color in data and the UI to reflect
-                    async def change_color(e: ft.Event[ft.MenuItemButton]):
-                        await self.widget.story.close_menu()
-                        self.update_data(**{'color': e.control.data})
-                        for shape in canvas.shapes:
-                            shape.paint.color = e.control.data
-                        self.update()
-                        
-            
-                    return [
-                        ft.MenuItemButton(
-                            content=ft.Text(color.capitalize(), weight=ft.FontWeight.BOLD, color=color),
-                            on_click=change_color, close_on_click=True,
-                            data=color,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click")
-                        ) for color in colors
-                    ]
+                # Changes our color in data and the UI to reflect
+                def handle_color_change(e: ft.Event[ft.MenuItemButton]):
+                    close_popovers()
+                    self.update_data(**{'color': e.control.data})
+                    for shape in canvas.shapes:
+                        shape.paint.color = e.control.data
+                    canvas.content.content.items = get_menu_options()
+                    self.update()
 
                 # Delete the marker from data and UI
-                async def delete_marker(e=None):
-                    await self.widget.story.close_menu()
+                def delete_marker(e=None):
                     self.widget.data.get('markers', {}).pop(self.data.get('id', ''), None)
                     self.widget.update_data(**{'markers': self.widget.data.get('markers', {})})
                     self.widget.marker_stack.controls.remove(self)
                     self.widget.marker_stack.update()
+
+                def toggle_color_popover(e=None):
+                    color_popover.open = not color_popover.open
+                    color_popover.update()
+                
+                def close_popovers(e=None):
+                    color_popover.open = False
+                    color_popover.update()
                     
                     
                 return [
-                    MenuOptionStyle(
+                    
+                    color_popover := shad.Popover(
+                        shad.MenuItem(
+                            leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary"), size=20),
+                            content=ft.Row([ft.Text("Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            trailing=ft.Icons.ARROW_RIGHT,
+                            on_click=toggle_color_popover,
+                            close_on_click=False,
+                        ),
+                        ft.Column([
+                            shad.MenuItem(
+                                content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                                on_click=handle_color_change, data=color,
+                                expand=True
+                            ) for color in colors
+                        ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO, height=min(320, ft.context.page.height * 0.3)),
+                        on_dismiss=close_popovers
+                    ), 
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    shad.MenuItem(
                         on_click=handle_rename,
-                        content=ft.Row([
-                            ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.data.get('color', 'primary'),),
-                            ft.Text(
-                                f"Rename Marker", 
-                                weight=ft.FontWeight.BOLD, 
-                                overflow=ft.TextOverflow.ELLIPSIS, expand=True
-                            ), 
-                        ]),
+                        content=f"Rename {self.data.get('title')}", 
+                        leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        data=self.data.get('id', ''),
                     ),
-                    MenuOptionStyle(
-                        ft.SubmenuButton(
-                            ft.Row([
-                                ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('color', "primary")), 
-                                ft.Text("Marker Color", weight=ft.FontWeight.BOLD, expand=True),
-                                ft.Icon(ft.Icons.ARROW_RIGHT),
-                            ], expand=True),
-                            get_color_options(), 
-                            menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0)),
-                            style=ft.ButtonStyle(padding=ft.Padding.only(left=8), shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Change this markers color"
-                        ),
-                        no_padding=True, no_effects=True
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    shad.MenuItem(
+                        on_click=delete_marker,
+                        content=f"Delete {self.data.get('title')}",
+                        leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
                     ),
-                    MenuOptionStyle(
-                        ft.MenuItemButton(
-                            f"Delete Marker", leading=ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
-                            on_click=delete_marker, 
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), mouse_cursor="click"),
-                            tooltip="Delete this marker from the plotline",
-                        ),
-                        no_effects=True, no_padding=True
-                    )
                 ]
                 
 
@@ -282,7 +273,7 @@ class Plotline(Widget):
                             on_pan_update=self.move_marker,
                             expand=True,
                             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,
-                            on_secondary_tap=lambda _: self.widget.story.open_menu(get_menu_options()),
+                            content=shad.ContextMenu(ft.Container(expand=True), get_menu_options()),
                         ),
                         shapes=[
                             cv.Line(
