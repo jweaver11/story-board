@@ -412,7 +412,7 @@ class ComicPreview(Widget):
                             content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
                             on_click=set_preview_background_color, close_on_click=True, data="#00000000",
                             expand=True
-                        )], tight=True, spacing=0, width=100),
+                        )], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
                         on_dismiss=close_popovers
                     ), 
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),

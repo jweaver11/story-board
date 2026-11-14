@@ -113,7 +113,7 @@ class PlotlinePlotPoint(MiniWidget):
                         on_click=handle_color_change, data=color,
                         expand=True
                     ) for color in colors
-                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO),
+                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO, height=min(320, ft.context.page.height * 0.3)),
                 on_dismiss=close_popovers
             ), 
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
@@ -129,8 +129,8 @@ class PlotlinePlotPoint(MiniWidget):
                         content=ft.Icon(icon, color=self.data.get('color', "primary"), size=20),
                         on_click=handle_icon_change, data=icon_str,
                     ) for icon_str, icon in icons.items()
-                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO, expand=True),
-                on_dismiss=close_popovers, expand=True
+                ], tight=True, spacing=0, width=100, scroll=ft.ScrollMode.AUTO, height=min(320, ft.context.page.height * 0.3)),
+                on_dismiss=close_popovers, 
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(

@@ -151,7 +151,7 @@ class Note(Widget):
                             on_click=handle_color_change, close_on_click=True, data=color,
                             expand=True
                         ) for color in colors
-                    ], tight=True, spacing=0, width=100),
+                    ], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
                     on_dismiss=close_popovers
                 ), 
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),

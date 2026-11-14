@@ -1421,8 +1421,7 @@ class Map(Widget):
                         "Space", leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY), 
                         data="map_bg_space.jpg", on_click=handle_set_built_in_image,
                     ), 
-                    
-                ], tight=True, width=150),
+                ], tight=True, width=150, spacing=0),
                 on_dismiss=close_popovers
             )
         ]

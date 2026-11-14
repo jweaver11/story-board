@@ -134,7 +134,7 @@ class RailFile(ft.GestureDetector):
                     on_click=toggle_color_popover,
                     close_on_click=False,
                 ),
-                ft.Column(self.widget.get_color_options(), tight=True, spacing=0, width=100)
+                ft.Column(self.widget.get_color_options(), tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
             ), 
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(

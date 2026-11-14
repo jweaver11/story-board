@@ -535,7 +535,7 @@ class CharacterRelationshipMap(Widget):
                             data=icon_str,
                             on_click=_new_icon_clicked, 
                         ) for icon_str, icon in connection_icons.items()
-                    ], tight=True, spacing=0, width=100),
+                    ], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
                     on_dismiss=close_popovers
                 ),
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
@@ -552,7 +552,7 @@ class CharacterRelationshipMap(Widget):
                             data=color,
                             on_click=_change_icon_color, 
                         ) for color in colors
-                    ], tight=True, spacing=0, width=100),
+                    ], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
                     on_dismiss=close_popovers
                 ),
 
