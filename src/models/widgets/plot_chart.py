@@ -53,7 +53,6 @@ class PlotChart(Widget):
         self.locked_new_node_position = (200, 200)  # Position we place new nodes when right clicking to create a new node
         self.edge_canvas: cv.Canvas           # Canvas that holds our edges (cv.shapes)
         self.node_stack: ft.Stack           # Stack that holds our nodes (gesture detectors)
-        self.node_sidebar_column: ft.Column
 
         # State trackers
         self.source_node: str = None        # Tracks which node we are dragging from when creating a new edge
@@ -290,11 +289,7 @@ class PlotChart(Widget):
 
             def _update_title(e: ft.Event[ft.TextField]):
                 new_title = e.control.value
-                for ctrl in self.widget.node_sidebar_column.controls:
-                    if ctrl.data == self.data.get('id', ''):
-                        ctrl.label = new_title
-                        ctrl.update()
-                        break
+                
 
             def _save_title(e: ft.Event[ft.TextField]):
                 for node_data in self.widget.data.get('nodes', []):
@@ -305,11 +300,7 @@ class PlotChart(Widget):
 
             def _update_description(e: ft.Event[ft.TextField]):
                 new_desc = e.control.value
-                for ctrl in self.widget.node_sidebar_column.controls:
-                    if ctrl.data == self.data.get('id', ''):
-                        ctrl.value = new_desc
-                        ctrl.update()
-                        break
+                
 
             # Saves the description for this node when the text field loses focus
             async def _save_description(e: ft.Event[ft.TextField]):
@@ -449,46 +440,6 @@ class PlotChart(Widget):
                     cv.Path.LineTo(mid_x, end_y),
                     cv.Path.LineTo(end_x, end_y),
                 ]
-                
-    async def rename_node_clicked(self, e: ft.Event):
-        ''' Opens a dialog to rename the node or cancel '''
-        return
-        
-        async def _rename_node(_):
-                
-            # Update the data
-            for node in self.data.get('nodes', []):
-                if node['label'] == old_label:
-                    node['label'] = node_title.value
-                    break
-            for edge in self.data.get('edges', []):
-                if edge['source'] == old_label:
-                    edge['source'] = node_title.value
-                elif edge['target'] == old_label:
-                    edge['target'] = node_title.value
-            self.update_data(**{'nodes': self.data.get('nodes', []), 'edges': self.data.get('edges', [])})
-
-            # Update node on the stack
-            for ctrl in self.node_stack.controls:
-                if ctrl.label == old_label:
-                    ctrl.label = node_title.value
-                    ctrl.content.content.controls[0].content.controls[0].value = node_title.value
-                    
-                    ctrl.update()
-                    break
-
-                # Update node in the sidebar
-                for ctrl in self.node_sidebar_column.controls:
-                    if ctrl.data == old_label:
-                        ctrl.data = node_title.value
-                        ctrl.label = node_title.value
-                        ctrl.update()
-                        break
-
-
-                self.page.pop_dialog()
-
-        await self.story.close_menu()
 
 
     # Creates our node with given title if unique
@@ -507,11 +458,6 @@ class PlotChart(Widget):
 
         # Add the node to the stack
         self.node_stack.controls.append(self.Node(widget=self, data=self.data.get('nodes')[-1]))
-
-        # Add the node to the sidebar
-        self.node_sidebar_column.controls.append(
-            self.create_node_sidebar_ctrl(len(self.node_sidebar_column.controls), self.data.get('nodes')[-1])
-        )
 
         self.update()
 
@@ -601,32 +547,11 @@ class PlotChart(Widget):
 
         # Stack that holdes our nodes
         self.node_stack = ft.Stack([], width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT)
-        
-        self.node_sidebar_column = ft.Column(
-            [self.create_node_sidebar_ctrl(idx, node_data) for idx, node_data in enumerate(self.data.get('nodes', []))],
-            tight=True, margin=ft.Margin.only(left=10, right=10)
-        )
 
         # Info container on the right to show details of our edges and nodes
         self.sidebar_body.controls.extend([
-            ft.Row([
-                ft.Text(f"Nodes", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16)),
-                ft.IconButton(
-                    ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED,
-                    ft.Colors.PRIMARY,
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                    on_click=self.create_node,
-                    data="sidebar",
-                    visible=False
-                ),
-            ], spacing=0),
-
-            # Nodes here
-            self.node_sidebar_column,
-            
             self.sidebar_notes_label,
             self.sidebar_notes_column
-
         ])
             
             
