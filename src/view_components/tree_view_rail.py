@@ -185,8 +185,8 @@ class ContentRail(ft.Column):
 
 
         match tag:
-            case "character_relationship_map":
-                self.new_item_textfield.hint_text = "Character Relationship Map Title"
+            case "connection_map":
+                self.new_item_textfield.hint_text = "Connection Map Title"
             
             case "plot_point": 
                 self.new_item_textfield.hint_text = "Plot Point Title"
@@ -303,7 +303,6 @@ class ContentRail(ft.Column):
                 data="character", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new character for your story."
             ),
-            
             shad.MenuItem(      
                 leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY, size=20), content="Note", 
                 data="note", on_click=self.new_item_clicked, close_on_click=True,
@@ -350,8 +349,8 @@ class ContentRail(ft.Column):
                 tooltip="Create a new world for your story. Choose from templates or create a default world."
             ),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY, size=20), content="Character Relationship Map", 
-                data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
+                leading=ft.Icon(ft.Icons.LINK_OUTLINED, ft.Colors.PRIMARY, size=20), content="Connection Map", 
+                data="connection_map", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Visualize the connections between the characters in your story"
             ),  
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
@@ -389,6 +388,7 @@ class ContentRail(ft.Column):
                 on_click=self.change_sort_method, close_on_click=True, data="default", 
                 tooltip="Let your Operating System decide the order.", 
             ),  
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.SORT_BY_ALPHA_OUTLINED, ft.Colors.PRIMARY, size=20), content="Alphabetical", 
                 on_click=self.change_sort_method, close_on_click=True, data="alphabetical", 
@@ -397,6 +397,7 @@ class ContentRail(ft.Column):
                 leading=ft.Icon(ft.Icons.SORT_BY_ALPHA_OUTLINED, ft.Colors.PRIMARY, size=20), content="Alphabetical Reversed", 
                 on_click=self.change_sort_method, close_on_click=True, data="alphabetical_reversed", 
             ),  
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20), content="Color", 
                 on_click=self.change_sort_method, close_on_click=True, data="color",
@@ -405,6 +406,7 @@ class ContentRail(ft.Column):
                 leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20), content="Color Reversed", 
                 on_click=self.change_sort_method, close_on_click=True, data="color_reversed",
             ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.UPDATE_OUTLINED, ft.Colors.PRIMARY, size=20), content="Creation Date", 
                 on_click=self.change_sort_method, close_on_click=True, data="creation_date",

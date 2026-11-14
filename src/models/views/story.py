@@ -388,7 +388,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_relationship_map import CharacterRelationshipMap
+        from models.widgets.connection_map import ConnectionMap
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
@@ -484,8 +484,8 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
-                            case "character_relationship_map":
-                                widget = CharacterRelationshipMap(
+                            case "connection_map":
+                                widget = ConnectionMap(
                                     widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
@@ -629,7 +629,6 @@ class Story(ft.View):
                 width=100, on_change=set_widget_default_type,
                 options=[
                     shad.SelectOption(".png"),
-                    
                 ]
             )
             
@@ -669,7 +668,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_relationship_map import CharacterRelationshipMap
+        from models.widgets.connection_map import ConnectionMap
         from models.widgets.item import Item
         from models.widgets.world import World
         from models.widgets.chart import Chart
@@ -697,8 +696,8 @@ class Story(ft.View):
             case "map":
                 d = {'canvas_data': data} if data is not None else None
                 widget = Map(title, directory_path, self, data, True)
-            case "character_relationship_map":
-                widget = CharacterRelationshipMap(title, directory_path, self, data, True)
+            case "connection_map":
+                widget = ConnectionMap(title, directory_path, self, data, True)
             case "world":
                 widget = World(title, directory_path, self, data, True)
             case "canvas_board":
@@ -741,7 +740,7 @@ class Story(ft.View):
         from models.widgets.character import Character
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
-        from models.widgets.character_relationship_map import CharacterRelationshipMap
+        from models.widgets.connection_map import ConnectionMap
         from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
@@ -814,8 +813,8 @@ class Story(ft.View):
                     is_new=widget.is_new
                 )
                 
-            case "character_relationship_map":
-                new_widget = CharacterRelationshipMap(
+            case "connection_map":
+                new_widget = ConnectionMap(
                     widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,

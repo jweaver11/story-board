@@ -97,7 +97,7 @@ class Workspace(ft.Container):
             case "canvas_board": icon = ft.Icons.SPACE_DASHBOARD_OUTLINED
             case "note": icon = ft.Icons.LIBRARY_BOOKS_OUTLINED
             case "character": icon = ft.Icons.PERSON_OUTLINE
-            case "character_relationship_map": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
+            case "connection_map": icon = ft.Icons.LINK_OUTLINED
             case "plotline": icon = ft.Icons.TIMELINE
             case "map": icon = ft.Icons.MAP_OUTLINED
             case "world": icon = ft.Icons.PUBLIC_OUTLINED

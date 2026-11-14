@@ -338,17 +338,18 @@ class Widget(ft.Container):
         return [
             
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
+                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 content="Set Canvas",
                 on_click=set_canvas_as_image,
             ),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
+                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 content="Upload Image",
                 on_click=upload_image,
             ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.PRIMARY),
+                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.ERROR, size=20),
                 content="Clear Image",
                 on_click=clear_image,
             )

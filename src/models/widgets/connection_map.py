@@ -15,7 +15,7 @@ from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 import flet_shadcn_ui as shad
 
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
-class CharacterRelationshipMap(Widget):
+class ConnectionMap(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
 
@@ -32,8 +32,8 @@ class CharacterRelationshipMap(Widget):
         if self.is_new == True:
             self.data.update({
                 # Widget data
-                'tag': "character_relationship_map",
-                'color': app.settings.data.get('widget_defaults', {}).get('character_relationship_map', {}).get('color'),
+                'tag': "connection_map",
+                'color': app.settings.data.get('widget_defaults', {}).get('connection_map', {}).get('color'),
                 'spider_web_view': False, # Whether lines/edges between characters are straight or have 3 segments
                 'characters': {
                     #'id': (position) # position of the character on the map
@@ -63,7 +63,7 @@ class CharacterRelationshipMap(Widget):
         
 
     class CharacterNode(ft.GestureDetector):
-        def __init__(self, char_id: str, widget: 'CharacterRelationshipMap', color, char_name: str, image: str, position: tuple=None):
+        def __init__(self, char_id: str, widget: 'ConnectionMap', color, char_name: str, image: str, position: tuple=None):
             self.char_id = char_id
             self.widget = widget
             self.image = image
@@ -220,6 +220,7 @@ class CharacterRelationshipMap(Widget):
                         margin=ft.Margin.only(bottom=2)
                     ) if self.in_character_bank else build_connector(),  
                     ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2, 6, trailing_indent=6),
+                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     ft.Container(ft.Image(self.image, 100, 100, expand=True), expand=True, width=100, height=100) if self.image else ft.Icon(ft.Icons.PERSON_OUTLINE_OUTLINED, self.color, size=100),
                                       
                 ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0, ),
@@ -414,7 +415,7 @@ class CharacterRelationshipMap(Widget):
 
     # Just for drawing the connection on the canvas, and icon on the stack
     class ConnectionEdge(cv.Path):
-        def __init__(self, widget: 'CharacterRelationshipMap', data: dict):
+        def __init__(self, widget: 'ConnectionMap', data: dict):
 
             # Set our attributes
             self.char1_id = data.get('char1_id')
@@ -448,7 +449,7 @@ class CharacterRelationshipMap(Widget):
             
 
     class ConnectionIcon(ft.GestureDetector):
-        def __init__(self, widget: 'CharacterRelationshipMap', data: dict):
+        def __init__(self, widget: 'ConnectionMap', data: dict):
             self.char1_id = data.get('char1_id')
             self.char2_id = data.get('char2_id')
             self.color = data.get('color', "#FFFFFF")

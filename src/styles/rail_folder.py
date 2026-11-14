@@ -140,8 +140,8 @@ class RailFolder(ft.GestureDetector):
                 tooltip="Create a new world for your story. Choose from templates or create a default world."
             ),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.FAMILY_RESTROOM_OUTLINED, ft.Colors.PRIMARY, size=20), content="Character Relationship Map", 
-                data="character_relationship_map", on_click=self.new_item_clicked, close_on_click=True,
+                leading=ft.Icon(ft.Icons.LINK_OUTLINED, ft.Colors.PRIMARY, size=20), content="Connection Map", 
+                data="connection_map", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Visualize the connections between the characters in your story"
             ),  
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
