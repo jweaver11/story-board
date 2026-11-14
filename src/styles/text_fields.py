@@ -35,24 +35,7 @@ class SingleLineTextField(ft.TextField):
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
 
-# Standard styling for most text fields we use
-@ft.control
-class SettingsTextField(ft.TextField):
-    
-    def __init__(self, *args, **kwargs):
 
-        super().__init__(*args, **kwargs)
-
-        # Default styles
-        self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
-        self.dense = True
-        self.text_style=ft.TextStyle(size=14)
-        self.multiline=False
-        self.capitalization=ft.TextCapitalization.SENTENCES
-        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
-        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
-        self.margin=ft.Margin.only(left=20)
-        self.width=200
 
 # Styling for title in the sidebar
 @ft.control

@@ -137,7 +137,6 @@ class Canvas(Widget):
         self.layer_stack: ft.Stack                # Stack to hold our list of layer canvases on top of each other
         self.canvas_controller: ft.GestureDetector  # Controller that sits over our layer stack and handles mouse events for drawing and tool usage 
         self.mouse_cursor: ft.Icon  # Our 'mouse cursor' that sits overtop the canvas_controller
-        self.use_standard_cursor: bool = app.settings.data.get('widget_defaults', {}).get('canvas', {}).get('use_standard_cursor', True)  # Whether to use a standard cursor or one that reflects our paint settings
         
         # Tool and shape stuff
         self.current_tool: CanvasShape = None                     # The active shape being added if we're using a tool
@@ -195,14 +194,7 @@ class Canvas(Widget):
         self.story.block_page()
         await super().hide_widget()
         self.story.unblock_page()
-        
-
-    # Moves our mouse cursor around to match our drawing
-    def move_mouse_cursor(self, position: ft.Offset):
-        if not self.use_standard_cursor:
-            self.mouse_cursor.left = position.x
-            self.mouse_cursor.top = position.y
-            self.mouse_cursor.update()         
+             
    
     # Sets our mouse cursor on hovering for feedback, depending on drawing or using tool
     def set_mouse_cursor(self, update: bool=True):
@@ -222,28 +214,7 @@ class Canvas(Widget):
                 standard_mouse_cursor = ft.MouseCursor.PRECISE
             self.canvas_controller.mouse_cursor = standard_mouse_cursor     # Set the decided cursor
             self.mouse_cursor.visible = False       # Hide the custom one
-
-        # For setting a custom cursor that reflects our paint settings
-        def set_custom_cursor():
             
-            self.canvas_controller.mouse_cursor = ft.MouseCursor.NONE   # Hide standard
-            self.mouse_cursor.visible = True    # Make sure we're showing
-            
-            self.mouse_cursor.size = paint_settings.get('stroke_width', 3) * 1.25
-            self.mouse_cursor.color = paint_settings.get('color', ft.Colors.BLACK)
-            
-            stroke_cap = paint_settings.get('stroke_cap', 'butt')
-            # Set mouse cursor based on stroke cap
-            if stroke_cap == 'round': self.mouse_cursor.icon = ft.Icons.CIRCLE
-            elif stroke_cap == 'square':self.mouse_cursor.icon = ft.Icons.SQUARE
-            else: self.mouse_cursor.icon = ft.Icons.SQUARE_ROUNDED
-
-            # If using tool mode, hide our custom one and use the standard, unless using erase or line tool
-            if control_mode == "tool":
-                if active_tool != "erase" and active_tool != "line": # Erase or line get normal draw cursor
-                    self.canvas_controller.mouse_cursor = ft.MouseCursor.CLICK     # Other tools get responsive click cursor
-                    self.mouse_cursor.visible = False       # Hide the custom one
-
         # Grab out settings for paint and canvas
         paint_settings = app.settings.data.get('paint_settings', {}).copy()
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
@@ -255,13 +226,8 @@ class Canvas(Widget):
             return  
 
         # Sets our mouse cursor as the standard one or custom one depending on setting
-        if self.use_standard_cursor:
-            set_standard_cursor()
-        else:
-            if control_mode == "draw" or (control_mode == "tool" and (active_tool == "erase" or active_tool == "line")):
-                set_custom_cursor()
-            else:
-                set_standard_cursor()
+        set_standard_cursor()
+        
 
         # Check if active layer is hidden, and overrite cursors
         if self.layer_stack.controls[self.active_layer_idx].visible == False:
@@ -720,7 +686,6 @@ class Canvas(Widget):
         # Grab canvas and catch errors
         canvas: cv.Canvas =  self.layer_stack.controls[self.active_layer_idx]
 
-        self.move_mouse_cursor(e.local_position)    # Make our custom mouse_cursor follow our mouse position when drawing if using it
         drawing.update_stroke(canvas=canvas, current_position=e.local_position, prev_position=ft.Offset(self.state.x, self.state.y))
         self.state.x = e.local_position.x
         self.state.y =  e.local_position.y
@@ -1571,7 +1536,6 @@ class Canvas(Widget):
             on_pan_start=self.handle_pan_start,         # Starts a new brush stroke with current paint settings
             on_pan_update=self.handle_pan_update,           # Updates the current stroke based on mouse movement
             on_pan_end=self.handle_pan_end,                # Saves the now complete stroke to our data and canvas capture
-            on_hover=lambda e: self.move_mouse_cursor(e.local_position),
             on_tap_up=self.handle_tap,                   # Handles adding dots and tools
             width=self.CANVAS_WIDTH,
             height=self.CANVAS_HEIGHT,

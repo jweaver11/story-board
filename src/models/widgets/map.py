@@ -70,7 +70,7 @@ class Map(Widget):
                 'show_sidebar': True,
 
                 # Info about the map
-                'draw_mode': app.settings.data.get('widget_defaults', {}).get('map', {}).get('draw_mode'),      # Whether we're in draw mode or not
+                'locked': app.settings.data.get('widget_defaults', {}).get('map', {}).get('locked'),      # Whether we're in draw mode or not
                 'background_image': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_image'),    # The background image of the map
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
@@ -112,7 +112,7 @@ class Map(Widget):
         self.map_controller: ft.GestureDetector
 
         # Sidebar elements
-        self.sidebar_draw_mode_toggle_button: ft.MenuItemButton
+        self.sidebar_locked_toggle_button: ft.MenuItemButton
         self.CANVAS_WIDTH = MAP_WIDTH
         self.CANVAS_HEIGHT = MAP_HEIGHT
 
@@ -451,7 +451,7 @@ class Map(Widget):
     # Handles all tap events on the canvas and decides how to handle them based on the current control mode
     async def handle_tap(self, e: ft.TapEvent):
 
-        if self.data.get('draw_mode', False):
+        if self.data.get('locked', False):
             control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
             # Add a point if in draw mode
             if control_mode == "draw":
@@ -477,7 +477,7 @@ class Map(Widget):
 
     # Handles all pan start events
     async def handle_pan_start(self, e: ft.DragStartEvent):
-        if not self.data.get('draw_mode', False):
+        if not self.data.get('locked', False):
             return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Draw mode, so we start our stroke
@@ -492,7 +492,7 @@ class Map(Widget):
 
     # Handles all pan update events
     async def handle_pan_update(self, e: ft.DragUpdateEvent):
-        if not self.data.get('draw_mode', False):
+        if not self.data.get('locked', False):
             return
 
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
@@ -509,7 +509,7 @@ class Map(Widget):
             
     # Handles all pan end events
     async def handle_pan_end(self, e: ft.DragEndEvent):
-        if not self.data.get('draw_mode', False):
+        if not self.data.get('locked', False):
             return
         control_mode = app.settings.data.get('canvas_settings', {}).get('current_control_mode', "")
         # Draw mode, so we end our stroke
@@ -534,7 +534,7 @@ class Map(Widget):
 
 
     async def fill_tool(self, e: ft.TapEvent):
-        if not self.data.get('draw_mode'):
+        if not self.data.get('locked'):
             return
         # Parse any app color format we may get into a Pillow RGBA tuple.
         def _parse_rgba(color_value) -> tuple[int, int, int, int]:
@@ -835,7 +835,7 @@ class Map(Widget):
     # Tap event for adding a tool to the canvas
     async def add_shape(self, e: ft.TapEvent):
 
-        if not self.data.get('draw_mode'):
+        if not self.data.get('locked'):
             return
         
         # Check if we're in tool mode, and what tool we're using
@@ -907,7 +907,7 @@ class Map(Widget):
         active_tool = app.settings.data.get('canvas_settings', {}).get('current_tool_name', "")
 
         # Sets our mouse cursor as the standard one or custom one depending on setting
-        if self.data.get('draw_mode'):
+        if self.data.get('locked'):
             set_standard_cursor()
         else:
             self.map_controller.mouse_cursor = ft.MouseCursor.CLICK
@@ -1383,9 +1383,9 @@ class Map(Widget):
                 on_click=self.show_info,
             ),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('draw_mode', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Lock Map" if not self.data.get('draw_mode') else "Unlock Map",
-                on_click=self.toggle_draw_mode,
+                leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('locked', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
+                content="Lock Map" if not self.data.get('locked') else "Unlock Map",
+                on_click=self.toggle_locked,
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             bg_popover := shad.Popover(
@@ -1432,12 +1432,12 @@ class Map(Widget):
         super().set_mouse_coords(e)
 
     
-    async def toggle_draw_mode(self, e=None):
+    async def toggle_locked(self, e=None):
         
-        new_draw_mode = not self.data.get('draw_mode', False)
-        self.update_data(**{'draw_mode': new_draw_mode})
+        new_locked = not self.data.get('locked', False)
+        self.update_data(**{'locked': new_locked})
         
-        self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_draw_mode else None
+        self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_locked else None
         self.map_controller.content.items = self.get_new_item_options()
         self.map_controller.update()
 
@@ -1528,7 +1528,7 @@ class Map(Widget):
                 ft.Container(expand=True, ignore_interactions=True),
                 items=self.get_new_item_options(),
             ),
-            mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('draw_mode', False) else None, 
+            mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('locked', False) else None, 
             expand=True,
 
             # Drawing event handlers

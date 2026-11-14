@@ -16,7 +16,6 @@ from models.dataclasses.item_template import default_item_template_data
 from models.dataclasses.world_template import default_world_template_data
 from models.dataclasses.templates import TEMPLATE_DEFAULTS, get_template
 import asyncio
-from styles.text_fields import SettingsTextField
 import base64
 import flet_shadcn_ui as shad
 
@@ -80,7 +79,6 @@ class Settings(ft.View):
                     },
                     'canvas': {
                         'color': "primary",
-                        'use_standard_cursor': True,     # if the mouse cursor will reflect the current paint settings or not. False=standard cursor
                         'export_file_type': ".png"   # Default export file type for plotlines
                     },
                     'note': {
@@ -101,7 +99,8 @@ class Settings(ft.View):
                     },
                     'map': {
                         'color': "primary",
-                        'draw_mode': False,   # If the map is in draw mode or not
+                        'locked': False,   # If the map is in draw mode or not
+                        'background_image_type': "default",   # Type of background image, can be default, custom, etc.
                         'background_image': "map_bg_fantasy_dark.png",   # Default background image for new maps
                         'export_file_type': ".json"   # Default export file type for maps
                     },
@@ -482,18 +481,14 @@ class Settings(ft.View):
             e.control.update()
             
 
-        def update_plotline_division_count(e: ft.Event[ft.TextField]):
-            if not e.control.value:
-                e.control.error = "Please enter a valid number"
+        def update_plotline_division_count(e: ft.Event[shad.Input]):
+            if not e.control.value or not e.control.value.isdigit() or int(e.control.value) < 0 or int(e.control.value) > 30:
+                e.control.error_text = "Please enter a valid number between 0 and 30"
                 e.control.value = str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9))
                 e.control.update()
                 return
-            elif int(e.control.value) < 0 or int(e.control.value) > 30:
-                e.control.error = "Maximum is 30"
-                e.control.value = str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 9))
-                e.control.update()
-                return
-            e.control.error = None
+            
+            e.control.error_text = None
             new_count = int(e.control.value)
             self.update_data(**{'widget_defaults': {'plotline': {'starting_division_count': new_count}}})
             e.control.update()
@@ -506,14 +501,17 @@ class Settings(ft.View):
 
         async def update_map_bg_image(e: ft.Event[ft.Dropdown]):
             new_image = e.control.value
-            if new_image == "upload_image":   # Wait for user to pick and image if uploading
+            new_image_type = None
+            if new_image == "custom_image":   # Wait for user to pick and image if uploading
                 new_image = await get_uploaded_map_bg_image()
+                new_image_type = "custom_image"
             if not new_image:   # If user canceled the upload, just return
                 new_image = self.data.get('widget_defaults', {}).get('map', {}).get('background_image', "map_bg_fantasy_dark.png")
                 e.control.value = self.data.get('widget_defaults', {}).get("map", {}).get('background_image', "map_bg_fantasy_dark.png")  # Reset the dropdown to the previous value
                 e.control.update()
                 return
             self.update_data(**{'widget_defaults': {'map': {'background_image': new_image}}})
+            self.update_data(**{'widget_defaults': {'map': {'background_image_type': new_image_type if new_image_type else new_image}}})
             
 
         # Uploads an image and sets it as the background image for our map
@@ -548,16 +546,11 @@ class Settings(ft.View):
             e.control.color = new_color
             e.control.update()
 
-        def toggle_plot_chart_spider_web_view(e: ft.Event):
-            new_value = not self.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False)
+        def toggle_plot_chart_spider_web_view(e: ft.Event[shad.Switch]):
+            new_value = e.control.value
             self.data['widget_defaults']['plot_chart']['spider_web_view'] = new_value
             self.update_data(**{'widget_defaults': {'plot_chart': {'spider_web_view': new_value}}})
-            if new_value:
-                e.control.icon = ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED
-            else:
-                e.control.icon = ft.Icons.SHOW_CHART
-            e.control.update()
-
+            
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
         content=ft.Column([
@@ -574,14 +567,14 @@ class Settings(ft.View):
 
             ft.Divider(),
 
-            ft.Container(height=10),    # Spacer
-            ft.Text("Default Colors", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(left=20)),
+            #ft.Container(height=10),    # Spacer
+            
 
             ft.Column([
+                ft.Text("Default Colors", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
+                ft.Row([
                 
-                ft.Container(
-                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8, 
-                    content=shad.Select(
+                shad.Card(shad.Select(
                         label="Manuscript", data="manuscript",
                         options=[
                             shad.SelectOption(
@@ -593,9 +586,7 @@ class Settings(ft.View):
                     ),
                 ),
 
-                ft.Container(
-                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Character", data="character",
                     options=[
                         shad.SelectOption(
@@ -607,9 +598,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Note", data="note",
                     options=[
                         shad.SelectOption(
@@ -620,9 +609,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('note', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Plotline", data="plotline",
                     options=[
                         shad.SelectOption(
@@ -633,9 +620,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('plotline', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Plot chart", data="plot_chart",
                     options=[
                         shad.SelectOption(
@@ -646,9 +631,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Item", data="item",
                     options=[
                         shad.SelectOption(
@@ -659,9 +642,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('item', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="World", data="world",
                     options=[
                         shad.SelectOption(
@@ -672,9 +653,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('world', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Map", data="map",
                     options=[
                         shad.SelectOption(
@@ -685,9 +664,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('map', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Radar Chart", data="chart",
                     options=[
                         shad.SelectOption(
@@ -698,9 +675,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('chart', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Connection Map", data="connection_map",
                     options=[
                         shad.SelectOption(
@@ -712,9 +687,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Canvas", data="canvas",
                     options=[
                         shad.SelectOption(
@@ -725,9 +698,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('canvas', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Canvas Board", data="canvas_board",
                     options=[
                         shad.SelectOption(
@@ -739,9 +710,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                ft.Container(
-                                    padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8,
-                                    content=shad.Select(
+                shad.Card(shad.Select(
                     label="Comic Preview", data="comic_preview",
                     options=[
                         shad.SelectOption(
@@ -752,217 +721,156 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('color', "primary").capitalize(),
                 ),
                 ),
+            ], wrap=True, max_width=1000, spacing=20, run_spacing=20),
 
-                
-                Switch(
-                    value=self.data.get('widget_defaults', {}).get('canvas', {}).get('use_standard_cursor', True),
-                    label="Use Standard Mouse Cursor", 
-                    tooltip="Whether to use a standard mouse cursor for Canvases or use a mouse cursor that reflects the current brush settings.",
-                    on_change=lambda e: self.update_data(**{'widget_defaults': {'canvas': {'use_standard_cursor': e.control.value}}}),
+            ft.Divider(),
+            ft.Text("Widget Defaults", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
+
+            ft.Row([      
+
+                shad.Card(
+                    "Plotline",
+                    "Default settings for new plotlines.",
+                    content=ft.Column([
+                        shad.Input(    # Change the default number of divisions for new plotlines
+                            label="Division Count",
+                            value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
+                            description="The starting number of divisions for new plotlines.",
+                            on_blur=update_plotline_division_count,
+                            width=350, keyboard_type=ft.KeyboardType.NUMBER,
+                        ),
+                        shad.Switch(
+                            value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
+                            label="Show Division Labels",
+                            sublabel="If the number above each division marker is shown for new plotlines.",
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
                 ),
-                ft.Divider(),
-                
-                
 
-                SettingsTextField(    # Change the default number of divisions for new plotlines
-                    label="Starting Division Count",
-                    value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
-                    tooltip="The default number of divisions for new plotlines.",
-                    input_filter=ft.NumbersOnlyInputFilter(),
-                    on_blur=update_plotline_division_count
+                shad.Card(
+                    "Map",
+                    "Default settings for new maps.",
+                    content=ft.Column([
+                        # Set defualt background image for new maps
+                        shad.Select(
+                            label="Default Background Image",
+                            value=self.data.get('widget_defaults', {}).get("map", {}).get('background_image_type', "map_bg_fantasy_dark.png"),
+                            on_change=update_map_bg_image,
+                            options=[
+                                shad.SelectOption(value="map_bg_fantasy_dark.png", text="Dark Fantasy"),
+                                shad.SelectOption(value="map_bg_fantasy_light.png", text="Light Fantasy"),
+                                shad.SelectOption(value="map_bg_scifi.png", text="Sci-Fi"),
+                                shad.SelectOption(value="map_bg_space.jpg", text="Space"),
+                                shad.SelectOption(value="custom_image", text="Custom Image")
+                            ],
+                        ),
+                        # Map draw mode
+                        shad.Switch(
+                            value=self.data.get('widget_defaults', {}).get('map', {}).get('locked', False),
+                            label="Locked", sublabel="If new maps start locked in order to prevent drawing.",
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'locked': e.control.value}}}),
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
                 ),
-                
-                
-                Switch(
-                    value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
-                    label="Show Division Labels",
-                    tooltip="Whether to show each divisions label or not.",
-                    on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
+         
+                shad.Card(
+                    "Plot Chart",
+                    "Default settings for new plot charts.",
+                    content=shad.Switch(
+                        label="Straight Line Connections",
+                        sublabel="If new connections between nodes in a plot chart should be straight lines.",
+                        on_change=toggle_plot_chart_spider_web_view,
+                        margin=ft.Margin.only(top=10),
+                    ),
                 ),
 
-                ft.Divider(),
-
-                ft.Text("Canvas Board", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("canvas_board")),
-                
-
-
-                ft.Divider(),
-
-                # Map options
-                ft.Text("Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("map")),
-
-                # Default map color
-                
-                
-
-                # Set defualt background image for new maps
-                ft.Dropdown(
-                    label="Default Background Image",
-                    value=self.data.get('widget_defaults', {}).get("map", {}).get('background_image', "map_bg_fantasy_dark.png"),
-                    on_select=update_map_bg_image,
-                    color=ft.Colors.ON_SURFACE,
-                    options=[
-                        ft.DropdownOption(
-                            key="map_bg_fantasy_dark.png",
-                            text="Dark Fantasy",
-                            content=ft.Text("Dark Fantasy", weight=ft.FontWeight.BOLD),
-                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+                shad.Card(
+                    "Comic Preview",
+                    "Default settings for new comic previews.",
+                    content=ft.Column([
+                        shad.Select(
+                            label="Preview Backgroun Color", 
+                            description="Starting background color for new comic previews.",
+                            options=[
+                                shad.SelectOption(
+                                    value=color, text=color.capitalize()
+                                ) for color in colors
+                            ] + [shad.SelectOption(value="transparent", text="Transparent")],
+                            on_change=set_comic_preview_background_color,
+                            value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent")),
                         ),
-                        ft.DropdownOption(
-                            key="map_bg_fantasy_light.png",
-                            text="Light Fantasy",
-                            content=ft.Text("Light Fantasy", weight=ft.FontWeight.BOLD),
-                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+
+                        shad.Select(
+                            label="Panel Spacing",
+                            description="Spacing between panels in new comic previews.",
+                            options=[
+                                shad.SelectOption(
+                                    value=str(i), text=str(i)
+                                ) for i in range(0, 21) if i % 2 == 0
+                            ],
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': int(e.control.value)}}}),
+                            value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0)),
                         ),
-                        ft.DropdownOption(
-                            key="map_bg_scifi.png",
-                            text="Sci-Fi",
-                            content=ft.Text("Sci-Fi", weight=ft.FontWeight.BOLD),
-                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+
+                        shad.Select(
+                            label="Preview Scale",
+                            description="Scale of the preview display for new comic previews.",
+                            options=[
+                                shad.SelectOption(
+                                    value=str(i), text=str(i)
+                                ) for i in range(1, 6)
+                            ],
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_scale': int(e.control.value)}}}),
+                            value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 1)),
                         ),
-                        ft.DropdownOption(
-                            key="map_bg_space.jpg",
-                            text="Space",
-                            content=ft.Text("Space", weight=ft.FontWeight.BOLD),
-                            leading_icon=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY)
+
+                        shad.Select(
+                            label="Preview Direction",
+                            description="Direction of the preview display for new comic previews.",
+                            options=[
+                                shad.SelectOption(
+                                    value="vertical", text="Vertical"
+                                ),
+                                shad.SelectOption(
+                                    value="horizontal", text="Horizontal"
+                                )
+                            ],
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_direction': e.control.value}}}),
+                            value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical"),
                         ),
-                        ft.DropdownOption(
-                            key="upload_image",
-                            text="Upload Image",
-                            content=ft.Text("Upload Image", weight=ft.FontWeight.BOLD),
-                            leading_icon=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY)
+
+                        shad.Select(
+                            label="Image Quality",
+                            description="Quality of the images for new comic previews.",
+                            options=[
+                                shad.SelectOption(
+                                    value="low", text="Low"
+                                ),
+                                shad.SelectOption(
+                                    value="medium", text="Medium"
+                                ),
+                                shad.SelectOption(
+                                    value="high", text="High"
+                                )
+                            ],
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'image_quality': e.control.value}}}),
+                            value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('image_quality', "medium"),
+                        ),
+
+                        shad.Switch(
+                            label="Anti-Aliasing",
+                            sublabel="If anti aliasing should be used when rendering images for new comic previews.",
+                            value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('anti_aliasing', True),
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'anti_aliasing': e.control.value}}})
                         )
-                    ],
-                ),
-                # Map draw mode
-                Switch(
-                    value=self.data.get('widget_defaults', {}).get('map', {}).get('draw_mode', False),
-                    label="Draw Mode",
-                    on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'draw_mode': e.control.value}}}),
-
-                ),
-
-                ft.Divider(),
-
+                        
+                    ], margin=ft.Margin.only(top=10), spacing=20),
+                ),    
+                 
                 
-                # Item options
-                ft.Text("Item", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("item")),
-                
-                # Plot Chart Options
-                ft.Text("Plot Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("plot_chart")),
-                
-                
-                Button(
-                    content="Toggle Connector View",
-                    icon=ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
-                    tooltip="Toggle between spider web connections and 3 line connections",
-                    on_click=toggle_plot_chart_spider_web_view
-                ),
-                
-                ft.Divider(),
-
-                ft.Text("Comic Preview", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("comic_preview")),
-                
-                ft.Dropdown(
-                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent")).capitalize(),   
-                    label="Preview Background Color",
-                    color=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent"),
-                    on_select=set_comic_preview_background_color,
-                    options=[
-                        ft.DropdownOption(
-                            key=color.capitalize(),
-                            text=color.capitalize(),
-                            content=ft.Text(color.capitalize(), color=color, weight=ft.FontWeight.BOLD),
-                        ) for color in colors
-                    ], #+ [ft.MenuItemButton("Transparent", data="#00000000", on_click=set_comic_preview_background_color,)],
-                    tooltip="Background color for transparent panels in the preview display, as well as between panels",
-                ),
-                ft.Dropdown(
-                    label="Panel Spacing",
-                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0)),
-                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': int(e.control.value)}}}),
-                    options=[
-                        ft.DropdownOption(
-                            key=str(i),
-                            text=str(i),
-                            content=ft.Text(str(i), weight=ft.FontWeight.BOLD),
-                        ) for i in range(0, 21) if i % 2 == 0
-                    ],
-                    tooltip="Adjust the spacing between panels in the preview display.",
-                ),
-                ft.Dropdown(
-                    label="Preview Scaling",
-                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 1)),
-                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_scale': int(e.control.value)}}}),
-                    options=[
-                        ft.DropdownOption(
-                            key=str(i),
-                            text=str(i),
-                            content=ft.Text(str(i), weight=ft.FontWeight.BOLD),
-                        ) for i in range(1, 6)
-                    ],
-                    tooltip="Adjust the scale of the preview display.",
-                ),
-                ft.Dropdown(
-                    label="Filter Quality",
-                    value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('filter_quality', "medium")).capitalize(),
-                    on_select=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'filter_quality': e.control.value.lower()}}}),
-                    options=[
-                        ft.DropdownOption(
-                            key=quality.capitalize(),
-                            text=quality.capitalize(),
-                            content=ft.Text(quality.capitalize(), weight=ft.FontWeight.BOLD),
-                        ) for quality in ["low", "medium", "high"]
-                    ],
-                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality.",
-                ),
-                Button(
-                    "Preview Direction", 
-                    ft.Icons.SWAP_VERT if self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical") == "vertical" else ft.Icons.SWAP_HORIZ, 
-                    tooltip="Swap the preview direction between vertical and horizontal.",
-                    on_click=toggle_comic_preview_direction,
-                ),
-                Switch(
-                    value=self.data.get('widget_defaults', {}).get('comic_preview', {}).get('anti_aliasing', True),
-                    label="Anti-Aliasing",
-                    tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                    on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'anti_aliasing': e.control.value}}})
-                ),
-                
-                
-                ft.Divider(),
-
-
-                ft.Text("Connection Map", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("connection_map")),
-                
-
-                ft.SubmenuButton(
-                    f"Image Filter Quality: {self.data.get('filter_quality', 'medium').capitalize()}",
-                    [
-                        #ft.MenuItemButton("Low", data="low", on_click=set_comic_preview_filter_quality),
-                        #ft.MenuItemButton("Medium", data="medium", on_click=set_comic_preview_filter_quality),
-                        #ft.MenuItemButton("High", data="high", on_click=set_comic_preview_filter_quality),
-                    ],
-                    tooltip="Adjust the filter quality of the preview display. This will affect performance and image quality",
-                    leading=ft.Icon(ft.Icons.PHOTO_FILTER_OUTLINED, self.data.get('color', ft.Colors.PRIMARY)),
-                    menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_LEFT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4)),
-                    style=ft.ButtonStyle(alignment=ft.Alignment.CENTER, mouse_cursor="click"),
-                ),      
-                ft.Divider(),
-
-                ft.Text("Character", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("character")),
-                
-
-                ft.Text("World", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("world")),
-                
-                ft.Divider(),
-
-                ft.Text("Chart", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD, key=ft.ScrollKey("chart")),
-                
-
-                
-
-            ], expand=True, scroll=ft.ScrollMode.AUTO, spacing=20, margin=ft.Margin.only(left=20)),
+            ], wrap=True, max_width=1000, spacing=20, run_spacing=20),
+            ], scroll=ft.ScrollMode.AUTO, margin=ft.Margin.only(left=20), expand=True)
             
         ], expand=True)
             
@@ -1642,4 +1550,21 @@ class Settings(ft.View):
         
 
 
+# Standard styling for most text fields we use
+@ft.control
+class SettingsTextField(ft.TextField):
+    
+    def __init__(self, *args, **kwargs):
 
+        super().__init__(*args, **kwargs)
+
+        # Default styles
+        self.label_style = ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY)
+        self.dense = True
+        self.text_style=ft.TextStyle(size=14)
+        self.multiline=False
+        self.capitalization=ft.TextCapitalization.SENTENCES
+        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+        self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
+        #self.margin=ft.Margin.only(left=20)
+        #self.width=200
