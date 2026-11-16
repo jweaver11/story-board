@@ -61,6 +61,12 @@ class Widget(ft.Container):
                 'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
                 'notes': list(),                # Several widgets have notes{'label': str(), 'value': str()}
                 'description': str(),
+
+                'interactive_viewer': {
+                    'scale': 1.0,
+                    'translation_x': 0.0,
+                    'translation_y': 0.0
+                }
             } 
 
         # Set title and story references
@@ -87,6 +93,7 @@ class Widget(ft.Container):
         # Other shared controls
         self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
         self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
+        self.iv: ft.InteractiveViewer
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
@@ -180,6 +187,28 @@ class Widget(ft.Container):
         self.w = e.width
         self.h = e.height
         await self._set_sidebar_size()  # Adjusts our sidebar size
+
+    # Called when the interactive viewer finishes a scale interaction
+    async def handle_iv_transform(self, e: ft.ScaleEndEvent):
+        transform = await e.control.get_transform()
+        self.update_data(**{
+            'interactive_viewer': {
+                'scale': transform.scale,
+                'translation_x': transform.translation_x,
+                'translation_y': transform.translation_y
+            }
+        })
+
+    # Handle panning the iv on load if we have one
+    async def transform_iv(self):
+        if not self.iv:
+            return
+        await self.iv.zoom(self.data.get('interactive_viewer', {}).get('scale', 1.0))
+        await self.iv.pan(
+            self.data.get('interactive_viewer', {}).get('translation_x', 0),
+            self.data.get('interactive_viewer', {}).get('translation_y', 0)
+        )
+        self.iv.update()
 
     # Adjust our sidebars size if visible whenever we resize
     async def _set_sidebar_size(self):

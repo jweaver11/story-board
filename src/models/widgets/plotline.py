@@ -847,6 +847,7 @@ class Plotline(Widget):
             constrained=False, expand=True,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
+            on_interaction_end=self.handle_iv_transform
         )
 
         self.content = ft.Stack([
@@ -860,6 +861,8 @@ class Plotline(Widget):
                 
         self.redraw_plotline_canvas()
 
+    def did_mount(self):
+        self.page.run_task(self.transform_iv)
 
 
 

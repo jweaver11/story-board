@@ -1520,7 +1520,7 @@ class Map(Widget):
             hover_interval=5
         )
                 
-        interactive_viewer = ft.InteractiveViewer(
+        self.iv = ft.InteractiveViewer(
             content=ft.Stack([
                 self.bg_image,
                 self.canvas,        # Canvas with our map drawing
@@ -1532,6 +1532,7 @@ class Map(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.01, max_scale=3.0,
+            on_interaction_end=self.handle_iv_transform
         )
 
 
@@ -1543,10 +1544,13 @@ class Map(Widget):
         
         # Set up our main conent
         self.content = ft.Stack([
-            interactive_viewer,
+            self.iv,
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
+    def did_mount(self):
+        self.page.run_task(self.transform_iv)

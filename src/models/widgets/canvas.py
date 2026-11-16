@@ -1555,7 +1555,7 @@ class Canvas(Widget):
         
         
         # Holds our drawing so we can interact with it, zoom, pan, etc.
-        interactive_viewer = ft.InteractiveViewer(
+        self.iv = ft.InteractiveViewer(
             content=ft.Stack([
                 ft.Container(   # Transparent Background
                     ignore_interactions=True,
@@ -1573,7 +1573,8 @@ class Canvas(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
-            #opacity=0.99
+            on_interaction_end=self.handle_iv_transform
+            
         )
         self.undo_button = ft.IconButton(
             ft.Icons.UNDO, ft.Colors.OUTLINE_VARIANT, #tooltip="Undo last task (ctrl+z)", 
@@ -1628,10 +1629,13 @@ class Canvas(Widget):
 
         # Set up our main conent
         self.content = ft.Stack([
-            interactive_viewer,
+            self.iv,
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
                 vertical_alignment=ft.CrossAxisAlignment.CENTER
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+
+    def did_mount(self):
+        self.page.run_task(self.transform_iv)

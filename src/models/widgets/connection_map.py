@@ -800,6 +800,7 @@ class ConnectionMap(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
+            on_interaction_end=self.handle_iv_transform
         )
 
         self.sidebar_notes_label.margin = None
@@ -828,3 +829,5 @@ class ConnectionMap(Widget):
         if self.data.get('show_alert', True) == True:
             self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8)))
             self.update_data(**{'show_alert': False})
+        self.page.run_task(self.transform_iv)
+        

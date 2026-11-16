@@ -627,10 +627,13 @@ class PlotChart(Widget):
         # Go through and draw our edges on the canvas
         for edge in self.data.get('edges', []):
             self.edge_canvas.shapes.append(self.Edge(self, edge))
+
+        
+            
         
 
         # Interactive viewer to hold the stack for UI manipulation
-        iv = ft.InteractiveViewer(
+        self.iv = ft.InteractiveViewer(
             content=ft.Stack([      # Hold the edge canvas and node stack
                 ft.Container(
                     image=ft.DecorationImage("flow_chart_background.png", repeat=ft.ImageRepeat.REPEAT),
@@ -643,6 +646,7 @@ class PlotChart(Widget):
             constrained=False,
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
+            on_interaction_end=self.handle_iv_transform
         )
 
         # Set up our main conent
@@ -653,7 +657,7 @@ class PlotChart(Widget):
                 open_on_long_press=True,
                 expand=True
             ),
-            ft.TransparentPointer(iv),
+            ft.TransparentPointer(self.iv),
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
@@ -661,3 +665,5 @@ class PlotChart(Widget):
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
+    def did_mount(self):
+        self.page.run_task(self.transform_iv)
