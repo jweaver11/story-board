@@ -640,7 +640,6 @@ class PlotChart(Widget):
             scale_factor=800, boundary_margin=1500,
             min_scale=0.02, max_scale=3.0,
         )
-         
 
         # Set up our main conent
         self.content = ft.Stack([
@@ -658,6 +657,3 @@ class PlotChart(Widget):
             )
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
-
-        #self.page.run_task(self.iv.pan, -FIXED_STACK_WIDTH / 4, -FIXED_STACK_HEIGHT / 4, 0)  # Center the view on the stack
-    

@@ -82,7 +82,8 @@ class Settings(ft.View):
                         'export_file_type': ".png"   # Default export file type for plotlines
                     },
                     'note': {
-                        'color': "primary"
+                        'color': "primary",
+                        'card_size': "medium"
                     },
                     'character': {
                         'color': "primary"
@@ -550,6 +551,11 @@ class Settings(ft.View):
             new_value = e.control.value
             self.data['widget_defaults']['plot_chart']['spider_web_view'] = new_value
             self.update_data(**{'widget_defaults': {'plot_chart': {'spider_web_view': new_value}}})
+
+        def update_note_card_size(e: ft.Event[shad.Select]):
+            new_size = e.control.value.lower()
+            self.update_data(**{'widget_defaults': {'note': {'card_size': new_size}}})
+            e.control.update()
             
 
         # Sets our widgets content. May need a 'reload_widget' method later, but for now this works
@@ -727,6 +733,23 @@ class Settings(ft.View):
             ft.Text("Widget Defaults", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
 
             ft.Row([      
+
+                shad.Card(
+                    "Note",
+                    "Default settings for new notes.",
+                    content=ft.Column([
+                        shad.Select(
+                            label="Default Note Card Size",
+                            value=self.data.get('widget_defaults', {}).get("note", {}).get('card_size', "medium"),
+                            on_change=update_note_card_size,
+                            options=[
+                                shad.SelectOption(value="small", text="Small"),
+                                shad.SelectOption(value="medium", text="Medium"),
+                                shad.SelectOption(value="large", text="Large"),
+                            ],
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
+                ),
 
                 shad.Card(
                     "Plotline",

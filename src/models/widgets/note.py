@@ -32,6 +32,8 @@ class Note(Widget):
                 'tag': "note", 
                 'color': app.settings.data.get('widget_defaults', {}).get('note', {}).get('color'),
 
+                'card_size': app.settings.data.get('widget_defaults', {}).get('note', {}).get('card_size'),
+
                 # Note card data. Stored as list so we can duplicate labels
                 'card_data': [ 
                     {"label": "", "value": "", 'color': 'onsurface', 'strikethrough': False},
@@ -105,7 +107,6 @@ class Note(Widget):
                     for tf in (column.controls[0], column.controls[2]):
                         tf.text_style.decoration = decoration
                         tf.update()
-                    await self.story.close_menu()
 
             async def move_card(offset: int):
                 
@@ -122,6 +123,13 @@ class Note(Widget):
                 card_row.controls = build_card_row()
                 card_row.update()
 
+            def handle_size_change(e: ft.Event[ft.Control]):
+                close_popovers()
+                new_size = str(e.control.data).lower()
+                self.update_data(**{'card_size': new_size})
+                card_row.controls = build_card_row()
+                card_row.update()
+
             async def move_up(e=None):
                 await move_card(-1)
 
@@ -131,8 +139,13 @@ class Note(Widget):
             def toggle_color_popover(e=None):
                 color_popover.open = not color_popover.open
                 color_popover.update()
+            def toggle_size_popover(e=None):
+                size_popover.open = not size_popover.open
+                size_popover.update()
             def close_popovers(e=None):
                 color_popover.open = False
+                size_popover.open = False
+                size_popover.update()
                 color_popover.update()
 
 
@@ -155,19 +168,37 @@ class Note(Widget):
                     on_dismiss=close_popovers
                 ), 
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                size_popover := shad.Popover(
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.OPEN_IN_FULL_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        content=ft.Row([ft.Text("Card Size"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        trailing=ft.Icons.ARROW_RIGHT,
+                        on_click=toggle_size_popover,
+                        close_on_click=False,
+                    ),
+                    ft.Column([
+                        shad.MenuItem(
+                            content=str(size),
+                            on_click=handle_size_change, close_on_click=True, data=size,
+                            expand=True
+                        ) for size in ("Small", "Medium", "Large")
+                    ], tight=True, spacing=0, width=100),
+                    on_dismiss=close_popovers
+                ), 
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(
                     leading=ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
-                    content=ft.Text("Move Up", weight=ft.FontWeight.BOLD),
+                    content="Move Up",
                     on_click=move_up,
                 ),
                 shad.MenuItem(
                     leading=ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
-                    content=ft.Text("Move Down", weight=ft.FontWeight.BOLD),
+                    content="Move Down",
                     on_click=move_down,
                 ),
                 shad.MenuItem(
                     leading=ft.Icon(ft.Icons.FORMAT_STRIKETHROUGH_OUTLINED, size=20, color=ft.Colors.PRIMARY),
-                    content=ft.Text("Mark Done", weight=ft.FontWeight.BOLD),
+                    content="Mark Done",
                     on_click=handle_strikethrough,
                 ),
                
@@ -175,7 +206,7 @@ class Note(Widget):
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(
                     leading=ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, size=20, color=ft.Colors.ERROR),
-                    content=ft.Text("Delete Card", weight=ft.FontWeight.BOLD),
+                    content="Delete Card",
                     on_click=delete_card,
                 ),
                 
@@ -188,14 +219,24 @@ class Note(Widget):
             color = data.get('color', 'onsurface')
             strikethrough = data.get('strikethrough', False)
 
+            size = self.data.get('card_size', "medium")
+            match size:
+                case "small":
+                    pixel_size = 300
+                case "medium":
+                    pixel_size = 400
+                case "large":
+                    pixel_size = 500
+                case _:
+                    pixel_size = 300
+
             # Top textfield for the label
             label_tf = ft.TextField(
                 value=label,
-                dense=True, multiline=True, width=400,
+                dense=True, multiline=True, width=pixel_size,
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 capitalization=ft.TextCapitalization.SENTENCES,
                 text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
-                
                 suffix_icon=HighlightButton(
                     content=shad.ContextMenu(
                         ft.Icon(ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT),
@@ -227,11 +268,10 @@ class Note(Widget):
                     ], spacing=0, expand=True),
                     bgcolor=ft.Colors.with_opacity(0.05, color),
                     border_radius=4,
-                    #shadow=ft.BoxShadow(blur_style=ft.BlurStyle.OUTER),
-                    height=300, width=300, data=idx
+                    data=idx
                 ),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                height=300, width=400,
+                height=pixel_size * 0.75, width=pixel_size,
                 shape=ft.RoundedRectangleBorder(radius=4),
                 data=idx
             )
