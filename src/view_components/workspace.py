@@ -237,6 +237,12 @@ class Workspace(ft.Container):
         self.tab_bar.indicator_color = self.tab_view.controls[new_selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
         self.update()
 
+        selected_index = self.tabs.selected_index
+        if 0 <= selected_index < len(self.tab_view.controls):
+            selected_widget = self.tab_view.controls[selected_index]
+            if hasattr(selected_widget, 'transform_iv'):
+                await selected_widget.transform_iv()
+
     # Saves the active widget on certain calls
     async def save_active_widget(self):
         widget = self.get_active_widget()

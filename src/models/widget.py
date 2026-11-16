@@ -93,7 +93,7 @@ class Widget(ft.Container):
         # Other shared controls
         self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
         self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
-        self.iv: ft.InteractiveViewer
+        self.iv: ft.InteractiveViewer = None
 
     # Updates data for this widget and marks it as dirty for the next file save
     def update_data(self, **kwargs):
