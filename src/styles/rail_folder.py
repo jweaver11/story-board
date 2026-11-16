@@ -193,7 +193,7 @@ class RailFolder(ft.GestureDetector):
                     on_click=toggle_new_popover,
                     close_on_click=False,
                 ),
-                ft.Column(self.new_items(), tight=True, spacing=0, width=230, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO)
+                ft.Column(self.new_items(), tight=True, spacing=0, width=180, height=min(500, ft.context.page.height * 0.5), scroll=ft.ScrollMode.AUTO)
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             color_popover := shad.Popover(
@@ -204,7 +204,7 @@ class RailFolder(ft.GestureDetector):
                     on_click=toggle_color_popover,
                     close_on_click=False,
                 ),
-                ft.Column(self._get_color_options(), tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO)
+                ft.Column(self._get_color_options(), tight=True, spacing=0, width=100, height=min(500, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO)
             ), 
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
         

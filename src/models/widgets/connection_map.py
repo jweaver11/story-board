@@ -475,8 +475,8 @@ class ConnectionMap(Widget):
                 self.left = 50
             elif self.left > self.left > FIXED_STACK_WIDTH - 50:
                 self.left = FIXED_STACK_WIDTH - 50
-            if self.top < 0:
-                self.top = 0
+            if self.top < 50:
+                self.top = 50
             elif self.top > self.left > FIXED_STACK_HEIGHT - 50:
                 self.top = FIXED_STACK_HEIGHT - 50
             
@@ -494,8 +494,7 @@ class ConnectionMap(Widget):
             # Make the icons follow us
             for icon in self.widget.connections_stack.controls:
                 if isinstance(icon, self.widget.ConnectionIcon) and (icon.widget1_id == self.widget_id or icon.widget2_id == self.widget_id):
-                    icon.build_icon()
-                    icon.update()
+                    icon.set_position()
 
         # Handles when we stop dragging
         async def _drag_end(self, e: ft.DragEndEvent):
@@ -663,14 +662,19 @@ class ConnectionMap(Widget):
             e.control.content.content.shadow = None
             e.control.update()
 
-        def build_icon(self):
+        def set_position(self, update=True):
             start_position = self.widget.data['widgets'].get(self.widget1_id, None)
             end_position = self.widget.data['widgets'].get(self.widget2_id, None)
 
-            mid_position = ((start_position[0] + end_position[0]) / 2, (start_position[1] + end_position[1]) / 2)
+            if start_position and end_position:
+                mid_position = ((start_position[0] + end_position[0]) / 2, (start_position[1] + end_position[1]) / 2)
+                self.left = mid_position[0]
+                self.top = mid_position[1]
+                if update:
+                    self.update()
 
-            self.left = mid_position[0]
-            self.top = mid_position[1]
+        def build_icon(self):
+            self.set_position(False)
             self.content = shad.ContextMenu(
                 ft.Container(
                     ft.Icon(connection_icons.get(self.icon, ft.Icons.ERROR), self.color, size=30),

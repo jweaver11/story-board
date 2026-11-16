@@ -88,11 +88,15 @@ class PlotChart(Widget):
             # Update us visually
             self.left += e.local_delta.x
             self.top += e.local_delta.y
+            if self.left < 50:
+                self.left = 50
+            elif self.left > self.left > FIXED_STACK_WIDTH - 50:
+                self.left = FIXED_STACK_WIDTH - 50
+            if self.top < 50:
+                self.top = 50
+            elif self.top > self.left > FIXED_STACK_HEIGHT - 50:
+                self.top = FIXED_STACK_HEIGHT - 50
             self.update()
-            if self.left < 0:
-                self.left = 0
-            if self.top < 0:
-                self.top = 0
             # Update data - Edge needs this to redraw as we drag, so we can't wait until drag is over
             for node in self.widget.data.get('nodes', []):
                 if node.get('id', '') == self.data.get('id', ''):
