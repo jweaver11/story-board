@@ -189,7 +189,7 @@ class Widget(ft.Container):
         await self._set_sidebar_size()  # Adjusts our sidebar size
 
     # Called when the interactive viewer finishes a scale interaction
-    async def handle_iv_transform(self, e: ft.ScaleEndEvent):
+    async def handle_iv_transform(self, e: ft.ScaleEndEvent[ft.InteractiveViewer]):
         transform = await e.control.get_transform()
         self.update_data(**{
             'interactive_viewer': {
@@ -203,12 +203,16 @@ class Widget(ft.Container):
     async def transform_iv(self):
         if not self.iv:
             return
-        await self.iv.zoom(self.data.get('interactive_viewer', {}).get('scale', 1.0))
-        await self.iv.pan(
-            self.data.get('interactive_viewer', {}).get('translation_x', 0),
-            self.data.get('interactive_viewer', {}).get('translation_y', 0)
-        )
-        self.iv.update()
+        try:
+            await self.iv.zoom(self.data.get('interactive_viewer', {}).get('scale', 1.0))
+            await self.iv.pan(
+                self.data.get('interactive_viewer', {}).get('translation_x', 0),
+                self.data.get('interactive_viewer', {}).get('translation_y', 0)
+            )
+            self.iv.update()
+        except Exception as e:
+            return
+            print("Error transforming IV:", e)
 
     # Adjust our sidebars size if visible whenever we resize
     async def _set_sidebar_size(self):

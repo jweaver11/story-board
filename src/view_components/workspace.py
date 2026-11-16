@@ -19,6 +19,7 @@ import asyncio
 from styles.menu_option_style import MenuOptionStyle
 import os
 import flet_shadcn_ui as shad
+from copy import deepcopy
 
 
 # Our workspace object that is stored in our story object
@@ -224,6 +225,7 @@ class Workspace(ft.Container):
             selected_widget = self.tab_view.controls[selected_index]
             if hasattr(selected_widget, 'save_file'):
                 await selected_widget.save_file()
+            
     
     # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
     async def tab_change(self, e: ft.Event):
@@ -240,7 +242,7 @@ class Workspace(ft.Container):
         selected_index = self.tabs.selected_index
         if 0 <= selected_index < len(self.tab_view.controls):
             selected_widget = self.tab_view.controls[selected_index]
-            if hasattr(selected_widget, 'transform_iv'):
+            if hasattr(selected_widget, 'transform_iv') and selected_widget.iv is not None:
                 await selected_widget.transform_iv()
 
     # Saves the active widget on certain calls
