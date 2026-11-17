@@ -1151,17 +1151,36 @@ class Settings(ft.View):
                     ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
                     on_click=_run_tutorial,
                 ),
+                ft.Container(
+                    ft.IconButton(
+                        ft.Icons.SCHOOL_OUTLINED,
+                        icon_color=ft.Colors.PRIMARY,
+                        on_click=_run_tutorial,  mouse_cursor="click", bgcolor=ft.Colors.SURFACE,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+                        tooltip="Click here to run the tutorial"
+                    ),
+                    border_radius=4, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                ),
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
                 ft.Container(
                     ft.Text("Discord", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500),
                     on_click=_discord_clicked,
+                ),
+                ft.Container(
+                    ft.IconButton(
+                        ft.Icons.DISCORD,
+                        icon_color=ft.Colors.PRIMARY,
+                        on_click=_discord_clicked,  mouse_cursor="click", bgcolor=ft.Colors.SURFACE,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
+                        tooltip="Click here to join our Discord"
+                    ),
+                    border_radius=4, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8, wrap=True), # Link
             
             
 
-            ft.Container(height=10),    # Spacer
 
             ft.Divider(),
             ft.Container(height=10),    # Spacer

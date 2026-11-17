@@ -166,7 +166,7 @@ class Map(Widget):
                 drag_interval=20,
                 on_enter=self.highlight,
                 on_exit=self.stop_highlight,
-                hover_interval=20, drag_interval=20,
+                hover_interval=20, 
                 on_hover=self.widget.set_mouse_coords,
                 mouse_cursor=ft.MouseCursor.CLICK,
             )
