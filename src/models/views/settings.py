@@ -733,81 +733,6 @@ class Settings(ft.View):
             ft.Text("Widget Defaults", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
 
             ft.Row([      
-
-                shad.Card(
-                    "Note",
-                    "Default settings for new notes.",
-                    content=ft.Column([
-                        shad.Select(
-                            label="Default Note Card Size",
-                            value=self.data.get('widget_defaults', {}).get("note", {}).get('card_size', "medium"),
-                            on_change=update_note_card_size,
-                            options=[
-                                shad.SelectOption(value="small", text="Small"),
-                                shad.SelectOption(value="medium", text="Medium"),
-                                shad.SelectOption(value="large", text="Large"),
-                            ],
-                        ),
-                    ], margin=ft.Margin.only(top=10), spacing=20),
-                ),
-
-                shad.Card(
-                    "Plotline",
-                    "Default settings for new plotlines.",
-                    content=ft.Column([
-                        shad.Input(    # Change the default number of divisions for new plotlines
-                            label="Division Count",
-                            value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
-                            description="The starting number of divisions for new plotlines.",
-                            on_blur=update_plotline_division_count,
-                            width=350, keyboard_type=ft.KeyboardType.NUMBER,
-                        ),
-                        shad.Switch(
-                            value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
-                            label="Show Division Labels",
-                            sublabel="If the number above each division marker is shown for new plotlines.",
-                            on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
-                        ),
-                    ], margin=ft.Margin.only(top=10), spacing=20),
-                ),
-
-                shad.Card(
-                    "Map",
-                    "Default settings for new maps.",
-                    content=ft.Column([
-                        # Set defualt background image for new maps
-                        shad.Select(
-                            label="Default Background Image",
-                            value=self.data.get('widget_defaults', {}).get("map", {}).get('background_image_type', "map_bg_fantasy_dark.png"),
-                            on_change=update_map_bg_image,
-                            options=[
-                                shad.SelectOption(value="map_bg_fantasy_dark.png", text="Dark Fantasy"),
-                                shad.SelectOption(value="map_bg_fantasy_light.png", text="Light Fantasy"),
-                                shad.SelectOption(value="map_bg_scifi.png", text="Sci-Fi"),
-                                shad.SelectOption(value="map_bg_space.jpg", text="Space"),
-                                shad.SelectOption(value="custom_image", text="Custom Image")
-                            ],
-                        ),
-                        # Map draw mode
-                        shad.Switch(
-                            value=self.data.get('widget_defaults', {}).get('map', {}).get('locked', False),
-                            label="Locked", sublabel="If new maps start locked in order to prevent drawing.",
-                            on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'locked': e.control.value}}}),
-                        ),
-                    ], margin=ft.Margin.only(top=10), spacing=20),
-                ),
-         
-                shad.Card(
-                    "Plot Chart",
-                    "Default settings for new plot charts.",
-                    content=shad.Switch(
-                        label="Straight Line Connections",
-                        sublabel="If new connections between nodes in a plot chart should be straight lines.",
-                        on_change=toggle_plot_chart_spider_web_view,
-                        margin=ft.Margin.only(top=10),
-                    ),
-                ),
-
                 shad.Card(
                     "Comic Preview",
                     "Default settings for new comic previews.",
@@ -889,10 +814,82 @@ class Settings(ft.View):
                         )
                         
                     ], margin=ft.Margin.only(top=10), spacing=20),
-                ),    
-                 
-                
-            ], wrap=True, max_width=1000, spacing=20, run_spacing=20),
+                ),   
+
+                shad.Card(
+                    "Plotline",
+                    "Default settings for new plotlines.",
+                    content=ft.Column([
+                        shad.Input(    # Change the default number of divisions for new plotlines
+                            label="Division Count",
+                            value=str(self.data.get('widget_defaults', {}).get('plotline', {}).get('starting_division_count', 4)),
+                            description="The starting number of divisions for new plotlines.",
+                            on_blur=update_plotline_division_count,
+                            width=350, keyboard_type=ft.KeyboardType.NUMBER,
+                        ),
+                        shad.Switch(
+                            value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
+                            label="Show Division Labels",
+                            sublabel="If the number above each division marker is shown for new plotlines.",
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
+                ), 
+
+                shad.Card(
+                    "Map",
+                    "Default settings for new maps.",
+                    content=ft.Column([
+                        # Set defualt background image for new maps
+                        shad.Select(
+                            label="Default Background Image",
+                            value=self.data.get('widget_defaults', {}).get("map", {}).get('background_image_type', "map_bg_fantasy_dark.png"),
+                            on_change=update_map_bg_image,
+                            options=[
+                                shad.SelectOption(value="map_bg_fantasy_dark.png", text="Dark Fantasy"),
+                                shad.SelectOption(value="map_bg_fantasy_light.png", text="Light Fantasy"),
+                                shad.SelectOption(value="map_bg_scifi.png", text="Sci-Fi"),
+                                shad.SelectOption(value="map_bg_space.jpg", text="Space"),
+                                shad.SelectOption(value="custom_image", text="Custom Image")
+                            ],
+                        ),
+                        # Map draw mode
+                        shad.Switch(
+                            value=self.data.get('widget_defaults', {}).get('map', {}).get('locked', False),
+                            label="Locked", sublabel="If new maps start locked in order to prevent drawing.",
+                            on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'locked': e.control.value}}}),
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
+                ),
+         
+                shad.Card(
+                    "Plot Chart",
+                    "Default settings for new plot charts.",
+                    content=shad.Switch(
+                        label="Straight Line Connections",
+                        sublabel="If new connections between nodes in a plot chart should be straight lines.",
+                        on_change=toggle_plot_chart_spider_web_view,
+                        margin=ft.Margin.only(top=10),
+                    ),
+                ),
+                shad.Card(
+                    "Note",
+                    "Default settings for new notes.",
+                    content=ft.Column([
+                        shad.Select(
+                            label="Default Note Card Size",
+                            value=self.data.get('widget_defaults', {}).get("note", {}).get('card_size', "medium"),
+                            on_change=update_note_card_size,
+                            options=[
+                                shad.SelectOption(value="small", text="Small"),
+                                shad.SelectOption(value="medium", text="Medium"),
+                                shad.SelectOption(value="large", text="Large"),
+                            ],
+                        ),
+                    ], margin=ft.Margin.only(top=10), spacing=20),
+                ),
+
+            ], wrap=True, vertical_alignment=ft.CrossAxisAlignment.START, spacing=20, run_spacing=20),
             ], scroll=ft.ScrollMode.AUTO, margin=ft.Margin.only(left=20), expand=True)
             
         ], expand=True)
