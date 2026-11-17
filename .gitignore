@@ -168,3 +168,9 @@ storage/
 
 # Google OAuth client secret
 src/assets/google_client_secret.json
+
+# AI related tests
+tests/
+
+# Macos file metadata
+.DS_Store

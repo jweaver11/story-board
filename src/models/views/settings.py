@@ -10,7 +10,6 @@ from styles.colors import colors, theme_colors
 import os
 import json
 from view_components.menu_bar import MenuBar
-from styles.snack_bar import SnackBar
 from models.dataclasses.character_template import default_character_template_data
 from models.dataclasses.item_template import default_item_template_data
 from models.dataclasses.world_template import default_world_template_data
@@ -1274,19 +1273,19 @@ class Settings(ft.View):
                 self.update_data(**{'sync_with_cloud_on_close': False, 'sync_with_cloud_on_launch': False})
                 await self.save_file()
                 self._settings_category_changed()
-                self.page.show_dialog(SnackBar("Disconnected from Google Drive."))
+                self.page.show_dialog(shad.Toast("Disconnected from Google Drive."))
                 return
             try:
-                self.page.show_dialog(SnackBar("Opening browser to connect your Google account..."))
+                self.page.show_dialog(shad.Toast("Opening browser to connect your Google account..."))
                 await asyncio.to_thread(google_drive.authenticate)
                 app.is_cloud_authenticated = True
                 self._settings_category_changed()
-                self.page.show_dialog(SnackBar("Google account connected."))
+                self.page.show_dialog(shad.Toast("Google account connected."))
             except Exception as ex:
-                self.page.show_dialog(SnackBar(google_drive.describe_error(ex)))
+                self.page.show_dialog(shad.Toast(google_drive.describe_error(ex)))
 
         async def _run_with_route(route: str, work):
-            ''' Shows the saving/pulling view while work() runs, then returns to settings with a result snackbar '''
+            ''' Shows the saving/pulling view while work() runs, then returns to settings with a result shad.Toast '''
             page = self.page    # Captured because this view unmounts while we are away
             await page.push_route(route)
             try:
@@ -1294,7 +1293,7 @@ class Settings(ft.View):
             except Exception as ex:
                 message = google_drive.describe_error(ex)
             await page.push_route("/settings")
-            page.show_dialog(SnackBar(message))
+            page.show_dialog(shad.Toast(message))
 
         async def _push_story_clicked(e=None):
             if self.story is None:
@@ -1362,7 +1361,7 @@ class Settings(ft.View):
         async def _pull_settings_clicked(e=None):
             _confirm(
                 "Pull settings from cloud?",
-                "This replaces your local settings (except window settings) with the ones in your Google Drive.",
+                "This replaces your local settings and character, world, and item templates with the ones in your Google Drive. Window settings are kept.",
                 _do_pull_settings,
             )
 
@@ -1456,7 +1455,8 @@ class Settings(ft.View):
                                 ft.Container(push_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
                                 ft.Text(f"Push Settings")
                             ], tight=True),
-                        ], margin=ft.Margin.only(top=10))
+                        ], margin=ft.Margin.only(top=10)),
+                        width=400
                     ),
                     shad.Card(
                         "Pull From Cloud",
@@ -1470,17 +1470,19 @@ class Settings(ft.View):
                                 ft.Container(pull_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
                                 ft.Text(f"Pull Settings")
                             ], tight=True),
-                        ], margin=ft.Margin.only(top=10))
+                        ], margin=ft.Margin.only(top=10)),
+                        width=400
                     ),
                     #ft.Divider(),
                     shad.Card(
                         "Settings that get Synced",
-                        f"- Appearance, Widget, and Template Settings\n- Paint Brushes and Saved Font configurations\n"
+                        f"- Appearance, Widget, and Template Settings\n- Paint Brushes and Saved Font configurations\n",
+                        width=400
                     )
                 
                 ], 
                 scroll=ft.ScrollMode.AUTO, spacing=20,
-                #visible=authed, 
+                visible=authed, 
                 alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(top=10, bottom=10)
             ),
             

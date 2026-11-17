@@ -16,6 +16,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 import shutil
 from constants import APP_DATA_PATH, STORIES_DIRECTORY_PATH
+from models.dataclasses.templates import TEMPLATE_DEFAULTS, get_template
 
 # drive.file only grants access to files/folders this app created
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -257,9 +258,16 @@ def _ensure_folder(service, children: dict, parent_id: str, name: str) -> str:
     return folder_id
 
 
+def _settings_with_templates(settings_data: dict) -> dict:
+    data = settings_data.copy()
+    for widget_type in TEMPLATE_DEFAULTS:
+        get_template(data, widget_type)
+    return data
+
+
 def _upload_settings(service, children: dict, root_id: str, settings_data: dict) -> None:
     ''' Uploads settings.json to the Drive root, leaving out the device specific 'page' settings '''
-    data = {k: v for k, v in settings_data.items() if k != "page"}
+    data = {k: v for k, v in _settings_with_templates(settings_data).items() if k != "page"}
     media = MediaIoBaseUpload(io.BytesIO(json.dumps(data, indent=4).encode("utf-8")), mimetype="application/json", resumable=False)
     existing = [i for i in children.get(root_id, []) if i["name"] == SETTINGS_FILE_NAME and i["mimeType"] != FOLDER_MIME]
     if existing:
@@ -324,12 +332,10 @@ def pull_all() -> tuple[dict | None, int]:
         raise FileNotFoundError("No 'Story Board' folder was found in your Google Drive. Push to the cloud first.")
 
     children = _list_all(service)
-    settings_data = None
+    settings_data = _get_settings(service, children, root_id)
     stories_id = None
     for item in children.get(root_id, []):
-        if item["name"] == SETTINGS_FILE_NAME and item["mimeType"] != FOLDER_MIME and settings_data is None:
-            settings_data = json.loads(service.files().get_media(fileId=item["id"]).execute().decode("utf-8"))
-        elif item["name"] == STORIES_FOLDER_NAME and item["mimeType"] == FOLDER_MIME:
+        if item["name"] == STORIES_FOLDER_NAME and item["mimeType"] == FOLDER_MIME:
             stories_id = item["id"]
 
     files: dict[str, bytes] = {}
@@ -355,7 +361,8 @@ def pull_all() -> tuple[dict | None, int]:
 def _get_settings(service, children: dict, root_id: str) -> dict | None:
     for item in children.get(root_id, []):
         if item["name"] == SETTINGS_FILE_NAME and item["mimeType"] != FOLDER_MIME:
-            return json.loads(service.files().get_media(fileId=item["id"]).execute().decode("utf-8"))
+            data = json.loads(service.files().get_media(fileId=item["id"]).execute().decode("utf-8"))
+            return _settings_with_templates(data)
     return None
 
 
