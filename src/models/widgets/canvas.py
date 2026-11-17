@@ -991,7 +991,7 @@ class Canvas(Widget):
 
             color_picker = ColorPicker(
                 self.data.get('background', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
-                on_color_change=_color_change,
+                on_color_change=_color_change, width=512, color_picker_width=152    # Fixed width of shad dialog
             )
             dlg = shad.Dialog(
                 content=color_picker,
@@ -1000,7 +1000,8 @@ class Canvas(Widget):
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
                     ft.TextButton("Set", on_click=_set_color_confirmed, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
-                ], expand=True
+                ], 
+                
             )
             self.page.show_dialog(dlg)
 
