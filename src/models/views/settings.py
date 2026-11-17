@@ -17,6 +17,7 @@ from models.dataclasses.templates import TEMPLATE_DEFAULTS, get_template
 import asyncio
 import base64
 import flet_shadcn_ui as shad
+from flet_color_pickers import ColorPicker
 
  
 class Settings(ft.View):
@@ -101,6 +102,7 @@ class Settings(ft.View):
                         'color': "primary",
                         'locked': False,   # If the map is in draw mode or not
                         'background_image_type': "default",   # Type of background image, can be default, custom, etc.
+                        'background_color': None,
                         'background_image': "map_bg_fantasy_dark.png",   # Default background image for new maps
                         'export_file_type': ".json"   # Default export file type for maps
                     },
@@ -500,11 +502,42 @@ class Settings(ft.View):
             e.control.update()
 
         async def update_map_bg_image(e: ft.Event[ft.Dropdown]):
+            def change_color(e: ft.Event[ft.Event]):
+                nonlocal color, new_image_type
+                color = e.data
+            def save_and_close(e: ft.Event[ft.Control]):
+                nonlocal color
+                self.update_data(**{'widget_defaults': {'map': {'background_image': None}}})
+                self.update_data(**{'widget_defaults': {'map': {'background_color': color}}})
+                self.update_data(**{'widget_defaults': {'map': {'background_image_type': "color"}}})
+                self.page.pop_dialog()
+                
             new_image = e.control.value
             new_image_type = None
+
+            if new_image == "color":
+                color = self.data.get('background_color', ft.Colors.PRIMARY)
+                color_picker = ColorPicker(
+                    self.data.get('background_color', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                    on_color_change=change_color, width=512, color_picker_width=152    # Fixed width of shad dialog
+                )
+                dlg = shad.Dialog(
+                    content=color_picker,
+                    title="Set Background to a Color",
+                    description="This will overwrite its current background image",
+                    actions=[
+                        ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                        ft.TextButton("Set", on_click=save_and_close, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                    ], 
+                    
+                )
+                self.page.show_dialog(dlg)
+                return
             if new_image == "custom_image":   # Wait for user to pick and image if uploading
                 new_image = await get_uploaded_map_bg_image()
                 new_image_type = "custom_image"
+                if not new_image:
+                    return
             if not new_image:   # If user canceled the upload, just return
                 new_image = self.data.get('widget_defaults', {}).get('map', {}).get('background_image', "map_bg_fantasy_dark.png")
                 e.control.value = self.data.get('widget_defaults', {}).get("map", {}).get('background_image', "map_bg_fantasy_dark.png")  # Reset the dropdown to the previous value
@@ -849,7 +882,8 @@ class Settings(ft.View):
                                 shad.SelectOption(value="map_bg_fantasy_light.png", text="Light Fantasy"),
                                 shad.SelectOption(value="map_bg_scifi.png", text="Sci-Fi"),
                                 shad.SelectOption(value="map_bg_space.jpg", text="Space"),
-                                shad.SelectOption(value="custom_image", text="Custom Image")
+                                shad.SelectOption(value="custom_image", text="Custom Image"),
+                                shad.SelectOption(value="color", text="Color"),
                             ],
                         ),
                         # Map draw mode

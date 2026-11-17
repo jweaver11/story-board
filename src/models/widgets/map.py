@@ -72,6 +72,7 @@ class Map(Widget):
                 # Info about the map
                 'locked': app.settings.data.get('widget_defaults', {}).get('map', {}).get('locked'),      # Whether we're in draw mode or not
                 'background_image': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_image'),    # The background image of the map
+                'background_color': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_color'),
 
                 'lore': list(),     # List of lores [{'label': "Lore Label", 'content': "Lore Content"}]
                 'history': list(),      # List of histories  [{'label': "History Label", 'content': "History Content"}]
@@ -1249,13 +1250,14 @@ class Map(Widget):
                     self.page.pop_dialog()
                     return
 
-                self.update_data(**{'background_image': snapshot_str})  # Update our data
+                self.update_data(**{'background_image': snapshot_str, 'background_color': None})  # Update our data
                 
                 # Update the image in our widget
                 self.bg_image.image = ft.DecorationImage(
                     f"data:image/png;base64,{snapshot_str}",
                     fit=ft.BoxFit.FILL
                 )
+                self.bg_image.bgcolor = None
                 self.bg_image.update()
                 self.page.pop_dialog()
 
@@ -1294,13 +1296,14 @@ class Map(Widget):
                     with open(file_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         # Save to our data
-                        self.update_data(**{'background_image': f"{encoded_string}"})
+                        self.update_data(**{'background_image': f"{encoded_string}", 'background_color': None})
 
                     # Update the image in our widget
                     self.bg_image.image = ft.DecorationImage(
                         f"data:image/png;base64,{encoded_string}",
                         fit=ft.BoxFit.FILL
                     )
+                    self.bg_image.bgcolor = None
                     self.bg_image.update()
 
                 except Exception:
@@ -1310,12 +1313,50 @@ class Map(Widget):
         def handle_set_built_in_image(e: ft.Event[ft.MenuItemButton]):
             close_popovers()
 
-            self.update_data(**{'background_image': e.control.data})
+            self.update_data(**{'background_image': e.control.data, 'background_color': None})
             self.bg_image.image = ft.DecorationImage(
                 e.control.data,
                 fit=ft.BoxFit.FILL
             )
+            self.bg_image.bgcolor = None
             self.bg_image.update()
+
+        
+
+        def set_bg_color(e: ft.Event[ft.Control]):
+
+            def change_color(e: ft.Event[ft.Event]):
+                nonlocal color
+                color = e.data
+            def save_and_close(e: ft.Event[ft.Control]):
+                nonlocal color
+                self.update_data(**{
+                    'background_color': color,
+                    'background_image': None
+                })
+                self.bg_image.bgcolor = color
+                self.bg_image.image = None
+                self.bg_image.update()
+                self.page.pop_dialog()
+
+            close_popovers()
+            color = self.data.get('background_color', ft.Colors.PRIMARY)
+            color_picker = ColorPicker(
+                self.data.get('background_color', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                on_color_change=change_color, width=512, color_picker_width=152    # Fixed width of shad dialog
+            )
+            dlg = shad.Dialog(
+                content=color_picker,
+                title="Set Background to a Color",
+                description="This will overwrite its current background image",
+                actions=[
+                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
+                    ft.TextButton("Set", on_click=save_and_close, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                ], 
+                
+            )
+            self.page.show_dialog(dlg)
+           
 
         def toggle_new_popover(e=None):
             new_popover.open = not new_popover.open
@@ -1329,6 +1370,7 @@ class Map(Widget):
             new_popover.update()
             bg_popover.open = False
             bg_popover.update()
+            
 
         return [
             new_popover := shad.Popover(
@@ -1353,17 +1395,7 @@ class Map(Widget):
                 on_dismiss=close_popovers
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
-                content="Show Info",
-                on_click=self.show_info,
-            ),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('locked', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Lock Map" if not self.data.get('locked') else "Unlock Map",
-                on_click=self.toggle_locked,
-            ),
-            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            
             bg_popover := shad.Popover(
                 shad.MenuItem(
                     content=ft.Row([ft.Text("Background"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -1371,6 +1403,12 @@ class Map(Widget):
                     on_click=toggle_bg_popover, close_on_click=False, 
                 ),
                 ft.Column([
+                    shad.MenuItem(
+                        "Set Color", leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        on_click=set_bg_color, 
+                        tooltip="Set the map background to a color",
+                        data="color",
+                    ),
                     shad.MenuItem(      
                         leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
                         on_click=set_canvas_bg_image,
@@ -1399,7 +1437,19 @@ class Map(Widget):
                     ), 
                 ], tight=True, width=150, spacing=0),
                 on_dismiss=close_popovers
-            )
+            ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
+                content="Show Info",
+                on_click=self.show_info,
+            ),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('locked', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
+                content="Lock Map" if not self.data.get('locked') else "Unlock Map",
+                on_click=self.toggle_locked,
+            ),
+            
         ]
     
     # Also sets our mouse coordinates for the menu to open at the right place
@@ -1460,7 +1510,8 @@ class Map(Widget):
             image=ft.DecorationImage(       # Background image
                 self.data.get('background_image', "map_bg_fantasy.jpg"),
                 fit=ft.BoxFit.FILL
-            ) 
+            )  if self.data.get('background_image') else None,
+            bgcolor=self.data.get('background_color', None)
         )
 
         capture = self.data.get('capture', '')
