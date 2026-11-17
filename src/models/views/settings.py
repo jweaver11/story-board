@@ -1111,7 +1111,7 @@ class Settings(ft.View):
                 ),
             ]),
             ft.Text(
-                "Edit your character and world templates",
+                "Edit your character, world, and item template",
                 theme_style=ft.TextThemeStyle.BODY_MEDIUM,
                 color=ft.Colors.ON_SURFACE_VARIANT,
             ),
@@ -1186,7 +1186,7 @@ class Settings(ft.View):
             ft.Container(height=10),    # Spacer
 
 
-            ft.Text("Widgets", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(left=20)),
+            #ft.Text("Widgets", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(left=20)),
 
             ft.Column([
                 
@@ -1255,7 +1255,7 @@ class Settings(ft.View):
                     "A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!",
                     width=ft.context.page.width * 0.7
                 ),
-            ], spacing=20, scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START, margin=ft.Margin.only(left=20, top=10)),
+            ], spacing=20, scroll=ft.ScrollMode.AUTO, expand=True, alignment=ft.MainAxisAlignment.START,),
 
         ], alignment=ft.MainAxisAlignment.START, expand=True)
 
@@ -1365,16 +1365,6 @@ class Settings(ft.View):
                 "This replaces your local settings (except window settings) with the ones in your Google Drive.",
                 _do_pull_settings,
             )
-        def _push_on_close_changed(e):
-            value = bool(e.control.value)
-            updates = {'sync_with_cloud_on_close': value}
-            if not value:
-                updates['sync_with_cloud_on_launch'] = False
-            self.update_data(**updates)
-            self._settings_category_changed()
-
-        def _pull_on_launch_changed(e):
-            self.update_data(**{'sync_with_cloud_on_launch': bool(e.control.value)})
 
         authed = app.is_cloud_authenticated
         
@@ -1390,7 +1380,7 @@ class Settings(ft.View):
         has_story = authed and self.story is not None
         push_story_button = ft.IconButton(
             ft.CupertinoIcons.BOOK,
-            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.ERROR,
+            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.OUTLINE_VARIANT,
             disabled=not has_story,
             on_click=_push_story_clicked, icon_size=50, mouse_cursor="click" if has_story else None, bgcolor=ft.Colors.SURFACE,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
@@ -1402,7 +1392,7 @@ class Settings(ft.View):
 
         pull_story_button = ft.IconButton(
             ft.CupertinoIcons.BOOK,
-            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.ERROR,
+            icon_color=ft.Colors.PRIMARY if has_story else ft.Colors.OUTLINE_VARIANT,
             disabled=not has_story,
             on_click=_pull_story_clicked, icon_size=50, mouse_cursor="click" if has_story else None, bgcolor=ft.Colors.SURFACE,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
@@ -1412,33 +1402,20 @@ class Settings(ft.View):
             else ("Open a story to pull it" if authed else "Connect to Google Drive first")
         )
 
-        push_settings_desc = "Push Story Board settings to cloud. These settings include: " if authed else "Connect to Google Drive first"
-        push_settings_details = f"- Character and World Templates\n- Paint Brushes and Saved Font configurations\n- Widget defaults and other settings" if authed else ""
+        push_settings_desc = "Push Story Board settings to cloud. These settings include: "
 
         push_settings_button = ft.IconButton(
             ft.Icons.SETTINGS_OUTLINED,
-            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.ERROR,
-            disabled=not authed, on_click=_push_settings_clicked, icon_size=50, mouse_cursor="click" if authed else None, bgcolor=ft.Colors.SURFACE,
+            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.OUTLINE_VARIANT,
+            disabled=not authed, 
+            on_click=_push_settings_clicked, icon_size=50, mouse_cursor="click" if authed else None, bgcolor=ft.Colors.SURFACE,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
         )
         pull_settings_button = ft.IconButton(
             ft.Icons.SETTINGS_OUTLINED,
-            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.ERROR,
+            icon_color=ft.Colors.PRIMARY if authed else ft.Colors.OUTLINE_VARIANT,
             disabled=not authed, on_click=_pull_settings_clicked, icon_size=50, mouse_cursor="click" if authed else None, bgcolor=ft.Colors.SURFACE,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4))
-        )
-        pull_settings_desc = "Pull Story Board settings from cloud, overriding the existing local version." if authed else "Connect to Google Drive first"
-
-
-
-        push_on_close_switch = ft.Switch(
-            label="Push TO cloud on close", value=self.data.get('sync_with_cloud_on_close', False),
-            disabled=not authed, on_change=_push_on_close_changed,
-        )
-        pull_on_launch_switch = ft.Switch(
-            label="Pull FROM cloud on launch", value=self.data.get('sync_with_cloud_on_launch', False),
-            disabled=not authed or not self.data.get('sync_with_cloud_on_close', False), on_change=_pull_on_launch_changed,
-            tooltip="Requires 'Push TO cloud on close', otherwise unsynced progress would be lost on relaunch",
         )
 
 
@@ -1457,53 +1434,57 @@ class Settings(ft.View):
                     theme_style=ft.TextThemeStyle.BODY_MEDIUM,
                     color=ft.Colors.ON_SURFACE_VARIANT,
                 ),
-            ft.Container(connect_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4),
+                ft.Container(connect_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4),
             ]),
             
             #ft.Container(height=10),    # Spacer
             ft.Divider(),
             
 
-            ft.Column([
+            ft.Column(
+                [
+
+                    shad.Card(
+                        "Push To Cloud",
+                        "Push your local settings from this device to the cloud.",
+                        ft.Column([
+                            ft.Row([
+                                ft.Container(push_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                                ft.Text(f"Push Story '{self.story.data.get('title', "") if self.story else "None"}'")
+                            ], tight=True),
+                            ft.Row([
+                                ft.Container(push_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                                ft.Text(f"Push Settings")
+                            ], tight=True),
+                        ], margin=ft.Margin.only(top=10))
+                    ),
+                    shad.Card(
+                        "Pull From Cloud",
+                        "Pull your settings from the cloud to this device.",
+                        ft.Column([
+                            ft.Row([
+                                ft.Container(pull_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                                ft.Text(f"Pull Story '{self.story.data.get('title', "") if self.story else "None"}'")
+                            ], tight=True),
+                            ft.Row([
+                                ft.Container(pull_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
+                                ft.Text(f"Pull Settings")
+                            ], tight=True),
+                        ], margin=ft.Margin.only(top=10))
+                    ),
+                    #ft.Divider(),
+                    shad.Card(
+                        "Settings that get Synced",
+                        f"- Appearance, Widget, and Template Settings\n- Paint Brushes and Saved Font configurations\n"
+                    )
                 
-                
-                ft.Row([
-                    ft.Text("Push TO Cloud", expand=True, text_align=ft.TextAlign.CENTER, theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
-                    ft.Text("Pull FROM Cloud", expand=True, text_align=ft.TextAlign.CENTER, theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD),
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                #ft.Divider(),
-                ft.Row([
-                    ft.Column([
-                        ft.Row([
-                            ft.Container(push_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
-                            ft.Text(push_story_desc, weight=ft.FontWeight.BOLD),
-                        ]),
-                        ft.Row([
-                            ft.Container(push_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
-                            ft.Text(push_settings_desc, weight=ft.FontWeight.BOLD),
-                            #ft.Text(push_settings_details, italic=True)
-                        ]),
-                    ], expand=True),
-                    ft.VerticalDivider(),
-                    ft.Column([
-                        ft.Row([
-                            ft.Container(pull_story_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
-                            ft.Text(pull_story_desc, weight=ft.FontWeight.BOLD),
-                        ]),
-                        ft.Row([
-                            ft.Container(pull_settings_button, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), border_radius=4), 
-                            ft.Text(pull_settings_desc, weight=ft.FontWeight.BOLD),
-                        ]),
-                    ], expand=True)
-                ], expand=True, spacing=30),
-                #push_on_close_switch,
-                #pull_on_launch_switch,
-                
-            ], scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER, margin=ft.Margin.only(left=20, top=10, bottom=10), visible=authed),
-            ft.Divider(visible=authed),
-            ft.Text("Settings that get Synced:", theme_style=ft.TextThemeStyle.TITLE_MEDIUM, weight=ft.FontWeight.BOLD, margin=ft.Margin.only(bottom=10, top=10), visible=authed),
-            ft.Text(push_settings_details, italic=True, visible=authed)
-        ], alignment=ft.MainAxisAlignment.START,  expand=True, spacing=0,)
+                ], 
+                scroll=ft.ScrollMode.AUTO, spacing=20,
+                #visible=authed, 
+                alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(top=10, bottom=10)
+            ),
+            
+        ], alignment=ft.MainAxisAlignment.START, expand=True, spacing=0)
 
         return content
     
