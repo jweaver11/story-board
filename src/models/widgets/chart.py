@@ -246,10 +246,9 @@ class Chart(Widget):
             update_indices()
 
         # Changes color of a rod in data, chart, and sidebar
-        async def change_rod_color(e: ft.Event):
+        async def change_rod_color(e: ft.Event[ft.Control]):
             # Grab indices and new color
-            group_idx, rod_idx = e.control.data
-            new_color = e.control.content
+            group_idx, rod_idx, new_color = e.control.data
 
             # Update data
             self.data['bar_data']['groups'][group_idx]['rods'][rod_idx]['color'] = new_color
@@ -268,19 +267,17 @@ class Chart(Widget):
             max_value=self.data.get('bar_data', {}).get('max_y', 20)
 
             return ft.Row([
-                ft.PopupMenuButton(     # Change rod color button
-                    icon=ft.Icons.COLOR_LENS_OUTLINED, 
-                    icon_color=rod.get('color', ft.Colors.PRIMARY),
-                    menu_padding=ft.Padding.all(0),
-                    tooltip="Change Color",
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                    items=[
-                        ft.PopupMenuItem(
-                            color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
-                            mouse_cursor=ft.MouseCursor.CLICK,
-                            on_click=change_rod_color, data=(group_idx, rod_idx)
+                
+                shad.ContextMenu(
+                    HighlightButton(ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, rod.get('color', ft.Colors.PRIMARY)), is_round=True, use_padding=True), 
+                    [
+                        shad.MenuItem(
+                            content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                            on_click=change_rod_color, close_on_click=True, data=(group_idx, rod_idx, color),
+                            expand=True,
                         ) for color in colors
-                    ]
+                    ],
+                    open_on_tap=True
                 ),
                 ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),  # Display min value left of slider
                 ft.Slider(      # Slider to adjust rod value
@@ -816,25 +813,27 @@ class Chart(Widget):
 
         # Returns a sidebar control for datasets
         def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False) -> ft.ExpansionTile:
+
             min_value = self.data.get('radar_data', {}).get('min_value', 0)
             max_value = self.data.get('radar_data', {}).get('max_value', 20)
             title = data_set_data.get('title', f"Data Set {data_set_idx}")
             color = data_set_data.get('color', "primary")
             entries = data_set_data.get('entries', [])
             idx = data_set_idx
+            
+            color_cm = shad.ContextMenu(
+                HighlightButton(ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, color), is_round=True, use_padding=True), 
+                [
+                    shad.MenuItem(
+                        content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
+                        on_click=update_dataset_color, close_on_click=True, data=color,
+                        expand=True
+                    ) for color in colors
+                ],
+                open_on_tap=True
+            )
             return ft.ExpansionTile(
-                leading=ft.PopupMenuButton(
-                    icon=ft.Icons.COLOR_LENS_OUTLINED, 
-                    icon_color=color, menu_padding=ft.Padding.all(0),
-                    tooltip="Change Color", data=data_set_idx,
-                    style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-                    items=[
-                        ft.PopupMenuItem(
-                            color.capitalize(), label_text_style=ft.TextStyle(color=color, weight=ft.FontWeight.BOLD),
-                            data=idx, on_click=update_dataset_color, mouse_cursor=ft.MouseCursor.CLICK
-                        ) for color in colors
-                    ]
-                ),
+                leading=color_cm,
                 title=ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 trailing=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
