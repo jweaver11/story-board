@@ -7,6 +7,7 @@ import io
 import json
 import os
 import socket
+from datetime import datetime, timezone
 import httplib2
 from google.auth.exceptions import RefreshError, TransportError
 from google.auth.transport.requests import Request
@@ -41,20 +42,20 @@ def _load_credentials() -> Credentials | None:
         return None
     try:
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-        if creds.valid:
-            return creds
-        if creds.refresh_token:
-            creds.refresh(Request())
-            _save_credentials(creds)
-            return creds
-    except TransportError:
-        raise   # Offline. Not the same as being signed out
-    except Exception as e:
+    except ValueError as e:
         print(f"Google credentials invalid: {e}")
-    return None
+        return None
+    if creds.valid:
+        return creds
+    if not creds.refresh_token:
+        return None
+    creds.refresh(Request())
+    _save_credentials(creds)
+    return creds
 
 
 def _save_credentials(creds: Credentials) -> None:
+    os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
     with open(TOKEN_PATH, "w", encoding="utf-8") as f:
         f.write(creds.to_json())
 
@@ -65,8 +66,9 @@ def is_authenticated() -> bool:
         return False
     try:
         creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-        return bool(creds.valid)
-    except Exception:
+        return bool(creds.valid or (creds.refresh_token and creds.client_id and creds.client_secret and creds.token_uri))
+    except (OSError, ValueError) as e:
+        print(f"Could not load Google credentials: {e}")
         return False
 
 
@@ -157,6 +159,9 @@ def authenticate() -> bool:
         authorization_response=redirect_uri.rstrip("/") + captured.get("path", ""),
         client_secret=client["client_secret"],
     )
+    if not token.get("refresh_token"):
+        raise RuntimeError("Google did not provide a refresh token. Please reconnect to Google Drive.")
+    expiry = datetime.fromtimestamp(token["expires_at"], timezone.utc).replace(tzinfo=None) if token.get("expires_at") else None
     creds = Credentials(
         token=token["access_token"],
         refresh_token=token.get("refresh_token"),
@@ -164,6 +169,7 @@ def authenticate() -> bool:
         client_id=client["client_id"],
         client_secret=client["client_secret"],
         scopes=SCOPES,
+        expiry=expiry,
     )
     _save_credentials(creds)
     return True

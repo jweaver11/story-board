@@ -27,6 +27,8 @@ Older settings retain their saved templates; the active legacy template (or
 Default when none is active) becomes the editable template.
 Pushing or pulling settings through Google Drive also syncs all three editable
 templates. Pulling settings replaces the local templates.
+Google Drive sign-in is saved on the device; expired access tokens are refreshed
+automatically when cloud features are used. Reconnect if access is revoked.
 
 <p align="center">
   <img src="images/Screenshot%201.png" alt="Screenshot 1 of the StoryBoard app" width="700">
