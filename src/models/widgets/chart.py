@@ -96,6 +96,7 @@ class Chart(Widget):
                         #{               # Starts maximized invisible so they can see other data_sets at all times
                             #'title': "Data Set 1",
                             #'color': "transparent",
+                            #'expanded': False,
                             #'entries': [0, 20, 20, 20, 20],   # The values for each title/axis of the radar chart. First value is min, second is max
                         #},
                         #{},...
@@ -149,7 +150,7 @@ class Chart(Widget):
             # Add rod to data and update
             self.data['bar_data']['groups'].append({
                 'name': f"Group {len(self.data.get('bar_data', {}).get('groups', [])) + 1}",
-                'expanded': False,
+                'expanded': True,
                 'rods': [
                     {
                         'to_y': median_value, 
@@ -306,6 +307,7 @@ class Chart(Widget):
         def create_sidebar_group(group_idx: int, group_data: dict, is_new: bool=False) -> ft.ExpansionTile:
             # Set data from groups
             title=group_data.get('name', "Group")
+            expanded=group_data.get('expanded', False)
             rods=[rod for rod in group_data.get('rods', [])]
 
             # Build expansion_tile functionality
@@ -318,7 +320,8 @@ class Chart(Widget):
                 dense=True, tile_padding=ft.Padding.only(left=10, right=0), controls_padding=ft.Padding.only(right=10, left=10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 data=group_idx, shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
-                expanded=is_new,
+                expanded=expanded,
+                on_change=lambda e: self.update_data(**{'bar_data': {'groups': {group_idx: {'expanded': e.control.expanded}}}}),
                 controls=[
                     ft.Divider(2, 2),   
                     ft.Row([
@@ -782,6 +785,7 @@ class Chart(Widget):
             self.data['radar_data']['data_sets'].append({
                 'title': f"Data Set {len(self.data['radar_data']['data_sets']) + 1}",
                 'color': "primary",
+                'expanded': True,
                 'entries': [median_value for _ in self.data['radar_data']['nodes']],   # Default entries for each title/node
             })
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
@@ -816,11 +820,16 @@ class Chart(Widget):
         # Returns a sidebar control for datasets
         def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False) -> ft.ExpansionTile:
 
+            def update_expanded(e: ft.Event):
+                self.data['radar_data']['data_sets'][idx]['expanded'] = e.data
+                self.update_data(**{'radar_data': self.data.get('radar_data', {})})
+
             min_value = self.data.get('radar_data', {}).get('min_value', 0)
             max_value = self.data.get('radar_data', {}).get('max_value', 20)
             title = data_set_data.get('title', f"Data Set {data_set_idx}")
             color = data_set_data.get('color', "primary")
             entries = data_set_data.get('entries', [])
+            expanded = data_set_data.get('expanded', False)
             idx = data_set_idx
             
             color_cm = shad.ContextMenu(
@@ -845,8 +854,8 @@ class Chart(Widget):
                 dense=True, tile_padding=ft.Padding.only(left=10, right=10), controls_padding=ft.Padding.only(right=20, left=20),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
-                expanded=is_new,
-                
+                expanded=expanded,
+                on_change=update_expanded,
                 controls=[
                     ft.Row([
                         ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
