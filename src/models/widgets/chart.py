@@ -132,7 +132,8 @@ class Chart(Widget):
                 for ctrl in exp_tile.controls:
                     if isinstance(ctrl, ft.Row) and len(ctrl.controls) > 2:
                         for item in ctrl.controls[0].items:     # Color picker popup items
-                            item.data = (group_idx, rod_idx)
+                            item.data = (group_idx, rod_idx, item.data[2])
+                        ctrl.controls[0].content.content.content.color = ctrl.controls[0].content.content.content.color
                         ctrl.controls[2].data = (group_idx, rod_idx)    # Slider
                         ctrl.controls[4].data = (group_idx, rod_idx)    # Delete button
                         rod_idx += 1
@@ -258,6 +259,7 @@ class Chart(Widget):
             chart.groups[group_idx].rods[rod_idx].color = new_color
             e.control.parent.icon_color = new_color
             e.control.parent.parent.controls[2].active_color = new_color
+            e.control.parent.content.content.content.color = new_color
             self.update()
 
         # Creates the rod controls for the sidebar inside a group expansion tile
@@ -837,7 +839,7 @@ class Chart(Widget):
                 title=ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 trailing=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
-                    mouse_cursor=ft.MouseCursor.CLICK, data=idx,
+                    mouse_cursor=ft.MouseCursor.CLICK, data=color,
                     on_click=delete_data_set
                 ),
                 dense=True, tile_padding=ft.Padding.only(left=10, right=10), controls_padding=ft.Padding.only(right=20, left=20),
@@ -879,9 +881,9 @@ class Chart(Widget):
             update_indices()
 
         # Change data_sets color on the chart
-        async def update_dataset_color(e: ft.Event):
-            data_set_idx = e.control.parent.data
-            new_color = str(e.control.content)
+        async def update_dataset_color(e: ft.Event[ft.Control]):
+            data_set_idx = e.control.parent.parent.data
+            new_color = e.control.data
             self.data['radar_data']['data_sets'][data_set_idx]['color'] = new_color
             self.update_data(**{'radar_data': self.data.get('radar_data', {})})
 
@@ -895,6 +897,8 @@ class Chart(Widget):
             # Update the chart's dataset color to reflect the change
             chart.data_sets[data_set_idx + 1].fill_color = ft.Colors.with_opacity(0.2, new_color)  # Skip first invisible dataset
             chart.data_sets[data_set_idx + 1].border_color = new_color
+            e.control.parent.content.content.content.color = new_color
+
             self.update()
 
         # Called to create a new node
