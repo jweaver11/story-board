@@ -163,7 +163,7 @@ class Map(Widget):
                 on_pan_start=self.start_drag,
                 on_pan_update=self.move_label,
                 on_pan_end=self.save_position,
-                
+                drag_interval=20,
                 on_enter=self.highlight,
                 on_exit=self.stop_highlight,
                 hover_interval=20, drag_interval=20,
@@ -1516,7 +1516,7 @@ class Map(Widget):
             # Non-drawing event handlers
             on_hover=self.set_mouse_coords,
 
-            drag_interval=5,
+            drag_interval=20,
             hover_interval=5
         )
                 

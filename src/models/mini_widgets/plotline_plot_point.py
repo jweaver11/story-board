@@ -409,7 +409,8 @@ class PlotlinePlotPoint(MiniWidget):
                 on_pan_start=self.widget.story.close_menu,
                 on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
                 on_tap=self.show_mini_widget,
-                mouse_cursor=ft.MouseCursor.CLICK
+                mouse_cursor=ft.MouseCursor.CLICK,
+                drag_interval=20
             ),
             shape=ft.BoxShape.CIRCLE, 
         )

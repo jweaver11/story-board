@@ -450,7 +450,7 @@ class ConnectionMap(Widget):
             ''' When we hover over a widgetacter node, we want to highlight it and show its connections '''
             if self.widget.widget1:
                 self.widget.widget2 = e.control.data
-            self.content.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(0.3, self.ref_widget.data.get('color')))
+            self.content.content.shadow = ft.BoxShadow(4, 4, ft.Colors.with_opacity(0.3, self.ref_widget.data.get('color')))
             self.update()
 
         # Stop highlighting our widgetacter node when we stop hovering over it. Ignore if we're dragging
@@ -460,7 +460,7 @@ class ConnectionMap(Widget):
                 return
             if self.widget.widget2:
                 self.widget.widget2 = None
-            self.content.shadow = ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
+            self.content.content.shadow = ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
             self.update()
 
         async def _start_drag(self, e: ft.DragStartEvent):

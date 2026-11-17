@@ -432,7 +432,7 @@ class MapLocation(MiniWidget):
                     ) if self.data.get('image_base64', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
                 ), 
-                on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
+                on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK, drag_interval=20
             ), 
             self.set_mw_image_options(),
             open_on_tap=True,
@@ -510,6 +510,7 @@ class MapLocation(MiniWidget):
                     on_tap=self.handle_rename,
                     on_enter=self.highlight, on_exit=self.stop_highlight,
                     mouse_cursor=ft.MouseCursor.TEXT,
+                    drag_interval=20,
                 ),
                 ft.Row([        # Constrain icon size to not fit our whole width
                     ft.GestureDetector(     # GD that holds our icon and allows us to drag
