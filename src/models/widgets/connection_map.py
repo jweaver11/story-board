@@ -782,7 +782,12 @@ class ConnectionMap(Widget):
         super().build()
 
         # Canvas that shows the drawn lines between widgets for their connections and icons
-        self.edges_canvas = cv.Canvas(expand=True)
+        self.edges_canvas = cv.Canvas(
+            content=ft.GestureDetector(
+                on_tap=lambda: self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8))),
+                on_secondary_tap=lambda: self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8))),
+                width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
+            ), expand=True)
 
         # Create the stack to hold our bank, widgetacter nodes, and connections canvas
         self.connections_stack = ft.Stack(

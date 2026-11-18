@@ -19,7 +19,7 @@ import base64
 import flet_shadcn_ui as shad
 from flet_color_pickers import ColorPicker
 from styles.highlight_button import HighlightButton
-
+from styles.card import Card
  
 class Settings(ft.View):
 
@@ -392,7 +392,7 @@ class Settings(ft.View):
         )
         # Dropdown so app can change their color scheme
         theme_color_dropdown = shad.Select(
-            label="Theme Color", description="Select the primary color scheme for the app",
+            #label="Theme Color", description="Select the primary color scheme for the app",
             options=[
                 shad.SelectOption(
                     value=color, text=name.capitalize()
@@ -403,7 +403,7 @@ class Settings(ft.View):
         )
 
         folder_color_dropdown = shad.Select(
-            label="Default Folder Color", description="Select the default color for new folders",
+            #label="Default Folder Color", description="Select the default color for new folders",
             options=[
                 shad.SelectOption(
                     value=color, text=color.capitalize()
@@ -438,19 +438,21 @@ class Settings(ft.View):
 
 
             ft.Row([
-                ft.Container(theme_color_dropdown, padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8),      # Change theme primary color dropdown   
-                ft.Container(folder_color_dropdown, padding=20, bgcolor=ft.Colors.SURFACE, border_radius=8),      # Change theme primary color dropdown   
-
-                
+                Card("Theme Color", "Select the primary theme color", theme_color_dropdown),      # Change theme primary color dropdown   
+                Card("Default Folder Color", "Select the default color for new folders", folder_color_dropdown),      # Change theme primary color dropdown   
             ]),  
 
 
-            ft.Switch(
-                label="Show Drawing Controls", margin=ft.Margin.only(top=10),
-                value=self.data.get('story', {}).get('show_canvas_rail', False), 
-                on_change=lambda e: self.update_data(**{'story': {'show_canvas_rail': e.control.value}}),
-                tooltip="Show or hide the drawing controls on the left side of the page. Turn off if you never plan on drawing",
-            ),
+            Card(
+                "Show Drawing Controls",
+                description="Show or hide the drawing controls on the left side of the page. Turn off if you never plan on drawing",
+                content=shad.Switch(
+                    #label="Show Drawing Controls", #margin=ft.Margin.only(top=10),
+                    value=self.data.get('story', {}).get('show_canvas_rail', False), 
+                    on_change=lambda e: self.update_data(**{'story': {'show_canvas_rail': e.control.value}}),
+                    sublabel="Show or hide the drawing controls on the left side of the page. Turn off if you never plan on drawing",
+                ),
+            )
 
         ])
 
@@ -613,7 +615,7 @@ class Settings(ft.View):
                 ft.Text("Default Colors", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
                 ft.Row([
                 
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                         label="Manuscript", data="manuscript",
                         options=[
                             shad.SelectOption(
@@ -625,7 +627,7 @@ class Settings(ft.View):
                     ),
                 ),
 
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Character", data="character",
                     options=[
                         shad.SelectOption(
@@ -637,7 +639,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Note", data="note",
                     options=[
                         shad.SelectOption(
@@ -648,7 +650,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('note', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Plotline", data="plotline",
                     options=[
                         shad.SelectOption(
@@ -659,7 +661,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('plotline', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Plot chart", data="plot_chart",
                     options=[
                         shad.SelectOption(
@@ -670,7 +672,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('plot_chart', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Item", data="item",
                     options=[
                         shad.SelectOption(
@@ -681,7 +683,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('item', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="World", data="world",
                     options=[
                         shad.SelectOption(
@@ -692,7 +694,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('world', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Map", data="map",
                     options=[
                         shad.SelectOption(
@@ -703,7 +705,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('map', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Radar Chart", data="chart",
                     options=[
                         shad.SelectOption(
@@ -714,7 +716,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('chart', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Connection Map", data="connection_map",
                     options=[
                         shad.SelectOption(
@@ -726,7 +728,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Canvas", data="canvas",
                     options=[
                         shad.SelectOption(
@@ -737,7 +739,7 @@ class Settings(ft.View):
                     value=self.data.get('widget_defaults', {}).get('canvas', {}).get('color', "primary").capitalize(),
                 ),
                 ),
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Canvas Board", data="canvas_board",
                     options=[
                         shad.SelectOption(
@@ -749,7 +751,7 @@ class Settings(ft.View):
                 ),
                 ),
 
-                shad.Card(shad.Select(
+                Card(content=shad.Select(
                     label="Comic Preview", data="comic_preview",
                     options=[
                         shad.SelectOption(
@@ -766,7 +768,7 @@ class Settings(ft.View):
             ft.Text("Widget Defaults", theme_style=ft.TextThemeStyle.TITLE_LARGE, margin=ft.Margin.only(bottom=10)),
 
             ft.Row([      
-                shad.Card(
+                Card(
                     "Comic Preview",
                     "Default settings for new comic previews.",
                     content=ft.Column([
@@ -849,7 +851,7 @@ class Settings(ft.View):
                     ], margin=ft.Margin.only(top=10), spacing=20),
                 ),   
 
-                shad.Card(
+                Card(
                     "Plotline",
                     "Default settings for new plotlines.",
                     content=ft.Column([
@@ -869,7 +871,7 @@ class Settings(ft.View):
                     ], margin=ft.Margin.only(top=10), spacing=20),
                 ), 
 
-                shad.Card(
+                Card(
                     "Map",
                     "Default settings for new maps.",
                     content=ft.Column([
@@ -896,7 +898,7 @@ class Settings(ft.View):
                     ], margin=ft.Margin.only(top=10), spacing=20),
                 ),
          
-                shad.Card(
+                Card(
                     "Plot Chart",
                     "Default settings for new plot charts.",
                     content=shad.Switch(
@@ -906,7 +908,7 @@ class Settings(ft.View):
                         margin=ft.Margin.only(top=10),
                     ),
                 ),
-                shad.Card(
+                Card(
                     "Note",
                     "Default settings for new notes.",
                     content=ft.Column([
@@ -1201,7 +1203,7 @@ class Settings(ft.View):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
                         tooltip="Click here to run the tutorial"
                     ),
-                    border_radius=4, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                    border_radius=4, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
                 ),
                 ft.Text("Join our", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT, ),
                 ft.Container(
@@ -1216,7 +1218,7 @@ class Settings(ft.View):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4)),
                         tooltip="Click here to join our Discord"
                     ),
-                    border_radius=4, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT),
+                    border_radius=4, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
                 ),
                 ft.Text("to be part of our community and see upcoming features!", theme_style=ft.TextThemeStyle.BODY_MEDIUM,),
             ], spacing=8, wrap=True), # Link
@@ -1232,67 +1234,67 @@ class Settings(ft.View):
 
             ft.Column([
                 
-                shad.Card(
+                Card(
                     "Manuscript",
                     "The main widget for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the manuscript widget as a fully built text editor",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Character",
                     "A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Note",
                     "A widget for all your ideas, themes, research, etc. Don't let the magic fade, save it here!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Plotline",
                     "A widget for visualizing the progression of your story. Create multiple plotlines for arcs, sub arcs, plot points, or regression & multi-timeline stories.",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Plot Chart",
                     "A widget for fleshing out plotlines in your story in a node to connection based format.",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Item",
                     "A widget for all items, weapons, armor, and MacGuffins in your story!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "World",
                     "A widget to describe your world(s) for your story. Plan out the lore, history, governments, factions, power systems, etc. You can create templates for your worlds, and connect them to existing maps!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Map",
                     "A widget to visualize locations in your story. Create a map for worlds, countries, cities, dungeons, etc. Connect locations on your map to other maps for a connected feel to your story!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Chart",
                     "A widget for visualizing power systems and other ideas in a chart format. Supports manipulation of bar and radar charts, with implicit animations!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Connection Map",
                     "A widget to visualize how your characters connect to each other within a story. See family trees, friends, enemies, guilds, etc.",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Canvas",
                     "The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas. Create your own drawing masterpiece or upload exported files from another drawing app!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Canvas Board",
                     "A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!",
                     width=ft.context.page.width * 0.7
                 ),
-                shad.Card(
+                Card(
                     "Comic Preview",
                     "A widget for comic-based stories for visualizing all your canvases (and external drawings you want to see), in a nice, scrollable vertical or horizontal format. See how your chapter comes together visually before you present it to the world!",
                     width=ft.context.page.width * 0.7
@@ -1486,7 +1488,7 @@ class Settings(ft.View):
             ft.Column(
                 [
 
-                    shad.Card(
+                    Card(
                         "Push To Cloud",
                         "Push your local settings from this device to the cloud.",
                         ft.Column([
@@ -1501,7 +1503,7 @@ class Settings(ft.View):
                         ], margin=ft.Margin.only(top=10)),
                         width=400
                     ),
-                    shad.Card(
+                    Card(
                         "Pull From Cloud",
                         "Pull your settings from the cloud to this device.",
                         ft.Column([
@@ -1517,7 +1519,7 @@ class Settings(ft.View):
                         width=400
                     ),
                     #ft.Divider(),
-                    shad.Card(
+                    Card(
                         "Settings that get Synced",
                         f"- Appearance, Widget, and Template Settings\n- Paint Brushes and Saved Font configurations\n",
                         width=400
@@ -1580,7 +1582,7 @@ class Settings(ft.View):
         )
 
         nav_rail_container = ft.Container(
-            bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
+            bgcolor=ft.Colors.SURFACE,
             padding=ft.Padding.all(10),
             content=nav_rail,
         )
