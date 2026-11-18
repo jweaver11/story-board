@@ -74,11 +74,16 @@ class Item(Widget):
 
             # Gives us a new textfield for each note field
             def new_field_textfield(key: str='', value: str='') -> TextField:
-                tf = TextField(
+                tf = ft.TextField(
                     value, expand=True, capitalization=ft.TextCapitalization.SENTENCES, 
                     multiline=True, label=key, dense=True, 
                     on_blur=save_field, 
                     data=key,
+                    label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
+                    text_style=ft.TextStyle(size=14),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                    border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+                    content_padding=ft.Padding.all(4),
                     suffix_icon=ft.IconButton(
                         ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
                         tooltip=f"Delete field {key}",
@@ -141,7 +146,7 @@ class Item(Widget):
 
         # Column to hold our fields textfields
         fields_column = ft.Column(
-            expand=True, horizontal_alignment=ft.CrossAxisAlignment.START, 
+            expand=True, horizontal_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(top=10),
             controls=build_fields_ctrls(), scroll="auto", alignment=ft.MainAxisAlignment.START,
         )
         

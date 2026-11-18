@@ -20,7 +20,7 @@ def default_character_template_data() -> dict:
         },
         'Physical Description': {
             'Build': "",           # Sumarrized build of character 
-            'Main Outfit': "",      
+            'Outfit': "",      
             'Sex': "", 
             'Race': "",  
             'Skin Color': "",  
