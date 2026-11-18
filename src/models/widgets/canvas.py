@@ -1561,15 +1561,14 @@ class Canvas(Widget):
                 ft.Container(   # Transparent Background
                     ignore_interactions=True,
                     image=ft.DecorationImage("canvas_bg.png", alignment=ft.Alignment.TOP_LEFT, repeat=ft.ImageRepeat.REPEAT),
-                    width=self.CANVAS_WIDTH,
-                    height=self.CANVAS_HEIGHT,
-                    expand=False,
-                    #opacity=0.99
+                    width=self.CANVAS_WIDTH + 4,
+                    height=self.CANVAS_HEIGHT + 4,
+                    expand=False, border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT)
                 ),     
                 self.layer_stack, 
                 self.mouse_cursor,
                 self.canvas_controller,
-            ]),
+            ], alignment=ft.Alignment.CENTER),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=1500,

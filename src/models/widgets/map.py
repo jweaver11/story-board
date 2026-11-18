@@ -1506,12 +1506,13 @@ class Map(Widget):
 
         self.bg_image = ft.Container(           # Background container
             ignore_interactions=True,
-            width=self.map_width, height=self.map_height,
+            width=self.map_width + 4, height=self.map_height + 4,
             image=ft.DecorationImage(       # Background image
                 self.data.get('background_image', "map_bg_fantasy.jpg"),
                 fit=ft.BoxFit.FILL
             )  if self.data.get('background_image') else None,
-            bgcolor=self.data.get('background_color', None)
+            bgcolor=self.data.get('background_color', None),
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT)
         )
 
         capture = self.data.get('capture', '')
@@ -1568,7 +1569,9 @@ class Map(Widget):
             on_hover=self.set_mouse_coords,
 
             drag_interval=20,
-            hover_interval=5
+            hover_interval=5,
+            width=self.map_width,
+            height=self.map_height,
         )
                 
         self.iv = ft.InteractiveViewer(
@@ -1578,7 +1581,7 @@ class Map(Widget):
                 self.map_controller,        # Gesture detector for our map
                 self.location_stack,        # Stack with our map locations
                 self.label_stack,           # Stack with our map labels
-            ], width=self.map_width, height=self.map_height),
+            ], alignment=ft.Alignment.CENTER),
             expand=3, 
             constrained=False,
             scale_factor=800, boundary_margin=1500,
