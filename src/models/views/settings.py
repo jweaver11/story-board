@@ -516,9 +516,9 @@ class Settings(ft.View):
             new_image_type = None
 
             if new_image == "color":
-                color = self.data.get('background_color', ft.Colors.PRIMARY)
+                color = self.data.get('widget_defaults', {}).get('map', {}).get('background_color', ft.Colors.PRIMARY)
                 color_picker = ColorPicker(
-                    self.data.get('background_color', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
+                    color,
                     on_color_change=change_color, width=512, color_picker_width=152    # Fixed width of shad dialog
                 )
                 dlg = shad.Dialog(
@@ -526,8 +526,8 @@ class Settings(ft.View):
                     title="Set Background to a Color",
                     description="This will overwrite its current background image",
                     actions=[
-                        ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                        ft.TextButton("Set", on_click=save_and_close, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                        shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, size=shad.ButtonSize.SM, variant=shad.ButtonVariant.OUTLINE),
+                        shad.Button("Set Color", on_click=save_and_close, color=ft.Colors.PRIMARY, size=shad.ButtonSize.SM, variant=shad.ButtonVariant.OUTLINE),
                     ], 
                     
                 )
@@ -1181,7 +1181,7 @@ class Settings(ft.View):
              ft.Row([
                 #ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Container(
-                    ft.Text("Click here to Run Tutorial\t", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
+                    ft.Text("Click here to Run Tutorial", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
                     on_click=_run_tutorial,
                 ),
                 ft.Container(

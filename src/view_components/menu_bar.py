@@ -92,10 +92,8 @@ class MenuBar(ft.Container):
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton(
-                        "Create Story", on_click=submit_new_story, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)
-                    )
+                    shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button("Create Story", on_click=submit_new_story, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM)
                 ],
             )
     
@@ -213,7 +211,7 @@ class MenuBar(ft.Container):
                 ft.context.page.update()
 
     
-            open_button = ft.TextButton("Open", on_click=open_selected_story, disabled=True, style=ft.ButtonStyle(mouse_cursor="click"))
+            open_button = shad.Button("Open", on_click=open_selected_story, disabled=True, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM)
 
             stories_list = shad.RadioGroup(
                 label="Stories on this device",
@@ -227,7 +225,7 @@ class MenuBar(ft.Container):
                 description="Opening a story from the cloud will overwrite the local version if it exists.",
                 content=stories_list,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
+                    shad.Button("Cancel", on_click=lambda e: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
                     open_button,
                 ]
             )
@@ -281,8 +279,8 @@ class MenuBar(ft.Container):
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton("Rename", on_click=rename_story, style=ft.ButtonStyle(mouse_cursor="click")),
+                    shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button("Rename", on_click=rename_story, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
                 ],
             )
     
@@ -363,8 +361,8 @@ class MenuBar(ft.Container):
                 description="Are you sure you want to delete this story? This action cannot be undone!",
                 content=delete_from_cloud_switch,
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: ft.context.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                    ft.TextButton(f"Delete '{self.story.data.get('title', 'Story')}'", on_click=confirm_delete, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.RED)),
+                    shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button(f"Delete '{self.story.data.get('title', 'Story')}'", on_click=confirm_delete, variant=shad.ButtonVariant.DESTRUCTIVE, size=shad.ButtonSize.SM),
                 ],
             )
             ft.context.page.show_dialog(dlg)

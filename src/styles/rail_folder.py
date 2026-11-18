@@ -266,8 +266,8 @@ class RailFolder(ft.GestureDetector):
             title=title, 
             content=input_ctrl,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Submit", on_click=submit_new_item, style=ft.ButtonStyle(mouse_cursor="click")),
+                shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button("Submit", on_click=submit_new_item, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
             ]
         )
         
@@ -363,8 +363,8 @@ class RailFolder(ft.GestureDetector):
             title=f"Rename '{self.title}'",
             content=text_field,
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click")),
-                ft.TextButton("Submit", on_click=_submit_name, style=ft.ButtonStyle(mouse_cursor="click")),
+                shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button("Submit", on_click=_submit_name, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
             ],
         )
 
@@ -418,8 +418,8 @@ class RailFolder(ft.GestureDetector):
         dlg = shad.Dialog(
             title=f"Are you sure you want to delete folder '{self.title}' forever?",
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click")),
-                ft.TextButton(f"Delete {self.title}", on_click=_delete_confirmed, style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor="click") ),
+                shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button(f"Delete {self.title}", on_click=_delete_confirmed, variant=shad.ButtonVariant.DESTRUCTIVE, size=shad.ButtonSize.SM),
             ]
         )
         self.page.show_dialog(dlg)

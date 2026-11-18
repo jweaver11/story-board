@@ -103,7 +103,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
         # Reset the rest of the templates borders
         for control in template_controls:
             if control != e.control and isinstance(control, ft.Container):
-                control.border = ft.Border.all(1, ft.Colors.OUTLINE_VARIANT)
+                control.border = ft.Border.all(2, ft.Colors.OUTLINE_VARIANT)
                 control.update()
 
         # Update our selected template border
@@ -141,7 +141,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
 
     canvas_data = {'width': None, 'height': None}       # Data we will pass set to pass in whenever a different template is selected
 
-    create_button = ft.TextButton("Create", on_click=create_canvas, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))  # Button to create the canvas
+    create_button = shad.Button("Create", on_click=create_canvas, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM)  # Button to create the canvas
 
     width_textfield = ft.TextField(
         value=str(1920), label="Width", data="width", width=140, dense=True, input_filter=ft.NumbersOnlyInputFilter(), 
@@ -159,56 +159,65 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     template_controls = [
         ft.Container(
             content=ft.Text("4k\n3840 x 2160\n16:9", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=90, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=160,
             data={'width': 3840, 'height': 2160, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k\n2560 x 1440\n16:9",text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=90, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=160,
             data={'width': 2560, 'height': 1440, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD\n1920 x 1080\n16:9", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=160,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=90, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=160,
             data={'width': 1920, 'height': 1080, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Banner\n1500 x 500\n3:1", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(5), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=270,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=90, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=270,
             data={'width': 1500, 'height': 500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("4k\n2160 x 3840\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
-            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
+            height=160, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=90,
             data={'width': 2160, 'height': 3840, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("2k\n1440 x 2560\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=160, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=90,
             data={'width': 1440, 'height': 2560, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("HD\n1080 x 1920\n9:16", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
-            height=160, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected, 
+            height=160, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=90,
             data={'width': 1080, 'height': 1920, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Vertical Banner\n500 x 1500\n1:3", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=270, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=270, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=90,
             data={'width': 500, 'height': 1500, 'aspect_ratio': None}
         ),
         ft.Container(
             content=ft.Text("Logo\n(400x400)\n1:3", text_align=ft.TextAlign.CENTER), padding=ft.Padding.all(4), border_radius=4,
-            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
-            height=90, alignment=ft.Alignment.TOP_CENTER, bgcolor=ft.Colors.SURFACE, width=90,
+            border=ft.Border.all(2, ft.Colors.OUTLINE_VARIANT), on_click=_new_template_selected,
+            height=90, alignment=ft.Alignment.TOP_CENTER, #bgcolor=ft.Colors.SURFACE, 
+            width=90,
             data={'width': 400, 'height': 400, 'aspect_ratio': None}
         ),
     ]
@@ -217,7 +226,7 @@ def new_canvas_alert_dlg(page: ft.Page, story: Story, directory_path: str=None) 
     alert_dialog = shad.Dialog(
         title="Build Your Canvas", 
         actions=[
-            ft.TextButton("Cancel", on_click=lambda: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
+            shad.Button("Cancel", on_click=lambda: page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
             create_button
         ],
         content=ft.Column(

@@ -1277,8 +1277,9 @@ class Map(Widget):
                     on_change=select_canvas
                 ),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                    ft.TextButton("Select", on_click=set_canvas_image, style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor="click")),]
+                    shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button("Select", on_click=set_canvas_image, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                ]
             )
             self.page.show_dialog(dlg)
 
@@ -1350,10 +1351,9 @@ class Map(Widget):
                 title="Set Background to a Color",
                 description="This will overwrite its current background image",
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.ERROR)),
-                    ft.TextButton("Set", on_click=save_and_close, style=ft.ButtonStyle(mouse_cursor="click", color=ft.Colors.PRIMARY)),
+                    shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button("Set", on_click=save_and_close, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
                 ], 
-                
             )
             self.page.show_dialog(dlg)
            

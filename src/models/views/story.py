@@ -13,7 +13,6 @@ import constants
 from styles.snack_bar import SnackBar
 from utils.safe_string_checker import return_safe_name
 import asyncio
-from utils.tutorial import run_tutorial
 import uuid
 from styles.colors import dark_gradient
 from concurrent.futures import ThreadPoolExecutor
@@ -654,8 +653,8 @@ class Story(ft.View):
                 widgets_column
             ], tight=True, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                export_button := ft.TextButton("Export", on_click=export_confirmed, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY))
+                shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button("Export", on_click=export_confirmed, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM)
             ]
         )
 

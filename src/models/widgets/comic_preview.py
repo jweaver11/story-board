@@ -120,8 +120,8 @@ class ComicPreview(Widget):
                     scroll=ft.ScrollMode.AUTO
                 ),
                 actions=[
-                    ft.TextButton("Cancel", on_click=lambda: self.page.pop_dialog(), style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.ERROR)),
-                    ft.TextButton("Add Canvases", on_click=save_selections, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, color=ft.Colors.PRIMARY)),
+                    shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    shad.Button("Add Canvases", on_click=save_selections, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
                 ]
             )
             self.story.page.show_dialog(dlg)
