@@ -18,6 +18,7 @@ import asyncio
 import base64
 import flet_shadcn_ui as shad
 from flet_color_pickers import ColorPicker
+from styles.highlight_button import HighlightButton
 
  
 class Settings(ft.View):
@@ -1003,7 +1004,18 @@ class Settings(ft.View):
                     ft.TextButton("Cancel", on_click=cancel),
                 ]
                 show_button = ft.TextButton(f"Add {label}", on_click=show)
-                return ft.Row([show_button, row], tight=True, spacing=0, expand=True)
+                options_button = shad.ContextMenu(   # Options button
+                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
+                    [
+                        shad.MenuItem("New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show),
+                    ] + [
+                        shad.Separator(ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem("Delete Section", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20), on_click=delete_section,),
+                    ],
+                    open_on_tap=True
+                )
+                return ft.Row([options_button, row], tight=True, spacing=0, expand=True)
+                #return ft.Row([show_button, row], tight=True, spacing=0, expand=True)
 
             def field_list(fields):
                 rows = []
@@ -1090,14 +1102,11 @@ class Settings(ft.View):
                         redraw()
 
                     controls.append(ft.Container(
-                        border_radius=ft.BorderRadius.all(10),
-                        border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+                        border_radius=ft.BorderRadius.all(4),
+                        #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                         margin=ft.Margin.all(2),
-                        shadow=ft.BoxShadow(
-                            blur_radius=2, #color=ft.Colors.with_opacity(0.18, ft.Colors.BLACK),
-                            #offset=ft.Offset(0, 1),
-                        ),
+                        
                         padding=ft.Padding.all(10),
                         content=ft.Column([
                             ft.Row([
