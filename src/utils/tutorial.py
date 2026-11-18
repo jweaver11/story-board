@@ -4,6 +4,7 @@ import flet_shadcn_ui as shad
 import shutil
 import os
 import math
+from styles.card import Card
 
 LAST_TUTORIAL_STEP = 21
 
@@ -43,125 +44,93 @@ def run_tutorial(story) -> list[ft.Control]:
         page.show_dialog(shad.Dialog(
             title="Are you sure you want to exit the tutorial?", 
             actions=[
-                ft.Button("No, keep going", on_click=lambda _: page.pop_dialog(), color=ft.Colors.PRIMARY, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK)),
-                ft.Button("Yes, exit tutorial", on_click=_confirm_exit, style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK))
+                shad.Button("No, Continue Tutorial", on_click=lambda _: page.pop_dialog(), color=ft.Colors.ERROR, size=shad.ButtonSize.SM, variant=shad.ButtonVariant.OUTLINE),
+                shad.Button("Yes, Exit Tutorial", on_click=_confirm_exit, color=ft.Colors.PRIMARY, size=shad.ButtonSize.SM, variant=shad.ButtonVariant.DESTRUCTIVE)
             ]
         ))
 
     # Load the previous tutorial step
-    async def _previous_tutorial_step(e: ft.Event=None):
+    async def previous_tutorial_step(e: ft.Event=None):
         nonlocal tutorial_step
         if tutorial_step > 0:
             tutorial_step -= 1
             await load_tutorial_step()
 
     # Load the next tutorial step
-    async def _next_tutorial_step(e: ft.Event=None):
+    async def next_tutorial_step(e: ft.Event=None):
         nonlocal tutorial_step
         if tutorial_step < LAST_TUTORIAL_STEP:
             tutorial_step += 1
         await load_tutorial_step()
 
-    # Clears out any content at the start of the tutorial so we can creat
-    async def create_content():
-
-        # Clear all the content (if any) from the tutorial story so we can re-create it
-        for widget in story.widgets.values():   # Remove existing visible widgets from workspace
-            if widget.data.get('visible'):
-                story.workspace.remove_widget_from_workspace(widget)
-
-        # Force canvas rail to show
-        if not app.settings.data.get('story', {}).get('show_canvas_rail'):
-            app.settings.update_data(**{'story': {'show_canvas_rail': True}})
-            canvas_rail.width = 78
-
-        # Clar widget list
-        story.widgets.clear()
-        folder_path = story.data.get('content_directory_path')
-        if os.path.exists(folder_path) and os.path.isdir(folder_path):  
-            for entry in os.scandir(folder_path):
-                try:
-                    if entry.is_dir(follow_symlinks=False):
-                        shutil.rmtree(entry.path)
-                    else:
-                        os.remove(entry.path)  # files + symlinks
-                except Exception as e:
-                    print(f"Error deleting {entry.path}: {e}")
-
-        await story.create_folder("Book 1", update=False)
-        await story.create_widget("Manuscript", "manuscript", update=False)
-        await story.create_widget("Canvas", "canvas", update=False)
-        await story.create_widget("Plotline", "plotline", update=False)
-        await story.create_widget("Character", "character", update=False)
-        await story.create_widget("Note", "note", update=False)
-        await story.create_widget("Canvas Board", "canvas_board", update=False)
-        await story.create_widget("Map", "map", update=False)
-        await story.create_widget("World", "world", update=False)
-        await story.create_widget("Item", "item", update=False)
-        await story.create_widget("Plot Chart", "plot_chart", update=False)
-        await story.create_widget("Comic Preview", "comic_preview", update=False)
-        await story.create_widget("Bar Chart", "chart", chart_type="bar", update=False)
-        await story.create_widget("Radar Chart", "chart", chart_type="radar", update=False)
-        await story.create_widget("Connection Map", "connection_map", update=False)
-
-        # Since widgets are not added how they think they are, trick them into thinking they are all hidden initially
-        for widget in story.widgets.values():
-            widget.update_data(**{'visible': False})
-
-        story.tree_view_rail.reload_rail()
-
-    async def show_widget(widget_tag: str, chart_type: str="radar"):
-        nonlocal story
-        for widget in story.widgets.values():
-            if widget.data.get('tag') == widget_tag:
-                if widget.data.get('tag') == "chart":
-                    if widget.data.get('chart_type') != chart_type:
-                        continue
-
-                await widget.show_widget()
-                return
-
+    async def create_widget(widget_tag: str, chart_type: str="radar"):
+        
         # If we didn't find the widget (user deleted it), create it
         title = widget_tag.replace("_", " ").title()
+        for w in story.widgets.values():
+            if w.data.get('tag', '') == widget_tag:
+                if w.data.get('tag', '') == "chart":    # Check charts to be the right type
+                    if w.data.get('chart_type', 'radar') == chart_type:
+                        await w.show_widget()
+                    else:
+                        continue
+                await w.show_widget()   # Show them if their tags match
+                return
         await story.create_widget(title, widget_tag, chart_type=chart_type)
        
-
         
-
     # Give us the actual content of the current tutorial step
     async def load_tutorial_step():
         nonlocal tutorial_step
             
         match tutorial_step:
             case 0:
-                tutorial_tip_container.title = "StoryBoard"
-                tutorial_tip_container.left = page.width / 2 - 150
+                tutorial_title.value = "StoryBoard"
+                tutorial_tip_container.left = page.width / 2 - 175
                 tutorial_tip_container.top = page.height / 2 - 150
                 tutorial_arrow.visible = False
-                tutorial_tip.value = "StoryBoard is a story creation and organizational tool for both novel and comic based authors. \n\nThis tutorial will give you a quick introduction to everything you will need when creating your masterpiece!\n\nUse the buttons below for next step, previous step, or to exit the tutorial."
+                tutorial_tip.value = "StoryBoard is a story creation and organizational tool for both novel and comic based authors, meant to be used by itself or in tandem with other creative tools." \
+                        "\n\nThis tutorial will give you a quick introduction to everything you will need when creating your masterpiece!" \
+                        "\n\nUse the buttons at the bottom of the app for, previous step, next step, or to exit the tutorial." \
+                        "\n\nKeep in mind, any changes you make will be deleted upon exiting the tutorial."
             case 1:
                 
                 tutorial_arrow.visible = True
-                tutorial_tip.value = "This is the menu bar, where you can access app settings, account settings, and more!\n\nHovering over most things will show a tooltip with more information on them!"
+                tutorial_title.value = "File Menu"
+                tutorial_tip.value = "This is the File Menu, where you will manage your stories, exporting, and settings."
                 
-                tutorial_tip_container.left = 70
+                tutorial_tip_container.left = 60
                 tutorial_tip_container.top = 50
                 tutorial_arrow.left = 20
                 tutorial_arrow.top = 50
                 
             case 2:
+                tutorial_title.value = "Settings"
                 tutorial_tip.value = "You can also open the settings from here"
-                tutorial_tip_container.left = page.width - tutorial_tip_container.width - 50
-                tutorial_arrow.left = page.width - 32
+                tutorial_tip_container.left 
+                tutorial_arrow.left = page.width - 36
+                tutorial_tip_container.left = tutorial_arrow.left - 20 - tutorial_tip_container.width
+                tutorial_arrow.top = 50
+                tutorial_tip_container.top = 50
                 tutorial_arrow.icon = ft.Icons.ARROW_UPWARD
                 canvas_rail.visible = False
                 canvas_rail.update()
             case 3:
-                tutorial_tip.value = "Here is your canvas rail, for all your drawing controls.\n\nIf you don't plan on drawing, you can hide this rail from the file menu, or in the settings."
+                tutorial_title.value = "Cloud Connect"
+                tutorial_tip.value = "Connect to the cloud here or in the settings to save and sync your work across devices."
+                tutorial_arrow.left = page.width - 80
+                tutorial_arrow.top = 50
+                tutorial_arrow.icon = ft.Icons.ARROW_UPWARD
+                tutorial_tip_container.left = tutorial_arrow.left - 20 - tutorial_tip_container.width
+                tutorial_tip_container.top = 50
+            
+            case 4:
+                tutorial_title.value = "Drawing Controls"
+                tutorial_tip.value = "Here are you drawing controls\n\nIf you don't plan on drawing, you can hide this rail from the file menu, or in the settings."
                 tutorial_tip_container.left = 100
-                tutorial_tip_container.top = 100
-                tutorial_arrow.left = 175
-                tutorial_arrow.top = 250
+                tutorial_tip_container.top = 150
+                tutorial_arrow.left = 100
+                tutorial_arrow.top = 110
                 tutorial_arrow.icon = ft.Icons.ARROW_BACK
 
                 canvas_rail.visible = True
@@ -172,116 +141,137 @@ def run_tutorial(story) -> list[ft.Control]:
                 tree_view_rail.update()
                 tree_view_rail_resizer.update()
                 workspace.update()
-            
-            case 4:
-
-                tutorial_tip.value = "This is your binder view of your Story's structure of all your folders and widgets.\n\nWe have created one of each widget for this tutorial."
-                tutorial_arrow.top = page.height / 2 - 50
-                tutorial_tip_container.top = page.height / 2 - 10
-                tutorial_arrow.left = 330
-                tutorial_tip_container.left = 330
-
-                tree_view_rail.visible = True
-                tree_view_rail_resizer.visible = True
-                tree_view_rail.update()
-                tree_view_rail_resizer.update()
-
-                workspace.visible = True
-                workspace.update()
                 
             
             case 5:
                 
-                
-                tutorial_tip.value = "Create new Widgets and Folders here, or by right clicking on a folder.\n\nWe have created one of each widget for this tutorial."
-                tutorial_arrow.top = 60
-                tutorial_tip_container.top = 60
-                tutorial_tip_container.left = 280
-                tutorial_arrow.left = 240
+                tutorial_title.value = "Create Items"
+                tutorial_tip.value = "Create new Widgets here, and folders to organize them." \
+                    "\n\nWidgets are the building blocks of your story. We'll go through them one by one soon."
+                tutorial_arrow.top = 56
+                tutorial_tip_container.top = 56
+                tutorial_tip_container.left = 320
+                tutorial_arrow.left = 280
                 tutorial_arrow.visible = True
                 tutorial_arrow.icon = ft.Icons.ARROW_BACK
                 tutorial_arrow.flip = None
+                tree_view_rail.visible = True
+                tree_view_rail_resizer.visible = True
+                workspace.visible = True
+                workspace.update()
+                tree_view_rail_resizer.update()
+                tree_view_rail.update()
 
             case 6:
-                tutorial_tip.value = "Here is your workspace. This is where you can view and interact with your Story's content.\n\nLet's go through each widget one by one."
-                tutorial_arrow.top = page.height - 400
-                tutorial_tip_container.top = page.height - 360
-                tutorial_tip_container.left = 80
-                tutorial_arrow.left = 250
+                tutorial_title.value = "Workspace"
+                tutorial_tip.value = "Here is your workspace. This is where you can build your widgets\n\nLet's go through each widget one by one."
+                
+                tutorial_tip_container.top = page.height - 320
+                tutorial_tip_container.left = 10
+                tutorial_arrow.left = tutorial_tip_container.left + tutorial_tip_container.width - 40
+                tutorial_arrow.top = page.height - 360
                 tutorial_arrow.visible = True
                 tutorial_arrow.icon = ft.Icons.ARROW_BACK
                 tutorial_arrow.flip = ft.Flip(True)
                 
             case 7:
-                tutorial_tip.value = None
-                
-                tutorial_tip.value = "The meat and potatoes for creating all novel-based stories. Similar to Microsoft Word or Google Docs, use the manuscript widget as a fully built text editor.\n\nAdd your own comments or references images to the side of any manuscript!"
-                await show_widget("manuscript")
+                tutorial_title.value = "Manuscript"
+                tutorial_tip.value = "The meat and potatoes for creating all novel-based stories.\n\n" \
+                    "Similar to Google Docs and Microsoft Word, use the manuscript widget as your built-in text editor.\n\n" \
+                    "Many widgets have sidebars on the right side for additional info and options."
+                await create_widget("manuscript")
             case 8:
-                
-                tutorial_tip.value = "The main widget for creating all comic-based stories. This widget allows illustrators to watch their ideas come to life on the Canvas.\n\nCreate your own drawing masterpiece or upload exported files from another drawing app!"
-                await show_widget("canvas")
+                tutorial_title.value = "Character"
+                tutorial_tip.value = "A widget for all the characters in your story." \
+                "\n\nFlesh out your characters looks, personality, origin, arcs, etc." \
+                "\n\nOpen settings -> templates to customize your character template."
+                await create_widget("character")
             case 9:
-                
-                tutorial_tip.value = "A widget perfect for all your ideas, themes, research, etc., into organized note cards."
-                await show_widget("note")
+                tutorial_title.value = "Note"
+                tutorial_tip.value = "The perfect note-card organization board for all your ideas, themes, research, and anything else you can imagine."
+                await create_widget("note")
             case 10:
-                
-                tutorial_tip.value = "A widget for all the characters in your story. Flesh out your characters physical look, personality, origin, arcs, etc!\n\nSelect the 'New Section' button in the bottom right to seperate ideas.\n\nYou can also create character templates in Settings -> templates."
+                tutorial_title.value = "Plotline"
+                tutorial_tip.value = "Plotlines help visualize your Story's progression using plot points and markers." \
+                "\n\nRight click the plotline to add new plot points or markers, and to see the rest of the options. " \
+                "These options can be set to default for all new Plotlines in settings -> widgets" \
+                "\n\nThis widget also works well for tracking D&D Campaigns :)"
+                await create_widget("plotline")
             case 11:
-                
-                tutorial_tip.value = "Plotlines help visualize your Story's progression of arcs and plotpoints.\n\nThis is also a helpful widget for D&D Campaigns."
-                await show_widget("plotline")
+                tutorial_title.value = "Plot Chart"
+                tutorial_tip.value = "As the alternative to Plotlines, Plot Charts allow you to organize your Story's progression in a node-edge based structure." \
+                "\n\nThese particularly shine when you need to track complex storylines with multiple branching paths." \
+                "\n\nRight click anywhere on the stack to add a new Node, then drag the connectors to connect to other Nodes."
+                await create_widget("plot_chart")
             case 12:
-                
-                tutorial_tip.value = "A widget for visualizing the geography of your world.\n\nCreate maps of continents, countries, cities, forests, dungeons, etc.\n\nMaps allow you to create locations with fleshed out information and label important areas."
-                await show_widget("map")
+                tutorial_title.value = "Item"
+                tutorial_tip.value = "A widget for all items, weapons, armor, and MacGuffins in your story." \
+                "\n\nFlesh out their size, abilities, looks, cost, and any other ideas you have!" \
+                "\n\nOpen settings -> templates to customize your item template."
+                await create_widget("item")
             case 13:
-                
-                tutorial_tip.value = "A widget for visualizing the relationships between your characters.\n\nVisualize family trees, social connections, friends, enemies, and anything your heart desires.\n\nThis widget can be particularly useful for romance stories."
-                await show_widget("character_relationship_map")
+                tutorial_title.value = "World"
+                tutorial_tip.value = "Build your world(s) in your story in their entirety." \
+                "\n\nCreate your lore, power systems, government, geography and more!" \
+                "\n\nOpen settings -> templates to customize your world template."
+                await create_widget("world")
             case 14:
-                
-                tutorial_tip.value = "A widget for fleshing out to ideas of your world.\n\nCreate your lore, power systems, government, geography and more!\n\nSelect the 'New Section' button in the bottom right to seperate ideas.\n\nYou can also create character templates in Settings -> templates"
-                await show_widget("world")
+                tutorial_title.value = "Map"
+                tutorial_tip.value = "A widget for visualizing the geography of your world." \
+                "\n\nRight click the map to create locations with fleshed out information, or change the background image." \
+                "\n\nDraw your own maps using StoryBoard, or upload an existing file to use as the map."
+                await create_widget("map")
             case 15:
-                
-                tutorial_tip.value = "A widget for all items, weapons, armor, and MacGuffins in your story!\n\nFlesh out their size, abilities, looks, cost, and any other ideas you have!"
-                await show_widget("item")
+                tutorial_title.value = "Radar Chart"
+                tutorial_tip.value = "The radar chart is the ultimate vizualization of any power system in your story." \
+                "\n\nUse it to compare different characters, abilities, or any other elements in your story." \
+                "\n\nUse the sidebar to add new datasets and nodes, and adjust options about the chart."
+                await create_widget("chart", "radar")
             case 16:
-                
-                tutorial_tip.value = "A widget for visualizing how your comic pages will look when stitched together.\n\nChoose either a horizontal or vertical display."
-                await show_widget("comic_preview")
+                tutorial_title.value = "Bar Chart"
+                tutorial_tip.value = "One of the most common ways to visualize data in your story." \
+                "\n\nUse it to compare different characters, abilities, or any other elements in your story." \
+                "\n\nUse the sidebar to add new groups and rods, and adjust options about the chart." \
+                "\n\nI mostly added this widget out of stubbornness, so I hope someone enjoys it."
+                await create_widget("chart", "bar")
             case 17:
-                
-                tutorial_tip.value = "A dual widget for visualizing any data you want in your story. Create your radar or bar charts for visualizing elements in your story like power systems."
-                await show_widget("chart")
+                tutorial_title.value = "Connection Map"
+                tutorial_tip.value = "Visualize connections between characters or any other widgets in your story." \
+                "\n\nDrag widgets from the rail onto the stack to add them to the Connection Map. Drag between characters to create or delete a connection."
+                "\n\nThis widget can be particularly useful for romance stories."
+                await create_widget("connection_map")   
             case 18:
-                
-                tutorial_tip.value = "A dual widget for visualizing any data you want in your story. Create your radar or bar charts for visualizing elements in your story like power systems."
-                await show_widget("chart", "bar")
-
+                tutorial_title.value = "Canvas"
+                tutorial_tip.value = "Now we are getting into the comic-based widgets." \
+                "\n\nThe Canvas is the main widget for drawing and creating all comic-based stories. Use the sidebar to create new layers, and apply effects to them." \
+                "\n\nCreate your own masterpieces or upload exported files from another drawing app!"
+                await create_widget("canvas")
             case 19:
+                tutorial_title.value = "Canvas Board"
+                tutorial_tip.value = "A widget for planning out comic-based chapters for your story." \
+                "\n\nDescribe and sketch out your ideas for all you panels ahead of time, " \
+                "then connect them to a Canvas or an exported file from another drawing app and watch your Chapter progress."
+                await create_widget("canvas_board")
                 
-                tutorial_tip.value = "A widget for visualizing flow charts of your stories progression. Very useful for managing multiple story routes and arcs at the same time."
-                await show_widget("plot_chart")
             case 20:
-                tutorial_arrow.top = page.height - 400
-                tutorial_tip_container.top = page.height - 360
-                tutorial_tip_container.left = 80
-                tutorial_arrow.left = 250
-                tutorial_tip.value = "A widget for planning out comic-based chapters for your story. Describe and sketch out your ideas for all you panels ahead of time. Connect them to an existing canvas in your story to see how progress is coming along!"
-                
-                await show_widget("canvas_board")
-                tutorial_arrow.rotate = None
+                tutorial_title.value = "Comic Preview"
+                tutorial_tip.value = "Preview how a comic chapter will look with all its panels stitched together." \
+                "\n\nAdd panels from the sidebar to your preview, adjust their order and layout as needed."
+                await create_widget("comic_preview")
+                tutorial_arrow.visible = True
+                tutorial_tip_container.top = page.height - 320
+                tutorial_tip_container.left = 10
+                tutorial_arrow.left = tutorial_tip_container.left + tutorial_tip_container.width - 40
+                tutorial_arrow.top = page.height - 360
 
             case 21:
-                tutorial_tip.value = "Tutorial Complete!\nGet out there and create your masterpiece!"
-                tutorial_tip_container.left = page.width / 2 - 150
+                tutorial_tip.value = "Tutorial Complete!\n\nGet out there and create your masterpiece!"
+                tutorial_tip_container.left = page.width / 2 - 175
                 tutorial_tip_container.top = page.height / 2 - 150
                 tutorial_arrow.top = page.height - 100
                 tutorial_arrow.left = page.width / 2
                 tutorial_arrow.rotate = ft.Rotate(math.pi / 2 * 3)
+                tutorial_arrow.visible = False
                 
             
             
@@ -298,6 +288,7 @@ def run_tutorial(story) -> list[ft.Control]:
     # Rails start hidden
     canvas_rail.visible = False
     tree_view_rail.visible = False
+    tree_view_rail.width = 275  # Set size early since it fits well
     tree_view_rail_resizer.visible = False
     workspace.visible = False
 
@@ -308,32 +299,28 @@ def run_tutorial(story) -> list[ft.Control]:
     workspace.update()
 
     # Clear out any existing things in the rail
-    page.run_task(create_content)
+    #page.run_task(create_content)
+
+    tutorial_title = ft.Text("StoryBoard", theme_style=ft.TextThemeStyle.TITLE_LARGE, weight=ft.FontWeight.BOLD,)
         
     tutorial_tip = ft.Text(
-        "StoryBoard is a story creation and organizational tool for both novel and comic based authors. \n\nThis tutorial will give you a quick introduction to everything you will need when creating your masterpiece!\n\nUse the buttons at the bottom of the app for, previous step, next step, or to exit the tutorial.\n\nKeep in mind, any changes you make in the tutorial are not permanent.", 
-        expand=True, size=16,# width=300
+        "StoryBoard is a story creation and organizational tool for both novel and comic based authors, meant to be used by itself or in tandem with other creative tools." \
+        "\n\nThis tutorial will give you a quick introduction to everything you will need when creating your masterpiece!" \
+        "\n\nUse the buttons at the bottom of the app for, previous step, next step, or to exit the tutorial." \
+        "\n\nKeep in mind, any changes you make will be deleted upon exiting the tutorial.", 
     )
-    tutorial_step = 0
         
-    tutorial_tip_container = ft.Container(
-        ft.Column([
-            tutorial_tip, 
-        ], tight=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, ), 
-        bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST, 
-        padding=ft.Padding.all(10), 
-        border_radius=4, width=300, 
-        alignment=ft.Alignment.TOP_CENTER, 
-        animate_position=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-        shadow=ft.BoxShadow(0, 0, ft.Colors.SURFACE_CONTAINER_LOWEST), 
-        left=page.width / 2 - 150, top=page.height / 2 - 150,
-    )
+    tutorial_step = 0
 
-    tutorial_tip_container = shad.Card(
-        title="StoryBoard",
-        description=tutorial_tip, width=300,
-        left=page.width / 2 - 150, top=page.height / 2 - 150,
+    tutorial_tip_container = Card(
+        content=ft.Column([
+            tutorial_title,
+            tutorial_tip,
+        ]),
+        width=350, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        left=page.width / 2 - 175, top=page.height / 2 - 150,
         animate_position=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+        shadow=ft.BoxShadow(1, 1, color=ft.Colors.SURFACE)
     )
 
     tutorial_arrow = ft.Icon(
@@ -347,25 +334,19 @@ def run_tutorial(story) -> list[ft.Control]:
         tutorial_arrow,
         
         ft.Row([
-            shad.Card(
-                content=ft.Row([
-                    shad.Button(
-                        "Previous", ft.Icons.UNDO,
-                        on_click=_previous_tutorial_step, 
-                        variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM,
-                    ),
-                    shad.Button(
-                        "Exit Tutorial", color=ft.Colors.ERROR, 
-                        on_click=_end_tutorial_clicked, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM
-                    ),
-                    shad.Button(
-                        "Next", ft.Icons.REDO,
-                        on_click=_next_tutorial_step, 
-                        variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM,
-                    ),
-                ], alignment=ft.MainAxisAlignment.CENTER, tight=True),
-                
-                padding=10
+            shad.Button(
+                "Prev", ft.Icons.UNDO,
+                on_click=previous_tutorial_step, 
+                variant=shad.ButtonVariant.PRIMARY, size=shad.ButtonSize.SM,
             ),
-        ], bottom=0, left=0, right=0, alignment=ft.MainAxisAlignment.CENTER),
+            shad.Button(
+                "Exit Tutorial", 
+                on_click=_end_tutorial_clicked, variant=shad.ButtonVariant.DESTRUCTIVE, size=shad.ButtonSize.SM
+            ),
+            shad.Button(
+                "Next", ft.Icons.REDO,
+                on_click=next_tutorial_step, 
+                variant=shad.ButtonVariant.PRIMARY, size=shad.ButtonSize.SM,
+            ),
+        ], bottom=10, left=0, right=0, alignment=ft.MainAxisAlignment.CENTER),
     ]

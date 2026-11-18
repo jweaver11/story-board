@@ -832,6 +832,8 @@ class ConnectionMap(Widget):
         
     # Upon first creation, alert users how to add widgets to the stack
     def did_mount(self):
+        if self.page.route == "/tutorial":
+            return
         if self.data.get('show_alert', True) == True:
             self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8)))
             self.update_data(**{'show_alert': False})

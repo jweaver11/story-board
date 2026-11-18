@@ -454,11 +454,12 @@ class ContentRail(ft.Column):
         # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
         content.controls.append(
             ft.Container(
-                shad.ContextMenu(
-                    ft.Container(expand=True, height=1000), # Force CM to work until bottom of page
-                    expand=True,
-                    items=self.new_item_options()
-                )
+                #shad.ContextMenu(
+                    #ft.Container(expand=True, height=1000), # Force CM to work until bottom of page
+                    #expand=True,
+                    #items=self.new_item_options()
+                #)
+                expand=True, min_height=600     # Min height for scroll padding
             )
         )
 

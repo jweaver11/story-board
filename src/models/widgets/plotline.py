@@ -557,27 +557,6 @@ class Plotline(Widget):
             reset_search_bar()
             await character_search_bar.close_view()
 
-        # Return a row ctrl for the event data, which can be a plot point or a marker
-        def create_event_ctrl(event_data: dict) -> ft.Row:
-            id = event_data.get('id', '')
-            title = event_data.get('title', '')
-            tag = event_data.get('tag', '')
-            description = event_data.get('description', '')
-            
-            # Markers
-            if tag == "marker":
-                return ft.Row([
-                    ft.Container(height=2, bgcolor=ft.Colors.OUTLINE_VARIANT, expand=True),
-                    ft.Text(event_data.get('title', ''), weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, ),
-                    ft.Container(height=2, bgcolor=ft.Colors.OUTLINE_VARIANT, expand=True),
-                ], spacing=6, data=id)
-            else:
-                # Plot points
-                return ft.Row([
-                    ft.Text(title, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
-                    ft.Text(description, italic=True, expand=True, color=ft.Colors.ON_SURFACE_VARIANT),
-                ], data=id)
-
         # All other characters in our story that are not relevant to this plot point, so we can add them
         other_characters = {
             widget.data.get('id'): {
@@ -721,9 +700,9 @@ class Plotline(Widget):
         self.plotline_canvas = cv.Canvas(
             content=ft.GestureDetector(
                 shad.ContextMenu(
-                    ft.Container(width=PLOTLINE_WIDTH, height=50, ignore_interactions=True),
+                    ft.Container(width=PLOTLINE_WIDTH, height=75, ignore_interactions=True),
                     items=self.get_new_event_menu_options(),
-                    open_on_tap=True, width=PLOTLINE_WIDTH, height=50,
+                    open_on_tap=True, width=PLOTLINE_WIDTH, height=75,
                     margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING, vertical=PLOTLINE_HEIGHT / 2 - 25)
                 ),
                 width=PLOTLINE_WIDTH,

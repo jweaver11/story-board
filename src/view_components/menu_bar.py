@@ -60,7 +60,8 @@ class MenuBar(ft.Container):
         def handle_create_story(e):
             ''' Opens a dialog to create a new story. Checks story is unique or not '''
     
-    
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
             
     
             async def submit_new_story(e=None):
@@ -104,7 +105,8 @@ class MenuBar(ft.Container):
         async def handle_open_story(e=None):
             ''' Opens a dialog to open an existing story '''
     
-            #print("Open Story Clicked")
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
     
             selected_story = None
     
@@ -238,6 +240,8 @@ class MenuBar(ft.Container):
 
         def handle_rename_story(e: ft.Event=None):
 
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
 
             async def rename_story(e=None):
                 story = self.story
@@ -305,6 +309,8 @@ class MenuBar(ft.Container):
 
         async def handle_settings_clicked(e=None):
             ''' Goes to the settings page '''
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
             if ft.context.page.route != "/settings":
                 await ft.context.page.push_route("/settings")
             else:
@@ -315,6 +321,8 @@ class MenuBar(ft.Container):
                     await ft.context.page.push_route("/")
 
         async def handle_delete_story(e=None):
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
 
             async def confirm_delete(e=None):
                 try:
@@ -366,6 +374,12 @@ class MenuBar(ft.Container):
                 ],
             )
             ft.context.page.show_dialog(dlg)
+
+        async def handle_export(e=None):
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
+            if self.story:
+                await self.story.handle_export() 
             
 
         def highlight(e):
@@ -414,7 +428,7 @@ class MenuBar(ft.Container):
                     leading=ft.Icon(ft.Icons.FILE_DOWNLOAD_OUTLINED, ft.Colors.PRIMARY, size=20),
                     disabled=self.story is None,
                     tooltip="Export widgets from your story into other formats.",
-                    on_click=self.story.handle_export if self.story else None,
+                    on_click=handle_export,
                 ),
                 shad.MenuItem(
                     "Settings",
@@ -441,11 +455,12 @@ class MenuBar(ft.Container):
 
         async def handle_connect_clicked(e=None):
             ''' Opens the browser so the user can connect their Google account '''
-            #if is_connecting:
-               # return
-            #set_is_connecting(True)
+            
+            if self.page.route == "/tutorial":
+                return self.page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
             if app.is_cloud_authenticated == True:
                 return
+            
             try:
                 ft.context.page.show_dialog(shad.Toast("Opening browser to connect your Google account..."))
                 await asyncio.to_thread(google_drive.authenticate)
