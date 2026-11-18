@@ -1179,7 +1179,7 @@ class Settings(ft.View):
                 ) 
             ]),
              ft.Row([
-                #ft.Text(f"Resources about Story Board!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
+                #ft.Text(f"Resources about StoryBoard!", theme_style=ft.TextThemeStyle.BODY_MEDIUM, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Container(
                     ft.Text("Click here to Run Tutorial", color=ft.Colors.PRIMARY, theme_style=ft.TextThemeStyle.BODY_MEDIUM, weight=ft.FontWeight.W_500), 
                     on_click=_run_tutorial,
@@ -1435,7 +1435,7 @@ class Settings(ft.View):
             else ("Open a story to pull it" if authed else "Connect to Google Drive first")
         )
 
-        push_settings_desc = "Push Story Board settings to cloud. These settings include: "
+        push_settings_desc = "Push StoryBoard settings to cloud. These settings include: "
 
         push_settings_button = ft.IconButton(
             ft.Icons.SETTINGS_OUTLINED,

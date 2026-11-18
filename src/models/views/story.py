@@ -311,7 +311,7 @@ class Story(ft.View):
     def rename(self, new_title: str):
         ''' Renames the story '''
         self.update_data(**{'title': new_title})
-        self.page.title = f"Story Board (alpha) - {new_title}"
+        self.page.title = f"StoryBoard (alpha) - {new_title}"
         self.route=return_safe_name(f"/{new_title}_story")
         self.page.pop_dialog()
         self.page.update()
@@ -991,7 +991,7 @@ class Story(ft.View):
 
         # Set our specific event to detect keyboard events for the story
         self.page.on_keyboard_event = handle_keyboard_event 
-        self.page.title = f"Story Board (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
+        self.page.title = f"StoryBoard (alpha) - {self.data.get('title', 'Untitled')}"   # Set our page title
 
         # Load our widgets
         self.load_widgets() 

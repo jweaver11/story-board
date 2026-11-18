@@ -327,7 +327,7 @@ class MenuBar(ft.Container):
                     title = app.delete_story(story_id)
 
                     await ft.context.page.push_route("/loading")
-                    ft.context.page.title = "Story Board (alpha)"
+                    ft.context.page.title = "StoryBoard (alpha)"
                     ft.context.page.update()
                     await asyncio.sleep(0.2)
 
@@ -617,6 +617,13 @@ class MenuBar(ft.Container):
         
         set_cloud_button()
 
+        settings_button = shad.Button(
+            ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
+            on_click=handle_settings_clicked,
+            variant=shad.ButtonVariant.GHOST,
+            size=shad.ButtonSize.SM
+        )
+
 
         self.content = ft.Row(
             spacing=0, visible=not self.page.platform.is_mobile(),
@@ -634,14 +641,14 @@ class MenuBar(ft.Container):
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
                     self.cloud_button,
-                    ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+                    settings_button,   # Settings button
                 ], tight=True, spacing=0)
             ]
         )
 
         self.page.appbar = ft.AppBar(
             file_options,
-            title=self.story.data.get('title') if self.story else "Story Board",
+            title=self.story.data.get('title') if self.story else "StoryBoard",
             actions=[
                 ft.Text(
                     "Alpha", color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD, 
@@ -652,6 +659,6 @@ class MenuBar(ft.Container):
                     tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                 ),
                 self.cloud_button,
-                ft.IconButton(ft.Icons.SETTINGS_OUTLINED, "primary", on_click=handle_settings_clicked, mouse_cursor=ft.MouseCursor.CLICK),   # Settings button
+                settings_button,   # Settings button
             ]
         ) if self.page.platform.is_mobile() else None

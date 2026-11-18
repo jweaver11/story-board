@@ -1,5 +1,5 @@
 ﻿'''
-Google Drive sync: OAuth (installed-app flow) and manual push/pull that mirrors APP_DATA_PATH with a "Story Board" Drive folder (the receiving side is overwritten).
+Google Drive sync: OAuth (installed-app flow) and manual push/pull that mirrors APP_DATA_PATH with a "StoryBoard" Drive folder (the receiving side is overwritten).
 All functions here are blocking; call them with asyncio.to_thread from the UI.
 '''
 
@@ -21,7 +21,7 @@ from models.dataclasses.templates import TEMPLATE_DEFAULTS, get_template
 
 # drive.file only grants access to files/folders this app created
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-DRIVE_FOLDER_NAME = "Story Board"
+DRIVE_FOLDER_NAME = "StoryBoard"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 SETTINGS_FILE_NAME = "settings.json"
 STORIES_FOLDER_NAME = "stories"
@@ -137,7 +137,7 @@ def authenticate() -> bool:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(b"<html><body>Sign-in complete. You can close this tab and return to Story Board.</body></html>")
+            self.wfile.write(b"<html><body>Sign-in complete. You can close this tab and return to StoryBoard.</body></html>")
 
         def log_message(self, *args):
             pass
@@ -335,7 +335,7 @@ def pull_all() -> tuple[dict | None, int]:
     service = _service()
     root_id = _find_root(service)
     if root_id is None:
-        raise FileNotFoundError("No 'Story Board' folder was found in your Google Drive. Push to the cloud first.")
+        raise FileNotFoundError("No 'StoryBoard' folder was found in your Google Drive. Push to the cloud first.")
 
     children = _list_all(service)
     settings_data = _get_settings(service, children, root_id)
