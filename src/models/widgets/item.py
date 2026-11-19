@@ -119,10 +119,10 @@ class Item(Widget):
 
             # Button to click to add a new field
             add_field_button = ft.Button(
-                "Add Field", #ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY,
+                "Add Field", 
                 tooltip="Add a new field to your note.", 
-                on_click=create_new_field_clicked, 
-                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20)),
+                on_click=create_new_field_clicked, margin=ft.Margin.only(left=10),
+                style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.W_500, size=20), shape=ft.RoundedRectangleBorder(radius=4)),
                 bgcolor=ft.Colors.SURFACE
             )
     
@@ -131,7 +131,7 @@ class Item(Widget):
                 capitalization=ft.TextCapitalization.WORDS,
                 on_blur=hide_new_field_tf, 
                 on_submit=create_field, visible=False, 
-                autofocus=True,
+                autofocus=True, margin=ft.Margin.only(left=10),
                 bgcolor=ft.Colors.SURFACE
             ) 
             

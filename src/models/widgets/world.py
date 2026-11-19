@@ -355,13 +355,14 @@ class World(Widget):
         )
         new_section_button = ft.Button(
             "Add Section", bgcolor=ft.Colors.SURFACE,
-            on_click=add_section_clicked,
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
+            on_click=add_section_clicked, margin=ft.Margin.only(left=10),
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
         )
 
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
+            margin=ft.Margin.only(left=10),
         )
 
         # Load in our character data controls after the header

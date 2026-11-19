@@ -944,6 +944,8 @@ class Settings(ft.View):
             def redraw():
                 refresh()
                 editor.update()
+                self.page.run_task(editor.content.scroll_to, -1)    # Scroll to bottom to maintain position
+
 
             def move(values, old_index, new_index):
                 if isinstance(values, dict):
@@ -955,37 +957,9 @@ class Settings(ft.View):
                     values.insert(new_index, values.pop(old_index))
                 redraw()
 
-            def order_buttons(values, index, label):
-                return [
-                    ft.IconButton(
-                        icon=ft.Icons.ARROW_UPWARD, tooltip=f"Move {label} up",
-                        disabled=index == 0,
-                        on_click=lambda e: move(values, index, index - 1),
-                    ),
-                    ft.IconButton(
-                        icon=ft.Icons.ARROW_DOWNWARD, tooltip=f"Move {label} down",
-                        disabled=index == len(values) - 1,
-                        on_click=lambda e: move(values, index, index + 1),
-                    ),
-                ]
-
-            def add_input(label, names, add):
-                field = ft.TextField(
-                    label=f"New {label}", dense=True, expand=True,
-                    capitalization=ft.TextCapitalization.WORDS,
-                )
-                button = ft.TextButton("Add")
-                row = ft.Row(visible=False, expand=True)
-
-                async def show(e):
-                    row.visible = True
-                    show_button.visible = False
-                    editor.update()
-                    await field.focus()
-
+            def add_input(label, names, add, extra_menu_items=None, use_button=False):
                 def cancel(e):
-                    row.visible = False
-                    show_button.visible = True
+                    field.visible = False
                     field.value = ""
                     field.error = None
                     editor.update()
@@ -999,25 +973,46 @@ class Settings(ft.View):
                     add(name)
                     redraw()
 
-                field.on_submit = submit
-                button.on_click = submit
-                row.controls = [
-                    field, button,
-                    ft.TextButton("Cancel", on_click=cancel),
-                ]
-                show_button = ft.TextButton(f"Add {label}", on_click=show)
-                options_button = shad.ContextMenu(   # Options button
-                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
-                    [
-                        shad.MenuItem("New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show),
-                    ] + [
-                        shad.Separator(ft.Margin.symmetric(vertical=4)),
-                        shad.MenuItem("Delete Section", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20), on_click=delete_section,),
-                    ],
-                    open_on_tap=True
+                field = ft.TextField(
+                    label=f"New {label}", dense=True, #expand=True,
+                    capitalization=ft.TextCapitalization.WORDS, bgcolor=ft.Colors.SURFACE,
+                    on_blur=cancel, on_submit=submit, visible=False, autofocus=True,
+                    suffix_icon=ft.IconButton(
+                        ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
+                        on_click=submit,
+                        mouse_cursor="click",
+                    ),
                 )
-                return ft.Row([options_button, row], tight=True, spacing=0, expand=True)
-                #return ft.Row([show_button, row], tight=True, spacing=0, expand=True)
+
+                async def show(e):
+                    field.visible = True
+                    editor.update()
+                    await field.focus()
+
+                
+                
+                if use_button:
+                    action_control = ft.Container(
+                        ft.Button(
+                            f"New {label}",
+                            icon_color=ft.Colors.PRIMARY,
+                            on_click=show, bgcolor=ft.Colors.SURFACE,
+                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
+                        ),
+                        border_radius=4,
+                    )
+                else:
+                    menu_items = [
+                        shad.MenuItem(f"New {label}", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show),
+                    ]
+                    if extra_menu_items:
+                        menu_items.extend(extra_menu_items)
+                    action_control = shad.ContextMenu(
+                        HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
+                        menu_items,
+                        open_on_tap=True,
+                    )
+                return ft.Row([action_control, field], tight=True, spacing=0, expand=True)
 
             def field_list(fields):
                 rows = []
@@ -1059,7 +1054,7 @@ class Settings(ft.View):
                     show_default_drag_handles=True, on_reorder=reorder,
                 )
 
-            def field_input(fields):
+            def field_input(fields, section_menu_items=None, use_button=False):
                 def names():
                     return fields if isinstance(fields, dict) else [field["title"] for field in fields]
 
@@ -1069,7 +1064,7 @@ class Settings(ft.View):
                     else:
                         fields.append({"title": name, "content": ""})
 
-                return add_input("Field", names, add)
+                return add_input("Field", names, add, section_menu_items, use_button=use_button)
 
             def reset(e):
                 def confirm(e):
@@ -1095,13 +1090,40 @@ class Settings(ft.View):
                 ft.Divider(),
             ]
             if is_item:
-                controls.append(field_list(template))
-                controls.append(field_input(template))
+                controls.append(ft.Container(
+                    content=field_list(template),
+                    border_radius=ft.BorderRadius.all(4),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    margin=ft.Margin.all(2),
+                    padding=ft.Padding.all(10),
+                ))
+                controls.append(field_input(template, use_button=True))
             else:
                 for index, (name, fields) in enumerate(template.items()):
                     def delete_section(e, name=name):
                         del template[name]
                         redraw()
+
+                    section_menu_items = [
+                        shad.MenuItem(
+                            "Move Up",
+                            ft.Icon(ft.Icons.ARROW_UPWARD, ft.Colors.PRIMARY, 20),
+                            on_click=lambda e, index=index: move(template, index, index - 1),
+                            disabled=index == 0,
+                        ),
+                        shad.MenuItem(
+                            "Move Down",
+                            ft.Icon(ft.Icons.ARROW_DOWNWARD, ft.Colors.PRIMARY, 20),
+                            on_click=lambda e, index=index: move(template, index, index + 1),
+                            disabled=index == len(template) - 1,
+                        ),
+                        shad.Separator(ft.Margin.symmetric(vertical=4)),
+                        shad.MenuItem(
+                            "Delete Section",
+                            ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20),
+                            on_click=delete_section,
+                        ),
+                    ]
 
                     controls.append(ft.Container(
                         border_radius=ft.BorderRadius.all(4),
@@ -1114,18 +1136,17 @@ class Settings(ft.View):
                             ft.Row([
                                 ft.Text(name, theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
                                         weight=ft.FontWeight.BOLD,),
-                                field_input(fields),
+                                field_input(fields, section_menu_items),
                                 ft.Container(expand=True),
-                                *order_buttons(template, index, "section"),
-                                ft.IconButton(
-                                    icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
-                                    tooltip="Delete section", on_click=delete_section,
-                                ),
                             ]),
                             field_list(fields),
                         ], tight=True, spacing=0),
                     ))
-                controls.append(add_input("Section", lambda: template, lambda name: template.update({name: {}})))
+                controls.append(add_input(
+                    "Section", lambda: template,
+                    lambda name: template.update({name: {}}),
+                    use_button=True,
+                ))
 
             editor.content = ft.Column(controls, scroll=ft.ScrollMode.AUTO, expand=True)
 

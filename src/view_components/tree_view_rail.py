@@ -79,7 +79,7 @@ class ContentRail(ft.Column):
             ),                         # Text style for consistency
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            icon=None,
+            #=None,
             suffix_icon=ft.IconButton(
                 ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
                 on_click=self.submit_item,
