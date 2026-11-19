@@ -1,6 +1,6 @@
 import flet as ft
 import asyncio
-from styles.snack_bar import SnackBar
+import flet_shadcn_ui as shad
 
 
 def create_welcome_view(page: ft.Page) -> ft.View:
@@ -20,7 +20,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         
         app.settings.update_data(**{'is_first_launch': False})
         await app.settings.save_file()
-        page.show_dialog(SnackBar("You can access the tutorial anytime in Settings -> Resources", duration=7000))
+        page.show_dialog(shad.Toast("You can access the tutorial anytime in Settings -> Resources"))
 
     text = ft.Text(
         "Welcome to Story Board", 
@@ -31,14 +31,14 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         animate_opacity=ft.Animation(5000, ft.AnimationCurve.EASE_IN_OUT),
     )
 
-    run_tutorial_button = ft.Button(
-        "Run Tutorial", style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-        on_click=_run_tutorial_clicked, scale=1.5
+    run_tutorial_button = shad.Button(
+        "Run Tutorial", size=shad.ButtonSize.LG,
+        on_click=_run_tutorial_clicked, variant=shad.ButtonVariant.OUTLINE
     )
-    skip_tutorial_button = ft.Button(
-        "Skip Tutorial", tooltip="Must be a pro :o", 
-        on_click=_skip_tutorial_clicked, scale=1.5,
-        style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+    skip_tutorial_button = shad.Button(
+        "Skip Tutorial", size=shad.ButtonSize.LG,
+        on_click=_skip_tutorial_clicked, variant=shad.ButtonVariant.OUTLINE
+        
     )
 
     return ft.View(
@@ -48,9 +48,9 @@ def create_welcome_view(page: ft.Page) -> ft.View:
             text,
             ft.Row([
                 run_tutorial_button,
-                ft.Container(width=75),
+                
                 skip_tutorial_button,
-            ], alignment=ft.MainAxisAlignment.CENTER, visible=False),
+            ], alignment=ft.MainAxisAlignment.CENTER, spacing=20, visible=False),
             ft.Text("\nplz run tutorial, I worked really hard on it", visible=False, color=ft.Colors.ON_SURFACE_VARIANT),
             progress_ring := ft.ProgressRing(visible=False),
             ft.Container(expand=4)     # Spacing

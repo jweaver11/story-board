@@ -1,6 +1,8 @@
 import flet as ft
 from view_components.menu_bar import MenuBar
 from styles.colors import dark_gradient
+import flet_shadcn_ui as shad
+
 
 
 # Called when creating our home view (No stories exist or none active)
@@ -27,29 +29,28 @@ def create_home_view(page: ft.Page) -> ft.View:
             page.update()
             
         # Create a reference to the text field so we can access its value
-        story_title_field = ft.TextField(
+        story_title_field = shad.Input(
             label="Story Title",
             autofocus=True,
-            capitalization=ft.TextCapitalization.SENTENCES,
             on_submit=submit_new_story,
         )
 
             
         # The dialog that will pop up whenever the new story button is clicked
-        dlg = ft.AlertDialog(
+        dlg = shad.Dialog(
 
             # Title of our dialog
-            title=ft.Text("Create New Story"),
+            title="Create New Story",
 
             # Main content is text box for user to input story title
             content=story_title_field,
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                ft.TextButton("Cancel", on_click=lambda _: page.pop_dialog(), style=ft.ButtonStyle(color=ft.Colors.ERROR, mouse_cursor=ft.MouseCursor.CLICK)),
-                ft.TextButton(
+                shad.Button("Cancel", on_click=lambda: page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button(
                     "Create", on_click=submit_new_story, 
-                    style=ft.ButtonStyle(color=ft.Colors.PRIMARY, mouse_cursor=ft.MouseCursor.CLICK)
+                    color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM
                 ),
             ],
         )
