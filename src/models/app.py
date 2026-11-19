@@ -261,10 +261,9 @@ class App:
     
     
     # Called when app creates a new story. Accepts our title, page reference, a template, and a type
-    def create_new_story(self, title: str, page: ft.Page) -> Story:
+    def create_new_story(self, title: str, page: ft.Page, template: str = "default") -> Story:
         ''' Creates the new story object and has it run its 'startup' method. Changes route so our view displays the new story '''
-        
-        story = Story(title)
+        story = Story(title, template=template)
         page.run_task(story.save_file)  # Save it to data
         
         # Create a new story object and add it to our stories dict

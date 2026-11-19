@@ -38,24 +38,6 @@ class MenuBar(ft.Container):
 
     def build(self):
 
-        class Dropdown(ft.Dropdown):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.border_color=ft.Colors.OUTLINE_VARIANT
-                self.menu_style=ft.MenuStyle(alignment=ft.Alignment.TOP_RIGHT, padding=ft.Padding.all(0), shape=ft.RoundedRectangleBorder(radius=4))
-                self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-                self.margin=ft.Margin.only(top=8, left=4, right=4)
-                self.dense=True
-
-        class Switch(ft.Switch):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.adaptive=True
-                self.label_style=ft.TextStyle(color=ft.Colors.ON_SURFACE_VARIANT, italic=True)
-                #self.margin=ft.Margin.only(top=8, left=4, right=4)
-                
-    
-    
         # Called when file -> new is clicked
         def handle_create_story(e):
             ''' Opens a dialog to create a new story. Checks story is unique or not '''
@@ -69,11 +51,8 @@ class MenuBar(ft.Container):
     
                 title = story_title_field.value.strip()
     
-                app.create_new_story(title, ft.context.page) # Needs the story object
+                app.create_new_story(title, ft.context.page, template=template.value) # Needs the story object
                 ft.context.page.pop_dialog()
-    
-    
-            
     
             # Create a reference to the text field so we can access its value
             story_title_field = shad.Input(
@@ -89,7 +68,19 @@ class MenuBar(ft.Container):
                 title="Create New Story", 
     
                 # Main content is text box for user to input story title
-                content=story_title_field,
+                content=ft.Column([
+                    story_title_field,
+                    shad.Separator(),
+                    #ft.Text("Templates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500),
+                    template :=shad.RadioGroup(
+                        [
+                            shad.Radio("blank", "Blank", "An empty story with no initial content."),
+                            shad.Radio("default", "Default", "A story with basic structure and widgets.")
+                        ],
+                        value="default",
+                        label="Templates"
+                    )
+                ]),
     
                 # Our two action buttons at the bottom of the dialog
                 actions=[
@@ -139,8 +130,9 @@ class MenuBar(ft.Container):
                 for story in app.stories.values():
                     ctrls.append(shad.Radio(value=f"local:{story.data.get('id')}", label=story.data.get('title')))
 
-                #ctrls.append(shad.Separator(ft.Margin.symmetric(vertical=8)))
-                ctrls.append(ft.Text("Cloud Stories", color=ft.Colors.ON_SURFACE, margin=ft.Margin.only(top=10), weight=ft.FontWeight.W_500))
+                ctrls.append(shad.Separator(ft.Margin.only(top=6, bottom=4), width=450))
+                ctrls.append(ft.Text("Cloud Stories", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500))
+
                 ctrls.append(ft.Text("Connect to Google Drive to access your cloud stories.", italic=True, visible=not app.is_cloud_authenticated))
                 ctrls.append(ft.ProgressRing(width=24, height=24, stroke_width=3, visible=app.is_cloud_authenticated))
                 

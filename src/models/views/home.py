@@ -13,51 +13,59 @@ def create_home_view(page: ft.Page) -> ft.View:
     menubar = MenuBar()
 
 
-    # Called when giant new story button is clicked
-    async def create_new_story_button_clicked(e):
+    # Called when file -> new is clicked
+    def handle_create_story(e):
         ''' Opens a dialog to create a new story. Checks story is unique or not '''
 
-        def submit_new_story(e=None):
+        if page.route == "/tutorial":
+            return page.show_dialog(shad.Toast("Action not possible during tutorial", variant=shad.ToastVariant.DESTRUCTIVE))
+        
+
+        async def submit_new_story(e=None):
             ''' Creates a new story with the given title '''
 
-            title = story_title_field.value.strip()  # Get the title from the text field and strip whitespace
+            title = story_title_field.value.strip()
 
-            # Check if the title is unique
-                #print("title is unique, story being created: ", title)
-            app.create_new_story(title, page) # Needs the story object
-            page.pop_dialog()
-            page.update()
-            
+            app.create_new_story(title, ft.context.page, template=template.value) # Needs the story object
+            ft.context.page.pop_dialog()
+
         # Create a reference to the text field so we can access its value
         story_title_field = shad.Input(
             label="Story Title",
             autofocus=True,
             on_submit=submit_new_story,
         )
-
-            
+    
         # The dialog that will pop up whenever the new story button is clicked
         dlg = shad.Dialog(
 
             # Title of our dialog
-            title="Create New Story",
+            title="Create New Story", 
 
             # Main content is text box for user to input story title
-            content=story_title_field,
+            content=ft.Column([
+                story_title_field,
+                shad.Separator(),
+                #ft.Text("Templates", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500),
+                template :=shad.RadioGroup(
+                    [
+                        shad.Radio("blank", "Blank", "An empty story with no initial content."),
+                        shad.Radio("default", "Default", "A story with basic structure and widgets.")
+                    ],
+                    "default",
+                    label="Templates"
+                )
+            ]),
 
             # Our two action buttons at the bottom of the dialog
             actions=[
-                shad.Button("Cancel", on_click=lambda: page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                shad.Button(
-                    "Create", on_click=submit_new_story, 
-                    color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM
-                ),
+                shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                shad.Button("Create Story", on_click=submit_new_story, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM)
             ],
         )
 
         # Open our dialog in the overlay
-        page.show_dialog(dlg)
-        page.update()
+        ft.context.page.show_dialog(dlg)
 
 
     return ft.View(
@@ -73,7 +81,7 @@ def create_home_view(page: ft.Page) -> ft.View:
                 content=ft.FloatingActionButton(
                     "Create New Story",
                     ft.Icons.ADD_OUTLINED,
-                    on_click=create_new_story_button_clicked,
+                    on_click=handle_create_story,
                     scale=1.5,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     shape=ft.RoundedRectangleBorder(radius=10),  

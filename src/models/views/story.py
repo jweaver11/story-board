@@ -26,12 +26,12 @@ class Story(ft.View):
     def __init__(
         self, 
         title: str,             # Title of our story
-        data: dict=None,        # Data to load our story with (if any)
-    ):
+        data: dict = None,        # Data to load our story with (if any)
+        template: str = "blank"   # Template used for creating the story
+    ):        
         
         # Parent constructor
         super().__init__(
-            #route=return_safe_name(f"/{title}_story"),    # Sets our route for our new story
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
             bgcolor=ft.Colors.SURFACE
@@ -80,8 +80,9 @@ class Story(ft.View):
 
         # Set our route after we have generated an id if we are a new Story
         self.route = return_safe_name(f"/{self.data.get('id', '')}")
+        self.template = template
+        self.active_widget: str = ""    # Widget ID of the currently visible widget in the main workspace
         
-
         # State for storying mouse coords
         self.mouse_x: int = 0
         self.mouse_y: int = 0
@@ -104,6 +105,8 @@ class Story(ft.View):
         
         # Store all our widgets above in a master list for easier rendering in the UI
         self.widgets: dict = {} 
+
+        ft.context.page.run_task(self.create_template_content)
 
         # Controller for text shapes (canvas), labels and location labels (maps)
         # Canvas shapes get updated with this in real time if they are being edited
@@ -150,28 +153,42 @@ class Story(ft.View):
     def get_widget_by_id(self, id: str) -> ft.Control:
         return self.widgets.get(id, None)
 
+    # Creates our template content based on the selected template
+    async def create_template_content(self):
+        print(self.template)
+        match self.template:
+            case "blank":   # None. Stories that are loaded (not just created) run this, so their content remains empty
+                return
+            case "default":
+                folders = (
+                    "Book 1",
+                    "Items", 
+                    "Maps",
+                    "Research",
+                    "Characters/Main",
+                    "Characters/Supporting",
+                    "Characters/Background",
+                )
+                content_directory = self.data.get('content_directory_path', '')
+                for folder in folders:
+                    path = os.path.join(content_directory, folder)
+                    os.makedirs(path, exist_ok=True)
+                    
+
     # Called when a new folder is created.
-    async def create_folder(self, name: str, directory_path: str=None, update: bool=True, full_path: str=None):
+    async def create_folder(self, name: str, directory_path: str=None, update: bool=True):
         ''' Creates a new folderinside of our story structure for content organization '''
         from models.app import app
 
         if directory_path is None:
             directory_path = self.data.get('content_directory_path', '')
 
-        #if directory_path in self.data.get('folders', {}):
-            #return
-
         try:
 
-            if full_path is None:
-                # Clean up names for folders created through the UI.
-                name = name.capitalize()
-                name = name.rstrip()
-                name = return_safe_name(name)
-                folder_path = os.path.join(directory_path, name)
-            else:
-                folder_path = os.path.normpath(full_path)
-                name = os.path.basename(folder_path)
+            # Clean up names for folders created through the UI.
+            name = name.rstrip()
+            name = return_safe_name(name)
+            folder_path = os.path.join(directory_path, name)
 
             if folder_path in self.data.get('folders', {}):
                 return
@@ -180,7 +197,7 @@ class Story(ft.View):
             os.makedirs(folder_path, exist_ok=True) 
 
             # Preserve existing folder settings when the folder is encountered again.
-            folders = self.data.setdefault('folders', {})
+            folders: dict = self.data.setdefault('folders', {})
             folders.setdefault(folder_path, {
                 'name': name,
                 'is_expanded': True,
