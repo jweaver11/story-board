@@ -864,8 +864,8 @@ class Settings(ft.View):
                         ),
                         shad.Switch(
                             value=self.data.get('widget_defaults', {}).get('plotline', {}).get('show_division_labels', True),
-                            label="Show Division Labels",
-                            sublabel="If the number above each division marker is shown for new plotlines.",
+                            label="Show Labels",
+                            sublabel="If the time label and division numbers are shown for new plotlines.",
                             on_change=lambda e: self.update_data(**{'widget_defaults': {'plotline': {'show_division_labels': e.control.value}}}),
                         ),
                     ], margin=ft.Margin.only(top=10), spacing=20),

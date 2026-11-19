@@ -319,8 +319,10 @@ class Plotline(Widget):
         def show_division_labels(e: ft.Event[ft.MenuItemButton]):
             self.update_data(**{'show_division_labels': not self.data.get('show_division_labels', True)})
             self.redraw_plotline_canvas()
-            self.plotline_canvas.update()
-            self.divisions_stack.update()
+            self.start_label.visible = self.data.get('show_division_labels', True)
+            self.end_label.visible = self.data.get('show_division_labels', True)
+            self.time_label.visible = self.data.get('show_division_labels', True)
+            self.update()
 
         def toggle_new_popover(e=None):
             new_popover.open = not new_popover.open
@@ -363,7 +365,7 @@ class Plotline(Widget):
                 tooltip="Show this map's info in the sidebar"
             ),
             shad.MenuItem(
-                "Show Division Labels",
+                "Show Labels",
                 leading=ft.Icon(ft.Icons.FORMAT_SIZE_OUTLINED, ft.Colors.PRIMARY, size=20),
                 on_click=show_division_labels,
                 tooltip="Whether to show each divisions label or not"
@@ -735,7 +737,7 @@ class Plotline(Widget):
         for marker in self.data.get('markers', {}).values():
             markers_data_list.append(marker)
 
-        # Add markers next since they are next biggest
+        # Markers on bottom since they are much bigger
         for marker_data in markers_data_list:    
             self.marker_stack.controls.append(self.PlotlineMarker(self, marker_data))
 
@@ -747,14 +749,14 @@ class Plotline(Widget):
         if self.data.get('show_sidebar', True) == False:
             self.showing_info = False
 
-        start_label = ft.TextField(
+        self.start_label = ft.TextField(
             value=self.data.get('start_label', ""), dense=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
             on_blur=change_label,
             content_padding=ft.Padding.all(0),
             border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-            data='start_label',
+            data='start_label', visible=self.data.get('show_division_labels', True),
             text_align=ft.TextAlign.CENTER,
             left=PLOTLINE_PADDING,
             top=PLOTLINE_HEIGHT / 2 - PLOTLINE_PADDING,
@@ -763,14 +765,14 @@ class Plotline(Widget):
             text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
         )
 
-        end_label = ft.TextField(
+        self.end_label = ft.TextField(
             value=self.data.get('end_label', ""), dense=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
             on_blur=change_label,
             content_padding=ft.Padding.all(0),
             border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-            data='end_label',
+            data='end_label', visible=self.data.get('show_division_labels', True),
             text_align=ft.TextAlign.CENTER,
             left=PLOTLINE_WIDTH - PLOTLINE_PADDING,
             top=PLOTLINE_HEIGHT / 2 - PLOTLINE_PADDING,
@@ -779,11 +781,11 @@ class Plotline(Widget):
             text_style=ft.TextStyle(size=18, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS),
         )
 
-        time_label = ft.TextField(
+        self.time_label = ft.TextField(
             value=self.data.get('time_label', ""), dense=True,
             capitalization=ft.TextCapitalization.SENTENCES,
             bgcolor=ft.Colors.TRANSPARENT,
-            on_blur=change_label,
+            on_blur=change_label, visible=self.data.get('show_division_labels', True),
             border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             data='time_label',
             text_align=ft.TextAlign.CENTER,
@@ -810,9 +812,9 @@ class Plotline(Widget):
                 
 
                 # Start, time, and end labels for timeline
-                start_label,
-                time_label,
-                end_label,
+                self.start_label,
+                self.time_label,
+                self.end_label,
 
                 # Simple container for highlighting the plotline when hovering over it
                 self.plotline_highlight_container,
