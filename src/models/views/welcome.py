@@ -7,7 +7,7 @@ def create_welcome_view(page: ft.Page) -> ft.View:
     ''' Creates a loading view to be shown while the app is initializing '''
     from models.app import app
 
-    async def _run_tutorial_clicked(e):
+    async def run_tutorial(e):
         ''' Save that we have launched the app before, and route to the tutorial '''
         progress_ring.visible = True
         progress_ring.update()
@@ -15,11 +15,12 @@ def create_welcome_view(page: ft.Page) -> ft.View:
         await app.settings.save_file()
         await page.push_route("/tutorial")
 
-    async def _skip_tutorial_clicked(e):
+    async def skip_tutorial(e):
         ''' Save that we have launched the app before, and route to the home view '''
         
         app.settings.update_data(**{'is_first_launch': False})
         await app.settings.save_file()
+        await page.push_route("/")
         page.show_dialog(shad.Toast("You can access the tutorial anytime in Settings -> Resources"))
 
     text = ft.Text(
@@ -33,11 +34,11 @@ def create_welcome_view(page: ft.Page) -> ft.View:
 
     run_tutorial_button = shad.Button(
         "Run Tutorial", size=shad.ButtonSize.LG,
-        on_click=_run_tutorial_clicked, variant=shad.ButtonVariant.OUTLINE
+        on_click=run_tutorial, variant=shad.ButtonVariant.OUTLINE
     )
     skip_tutorial_button = shad.Button(
         "Skip Tutorial", size=shad.ButtonSize.LG,
-        on_click=_skip_tutorial_clicked, variant=shad.ButtonVariant.OUTLINE
+        on_click=skip_tutorial, variant=shad.ButtonVariant.OUTLINE
         
     )
 

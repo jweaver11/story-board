@@ -3,6 +3,7 @@ from models.views.story import Story
 from styles.snack_bar import SnackBar
 import asyncio
 from utils.tutorial import run_tutorial
+from models.views.welcome import create_welcome_view, animate_welcome_text
 
 # Called whenever a new story is laoded
 async def route_change(e: ft.RouteChangeEvent) -> Story:
@@ -29,14 +30,11 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             
 
     # If we have a story loaded with unsaved changes, save them first
-    #if len(page.views) > 0:
-        #if isinstance(page.views[0], Story):
-            #await page.views[0].save_widgets_to_file()
+    
 
     # Clear our views and any existing overlay controls
     page.views.clear()
     page.overlay.clear()
-
     
     match page.route:
         case "/":
@@ -48,6 +46,26 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             # Append the view manually since its just a function to return the view
             page.views.append(create_home_view(page))
             page.update()
+            return
+        case "/welcome":
+            welcome_view = create_welcome_view(page)
+            page.views.append(welcome_view)
+            page.update()
+            text = welcome_view.controls[1]   
+            await asyncio.sleep(0.5)   # Wait a bit before animating the text so it doesn't feel too abrupt
+            await animate_welcome_text(text)  
+    
+            button: ft.Button = welcome_view.controls[2]
+            button.visible = True
+            button.update()
+    
+            text: ft.Text = welcome_view.controls[3]
+            text.visible = True
+            text.update()
+    
+            # Wait here until user clicks either tutorial or skip tutorial button
+            #while app.settings.data.get("is_first_launch", True):
+                #await asyncio.sleep(0.1)
             return
         case "/settings":
             page.views.append(app.settings)
@@ -96,5 +114,5 @@ async def route_change(e: ft.RouteChangeEvent) -> Story:
             # If theres an error loading the story, go to home view
             page.views.append(create_home_view(page))
             page.update()
-            page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
+            #page.show_dialog(SnackBar(f"Error loading story for route: {page.route}"))     
             return
