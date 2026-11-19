@@ -944,7 +944,7 @@ class Settings(ft.View):
             def redraw():
                 refresh()
                 editor.update()
-                self.page.run_task(editor.content.scroll_to, -1)    # Scroll to bottom to maintain position
+                #self.page.run_task(editor.content.scroll_to, -1)    # Scroll to bottom to maintain position
 
 
             def move(values, old_index, new_index):
