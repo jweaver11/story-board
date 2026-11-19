@@ -1577,27 +1577,32 @@ class Settings(ft.View):
                 ft.NavigationRailDestination(
                     icon=ft.Icons.COLOR_LENS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.COLOR_LENS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Appearance", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)),
+                    padding=ft.Padding.only(top=20)
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.NOW_WIDGETS_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.NOW_WIDGETS_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Widgets", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)),
+                    padding=ft.Padding.only(top=20)
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.FILE_PRESENT_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.FILE_PRESENT, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Templates", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)),
+                    padding=ft.Padding.only(top=20)
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.INFO_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.INFO_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Resources", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)),
+                    padding=ft.Padding.only(top=20)
                 ),
                 ft.NavigationRailDestination(
                     icon=ft.Icons.CLOUD_OUTLINED,
                     selected_icon=ft.Icon(ft.Icons.CLOUD_ROUNDED, color=ft.Colors.PRIMARY),
-                    label=ft.Container(ft.Text("Cloud", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE), margin=ft.Margin.only(bottom=20))
+                    label=ft.Container(ft.Text("Cloud", no_wrap=True, theme_style=ft.TextThemeStyle.LABEL_LARGE)),
+                    padding=ft.Padding.only(top=20)
                 ),
             ],
         )
