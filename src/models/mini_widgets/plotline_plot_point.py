@@ -148,15 +148,6 @@ class PlotlinePlotPoint(MiniWidget):
         for pp in self.widget.plot_point_stack.controls:
             if pp.data.get('id', '') != self.data.get('id', ''):
                 pp.stop_highlight()
-
-    def save_position(self, e: ft.DragEndEvent):
-        super().save_position(e)
-        # Refresh event data in the sidebar to match updated drag
-        if self.widget.showing_info:
-            self.widget.sidebar_body.controls = self.widget.create_sidebar_body_ctrls()
-            self.widget.sidebar_body.update()
-        
-
     
     # Create our sidebar body controls
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:

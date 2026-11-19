@@ -10,10 +10,12 @@ import flet.canvas as cv
 from styles.snack_bar import SnackBar
 from styles.colors import colors
 import asyncio
-from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
+from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT, FIXED_STACK_PADDING
 import uuid
 from styles.text_fields import NoLabelTextField
 import flet_shadcn_ui as shad
+
+NODE_STACK_PADDING = 200
 
 class PlotChart(Widget):
 
@@ -49,20 +51,14 @@ class PlotChart(Widget):
         )
 
         # State and management
-        self.new_node_position = (200, 200)     # Position we place new nodes
-        self.locked_new_node_position = (200, 200)  # Position we place new nodes when right clicking to create a new node
+        self.new_node_position = (NODE_STACK_PADDING, NODE_STACK_PADDING)     # Position we place new nodes
         self.edge_canvas: cv.Canvas           # Canvas that holds our edges (cv.shapes)
         self.node_stack: ft.Stack           # Stack that holds our nodes (gesture detectors)
 
         # State trackers
         self.source_node: str = None        # Tracks which node we are dragging from when creating a new edge
         self.target_node: str = None        # Tracks which node we are dragging to when creating a new edge
-        #self.source_side: str = None      # Determines which sides of the nodes we start dragging from
-        #self.target_side: str = None       # Determines which sides of the nodes we end dragging on
 
-
-        
-        
 
     # Class for handling all node logic
     class Node(ft.GestureDetector):
@@ -71,12 +67,12 @@ class PlotChart(Widget):
 
             # Initialize node properties
             self.widget = widget
-            position = data.get('position', (200, 200))
+            position = data.get('position', (NODE_STACK_PADDING, NODE_STACK_PADDING))
 
             super().__init__(
                 left=position[0],
                 top=position[1],
-                width=150, data=data,
+                width=150, data=data, height=150,
                 offset=ft.Offset(0, -1),
                 animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
                 on_hover=self.widget.set_mouse_coords,
@@ -88,13 +84,15 @@ class PlotChart(Widget):
             # Update us visually
             self.left += e.local_delta.x
             self.top += e.local_delta.y
-            if self.left < 50:
-                self.left = 50
-            elif self.left > self.left > FIXED_STACK_WIDTH - 50:
-                self.left = FIXED_STACK_WIDTH - 50
-            if self.top < 50:
-                self.top = 50
-            elif self.top > self.left > FIXED_STACK_HEIGHT - 50:
+
+            # Clamp
+            if self.left < FIXED_STACK_PADDING:
+                self.left = FIXED_STACK_PADDING
+            elif self.left > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150:
+                self.left = FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150
+            if self.top < NODE_STACK_PADDING:
+                self.top = NODE_STACK_PADDING
+            elif self.top > FIXED_STACK_HEIGHT - 50:
                 self.top = FIXED_STACK_HEIGHT - 50
             self.update()
             # Update data - Edge needs this to redraw as we drag, so we can't wait until drag is over
@@ -301,10 +299,7 @@ class PlotChart(Widget):
                         break
                 self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
 
-            def _update_description(e: ft.Event[ft.TextField]):
-                new_desc = e.control.value
-                
-
+  
             # Saves the description for this node when the text field loses focus
             async def _save_description(e: ft.Event[ft.TextField]):
                 for node_data in self.widget.data.get('nodes', []):
@@ -317,7 +312,6 @@ class PlotChart(Widget):
             self.description_ctrl = SmallTextField(
                 self.data.get('description', ''),
                 expand=True, 
-                on_change=_update_description,
                 on_blur=_save_description,
             )
 
@@ -383,7 +377,7 @@ class PlotChart(Widget):
                             
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                    expand=True, shadow=ft.BoxShadow(1, 1, blur_style=ft.BlurStyle.OUTER),
+                    expand=True, shadow=ft.BoxShadow(0, 1, blur_style=ft.BlurStyle.OUTER),
                     bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                     border_radius=8, 
                     padding=ft.Padding.all(8),
@@ -476,7 +470,7 @@ class PlotChart(Widget):
             if self.widget.data.get('spider_web_view', False):
                 # Adjust for in/out nodes
                 if start_x < end_x:
-                    start_x += 140  # 150 width - 10 for mid node
+                    start_x += 140  # 1FIXED_STACK_PADDING width - 10 for mid node
                     end_x += 10
                 else:
                     end_x += 140
@@ -509,6 +503,17 @@ class PlotChart(Widget):
 
         # Default label
         node_label = f"Node {len(self.data.get('nodes', [])) + 1}"
+
+        # Clamp
+        if self.new_node_position[0] < FIXED_STACK_PADDING:
+            self.new_node_position = (FIXED_STACK_PADDING, self.new_node_position[1])
+        elif self.new_node_position[0] > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150:
+            self.new_node_position = (FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150, self.new_node_position[1])
+        if self.new_node_position[1] < NODE_STACK_PADDING:
+            self.new_node_position = (self.new_node_position[0], NODE_STACK_PADDING)
+        elif self.new_node_position[1] > FIXED_STACK_HEIGHT - 50:
+            self.new_node_position = (self.new_node_position[0], FIXED_STACK_HEIGHT - 50)
+        
 
         self.data['nodes'].append({
             'id': str(uuid.uuid4()),
@@ -561,7 +566,6 @@ class PlotChart(Widget):
         def get_new_node_menu_options() -> list[ft.Control]:
             async def _create_node(e: ft.Event):
                 await self.create_node(e)
-            self.locked_new_node_position = self.new_node_position
 
             async def _toggle_view_mode(e: ft.Event):
                 await self.story.close_menu()

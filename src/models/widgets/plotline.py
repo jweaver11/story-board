@@ -440,13 +440,6 @@ class Plotline(Widget):
         for pp in self.plot_point_stack.controls:
             pp.stop_highlight()
 
-    # Called when right clicking our plotline on the canvas
-    async def open_menu(self, e: ft.PointerEvent=None):
-        ''' Opens our menu for the options of our related plotline '''
-        if self.can_open_menu:
-            #self.story.open_menu(self.get_new_event_menu_options())
-            self.locked_position = self.position
-
 
     async def create_plot_point(self, e: ft.Event=None):
         ''' Creates plot point in data, control and control on event stack'''
@@ -462,6 +455,7 @@ class Plotline(Widget):
         self.plot_point_stack.controls.append(new_plot_point)
         self.plot_point_stack.update()
         await new_plot_point.show_mini_widget()   # Show in sidebar
+        self.cm.items = self.get_new_event_menu_options()
 
     # Creates a marker in data and a control on the event stack. Has no info for sidebar
     async def create_marker(self):
@@ -471,6 +465,7 @@ class Plotline(Widget):
         self.update_data(**{'markers': {new_marker.data.get('id', ''): new_marker.data}})
         self.marker_stack.controls.append(new_marker)
         self.marker_stack.update()
+        self.cm.items = self.get_new_event_menu_options()
 
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
 
@@ -697,16 +692,18 @@ class Plotline(Widget):
                 self.update_data(**{'end_label': new_value})
             else:
                 self.update_data(**{'time_label': new_value})
+
+        self.cm = shad.ContextMenu(
+            ft.Container(width=PLOTLINE_WIDTH, height=75, ignore_interactions=True),
+            items=self.get_new_event_menu_options(),
+            open_on_tap=True, width=PLOTLINE_WIDTH, height=75,
+            margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING, vertical=PLOTLINE_HEIGHT / 2 - 25)
+        )
             
         # Our canvas that 
         self.plotline_canvas = cv.Canvas(
             content=ft.GestureDetector(
-                shad.ContextMenu(
-                    ft.Container(width=PLOTLINE_WIDTH, height=75, ignore_interactions=True),
-                    items=self.get_new_event_menu_options(),
-                    open_on_tap=True, width=PLOTLINE_WIDTH, height=75,
-                    margin=ft.Margin.symmetric(horizontal=PLOTLINE_PADDING, vertical=PLOTLINE_HEIGHT / 2 - 25)
-                ),
+                self.cm,
                 width=PLOTLINE_WIDTH,
                 height=PLOTLINE_HEIGHT, 
                 on_hover=self.hover_plotline_canvas,

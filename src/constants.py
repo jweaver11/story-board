@@ -11,6 +11,7 @@ FONTS_DIRECTORY_PATH = os.path.join(APP_DATA_PATH, "fonts")
 # Size for stacks with fixed sizes (plot chart and character relationship map)
 FIXED_STACK_WIDTH = 5000
 FIXED_STACK_HEIGHT = 3000
+FIXED_STACK_PADDING = 50
 
 # Plotline constants
 PLOTLINE_WIDTH = 2000

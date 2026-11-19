@@ -13,6 +13,8 @@ from styles.colors import colors
 from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT
 import flet_shadcn_ui as shad
 
+NODE_STACK_PADDING = 125
+
 # Add label to the connection type. Allow changable symbols, colors, styles, etc
 class ConnectionMap(Widget):
     # Constructor
@@ -58,7 +60,7 @@ class ConnectionMap(Widget):
         self.edges_canvas: cv.Canvas = None
         self.connections_stack: ft.Stack = None
 
-        self.add_widget_position: tuple = (200, 200)  # Where we add widgets to the stack 
+        self.add_widget_position: tuple = (NODE_STACK_PADDING, NODE_STACK_PADDING)  # Where we add widgets to the stack 
        
     # Class for the nodes for each widget added to the connection map
     class WidgetNode(ft.GestureDetector):
@@ -67,6 +69,8 @@ class ConnectionMap(Widget):
             self.widget = widget
             self.position = position
             self.ref_widget = ref_widget
+
+            
 
         
             self.rename_tf: NoLabelTextField
@@ -80,7 +84,6 @@ class ConnectionMap(Widget):
                 content=self.build_content(),
                 on_enter=self._highlight,
                 on_exit=self._stop_highlight,
-                
                 on_pan_start=self.start_new_connection,   # Show line to follow mouse
                 on_pan_update=self._update_line,   # Update line to follow mouse
                 on_pan_end=self._create_new_connection,  # Create the new connection when dragging ends (or remove it if it already exists)
@@ -472,14 +475,16 @@ class ConnectionMap(Widget):
                 
             self.left += e.local_delta.x
             self.top += e.local_delta.y
-            if self.left < 50:
-                self.left = 50
-            elif self.left > self.left > FIXED_STACK_WIDTH - 50:
-                self.left = FIXED_STACK_WIDTH - 50
-            if self.top < 50:
-                self.top = 50
-            elif self.top > self.left > FIXED_STACK_HEIGHT - 50:
-                self.top = FIXED_STACK_HEIGHT - 50
+
+            # Clamp
+            if self.left < NODE_STACK_PADDING:
+                self.left = NODE_STACK_PADDING
+            elif self.left > FIXED_STACK_WIDTH - NODE_STACK_PADDING:
+                self.left = FIXED_STACK_WIDTH - NODE_STACK_PADDING
+            if self.top < NODE_STACK_PADDING:
+                self.top = NODE_STACK_PADDING
+            elif self.top > FIXED_STACK_HEIGHT - NODE_STACK_PADDING:
+                self.top = FIXED_STACK_HEIGHT - NODE_STACK_PADDING
             
             self.update()
 
@@ -692,11 +697,13 @@ class ConnectionMap(Widget):
         def show_accept_mc(e: ft.Event[ft.DragTarget]):
             e.control.content.mouse_cursor = ft.MouseCursor.GRABBING if self.page.platform == ft.PagePlatform.MACOS else ft.MouseCursor.CLICK
             e.control.update()
+            
 
         # Reset our mouse cursor when leaving the drag target
         def hide_accept_mc(e: ft.Event[ft.DragTarget]):
             e.control.content.mouse_cursor = None
             e.control.update()
+            
 
         # Adds the widget to the stack if its not there
         def accept_drag(e: ft.DragTargetEvent):
@@ -720,6 +727,17 @@ class ConnectionMap(Widget):
                 return
 
             new_position = (e.local_position.x, e.local_position.y)
+
+            # Clamp our position to be within the fixed stack boundaries
+            if new_position[0] < NODE_STACK_PADDING:
+                new_position = (NODE_STACK_PADDING, new_position[1])
+            elif new_position[0] > FIXED_STACK_WIDTH - NODE_STACK_PADDING:
+                new_position = (FIXED_STACK_WIDTH - NODE_STACK_PADDING, new_position[1])
+            if new_position[1] < NODE_STACK_PADDING:
+                new_position = (new_position[0], NODE_STACK_PADDING)
+            elif new_position[1] > FIXED_STACK_HEIGHT - NODE_STACK_PADDING:
+                new_position = (new_position[0], FIXED_STACK_HEIGHT - NODE_STACK_PADDING)
+            
             self.data['widgets'][widget_id] = new_position
 
             self.build_map_ctrls()
@@ -758,9 +776,9 @@ class ConnectionMap(Widget):
             ref_widget = self.story.get_widget_by_id(widget_id)
             if ref_widget is None:
                 continue
+
             self.connections_stack.controls.append(
                 self.WidgetNode(widget_id, self, ref_widget, position)
-                
             )
 
         # Re-add the drag target to allow new widgets to be dropped onto the map

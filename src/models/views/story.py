@@ -155,9 +155,8 @@ class Story(ft.View):
 
     # Creates our template content based on the selected template
     async def create_template_content(self):
-        print(self.template)
         match self.template:
-            case "blank":   # None. Stories that are loaded (not just created) run this, so their content remains empty
+            case "blank":   # None. Stories that are loaded (not just created) run this, so their content remains empty/unchanged
                 return
             case "default":
                 folders = (
