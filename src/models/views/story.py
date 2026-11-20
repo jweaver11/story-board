@@ -27,7 +27,7 @@ class Story(ft.View):
         self, 
         title: str,             # Title of our story
         data: dict = None,        # Data to load our story with (if any)
-        template: str = "blank"   # Template used for creating the story
+        template: str = ""   # Template used for creating the story
     ):        
         
         # Parent constructor
@@ -157,7 +157,7 @@ class Story(ft.View):
     async def create_template_content(self):
         match self.template:
             case "blank":   # None. Stories that are loaded (not just created) run this, so their content remains empty/unchanged
-                return
+                await self.create_widget("Summary", "manuscript", update=False)
             case "default":
                 folders = (
                     "Book 1",
@@ -172,6 +172,9 @@ class Story(ft.View):
                 for folder in folders:
                     path = os.path.join(content_directory, folder)
                     os.makedirs(path, exist_ok=True)
+                await self.create_widget("Summary", "manuscript", update=False)
+            case _:
+                return
                     
 
     # Called when a new folder is created.

@@ -66,9 +66,7 @@ class Plotline(Widget):
                 
         # State elements
         self.showing_info: bool = True      # If we are currently showing our info
-        self.can_open_menu: bool = False    # State for if we can open menu depending on mouse position over the plotline
         self.position = (0, None)  # Position for opening the menu when right clicking. We only care about x position, y is always middle of plotline
-        self.locked_position = (0, None)  # Locked position for our plotline. We don't want it to move, so we lock it in place
 
         # Visual elements
         self.plotline_canvas: cv.Canvas     # Canvas used to just draw our plotline line and markers

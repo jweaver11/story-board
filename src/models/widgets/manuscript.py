@@ -15,9 +15,11 @@ import flet_shadcn_ui as shad
 
 MANUSCRIPT_WIDTH = 820
 MANUSCRIPT_HEIGHT = 1060
-MANUSCRIPT_PADDING = 80
+#MANUSCRIPT_PADDING = 80
 MANUSCRIPT_VERTICAL_MARGIN = 50
 MANUSCRIPT_HORIZONTAL_MARGIN = 70
+
+MANUSCRIPT_PADDING = 40
 
 
 # Class that holds our text manuscript objects
@@ -245,14 +247,15 @@ class Manuscript(Widget):
             controller_id=self.data.get('id', None),
             text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),   # Pass in data
             placeholder_text="Start your masterpiece here...",
-            expand=True,
+            expand=True, min_height=MANUSCRIPT_HEIGHT
         )
 
         
         editor_container = ft.Container(
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
             expand=True,
-            margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
+            #margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
+            border_radius=6, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, padding=MANUSCRIPT_PADDING
         )
         
 
@@ -273,8 +276,8 @@ class Manuscript(Widget):
             ),
             ft.Divider(2, 2),
             ft.Row([
-                ft.Column([editor_container], scroll=ft.ScrollMode.HIDDEN, expand=True),
+                ft.Container(editor_container, expand=True, padding=ft.Padding.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN / 2, vertical=MANUSCRIPT_VERTICAL_MARGIN / 2)),
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar,
-            ], spacing=0, expand=True),
+            ], spacing=0, expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER),
         ], spacing=0, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
