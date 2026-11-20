@@ -133,7 +133,7 @@ class MenuBar(ft.Container):
                 ctrls.append(shad.Separator(ft.Margin.only(top=6, bottom=4), width=450))
                 ctrls.append(ft.Text("Cloud Stories", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500))
 
-                ctrls.append(ft.Text("Connect to Google Drive to access your cloud stories.", italic=True, visible=not app.is_cloud_authenticated))
+                ctrls.append(ft.Text("Connect to Google Drive to access your cloud stories.", visible=not app.is_cloud_authenticated))
                 ctrls.append(ft.ProgressRing(width=24, height=24, stroke_width=3, visible=app.is_cloud_authenticated))
                 
     

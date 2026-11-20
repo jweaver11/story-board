@@ -192,10 +192,10 @@ class Character(Widget):
             self.update_data(**{'character_data': self.data['character_data']})  # Save our updated character data dict
 
             # Reference the column that holds this field in case we're the last field being deleted so we can reference it later
-            body: ft.Column = e.control.parent.parent 
+            body: ft.Column = e.control.parent.parent.parent.parent
 
             # Remove the row from the column UI and update
-            body.controls.remove(e.control.parent)  
+            body.controls.remove(e.control.parent.parent.parent)  
             body.parent.update()   
 
             # Check the length of parent, if its empty, add our no fields text and delete section button
@@ -207,31 +207,34 @@ class Character(Widget):
 
         def create_field_ctrl(section_name: str, field_name: str, field_value: str) -> ft.Control:
             def show_delete_button(e=None):
-                delete_button.visible = True
+                delete_button.opacity = 1
                 delete_button.update()
             def hide_delete_button(e=None):
-                delete_button.visible = False
+                delete_button.opacity = 0
                 delete_button.update()
+                
+            
+            delete_button = ft.IconButton(
+                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                opacity=0, on_click=delete_field, animate_opacity=ft.Animation(ft.Duration(milliseconds=200), ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                data=(section_name, field_name), tooltip=f"Delete Field: {field_name}", 
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), padding=0)
+            )
             return ft.GestureDetector(
                 ft.Row(
-                    spacing=0, vertical_alignment=ft.CrossAxisAlignment.START,
+                    spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
                         ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,),    # Label
                         NoLabelTextField(   # Field value tf
-                            field_value, expand=True, cursor_color=ft.Colors.PRIMARY, multiline=False,
+                            field_value, expand=True, multiline=False,
                             on_blur=lambda e, fn=field_name: update_character_data(**{fn: e.control.value}), 
+                            suffix_icon=delete_button,
                         ),
-                        delete_button := ft.Container(   # Delete button
-                            ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
-                            on_click=delete_field, visible=False,
-                            data=(section_name, field_name), ink=True, shape=ft.BoxShape.CIRCLE,
-                            tooltip=f"Delete Field: {field_name}", 
-                        )
-                    ]
+                    ], 
                 ), 
                 on_enter=show_delete_button,
                 on_exit=hide_delete_button,
-                height=26
+                height=24
             )
         def create_section_ctrl(section_name: str, section_data: dict) -> list[ft.Control]:
 
@@ -336,13 +339,35 @@ class Character(Widget):
         data_column.controls.append(new_section_button)
         data_column.controls.append(new_section_tf)
 
-        self.content = ft.Stack([
-            data_column,
-            ft.Column([
-                new_section_button,
-                new_section_tf, 
-            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
-        ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
         self.content = data_column
-            
+
+        return
+        self.padding = 0
+
+        # TODO: Have 'thumbnail', and additional images for characters
+
+        # Possible future tab system
+        self.content = ft.Tabs(
+            ft.Column([
+                ft.Row([
+                    ft.TabBar(
+                        [ft.Tab("All")] + [ft.Tab(section_name) for section_name, section_data in self.data.get('character_data', {}).items()], 
+                        overlay_color=ft.Colors.SURFACE,
+                        splash_border_radius=4,
+                        label_padding=ft.Padding.symmetric(horizontal=20, vertical=0),
+                        indicator=ft.UnderlineTabIndicator(ft.BorderSide(2, ft.Colors.PRIMARY), border_radius=4),
+                    ),
+                    shad.Button(
+                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                        bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                        on_click=add_section_clicked, size=shad.ButtonSize.SM
+                    ), 
+                    new_section_tf
+                ]),
+                ft.TabBarView([data_column] + [ft.Text(section_name) for section_name, section_data in self.data.get('character_data', {}).items()], expand=True)
+            ]),
+            length=len(self.data.get('character_data', {})) + 1
+            #[shad.Tab(section_name, section_name, ft.Text(section_name)) for section_name, section_data in self.data.get('character_data', {}).items()]
+        )
+
+        
