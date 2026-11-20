@@ -207,7 +207,8 @@ class Story(ft.View):
                 'name': name,
                 'is_expanded': True,
                 'color': app.settings.data.get('story', {}).get('default_folder_color', "primary"),
-                'created_at': time.time()
+                'created_at': time.time(), 
+                'notes': ""
             })
             self.update_data(**{'folders': folders})
             if update:
@@ -259,7 +260,7 @@ class Story(ft.View):
             print(f"Error deleting folder: {e}")
 
     # Called when changing folder metadata, like color or is expanded or not
-    async def change_folder_data(self, full_path: str, key: str, value):
+    async def update_folder_data(self, full_path: str, key: str, value):
         ''' Changes our folder metadata inside of our story data '''
         #print("Changing folder data:", full_path, key, value)
 

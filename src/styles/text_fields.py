@@ -14,7 +14,7 @@ class TextField(ft.TextField):
         self.text_style=ft.TextStyle(size=14)
         self.multiline=True
         self.capitalization=ft.TextCapitalization.SENTENCES
-        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+        self.bgcolor=kwargs.get('bgcolor', ft.Colors.SURFACE_CONTAINER_HIGH)
         self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         
 
@@ -68,7 +68,7 @@ class NoLabelTextField(TextField):
         self.multiline=kwargs.get('multiline', True)
         self.content_padding=ft.Padding.all(0)
         self.capitalization=ft.TextCapitalization.SENTENCES
-        self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST
+        self.bgcolor=kwargs.get('bgcolor', ft.Colors.SURFACE_CONTAINER_HIGHEST)
         
 # Underlined Text Fields
 @ft.control

@@ -103,6 +103,7 @@ def load_directory_controls(
             color = folders_meta.get(_canon_path(full_path), {}).get('color', "primary")
             is_expanded = folders_meta.get(_canon_path(full_path), {}).get('is_expanded', False)    
             created_at = folders_meta.get(_canon_path(full_path), {}).get('created_at', 0)
+            notes = folders_meta.get(_canon_path(full_path), {}).get('notes', "")
 
             # Create the new folder dropdown
             new_folder = RailFolder(
@@ -113,6 +114,7 @@ def load_directory_controls(
                 is_expanded=is_expanded,
                 created_at=created_at,
                 in_base_directory=in_base_directory,
+                notes=notes,
             )
 
             directory_ctrls.append(new_folder)

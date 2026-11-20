@@ -10,6 +10,7 @@ from models.app import app
 from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 import flet_shadcn_ui as shad
+from styles.text_fields import TextField
 
 
 # Expansion tile for all sub directories (folders) in a directory
@@ -25,6 +26,7 @@ class RailFolder(ft.GestureDetector):
         is_expanded: bool = False,                              # Whether this directory is expanded or not
         color: str = "primary",                                 # Color of the folder icon
         created_at: float = 0,                                  # Creation timestamp of the folder
+        notes: str = "",                                           # Notes for the folder
         in_base_directory: bool = False,                            # Optional parent directory tile, if there is one
     ):
         
@@ -36,6 +38,7 @@ class RailFolder(ft.GestureDetector):
         self.color = color
         self.created_at = created_at
         self.is_expanded = is_expanded
+        self.notes = notes
 
         # Set our text style
         self.text_style = ft.TextStyle(
@@ -226,10 +229,33 @@ class RailFolder(ft.GestureDetector):
     # Called when expanding/collapsing the directory
     async def toggle_expand(self, e=None):
         ''' Makes sure our state and data match the updated expanded/collapsed state '''
+
+        async def update_notes(e=None):
+            self.notes = textfield.value
+            await self.story.update_folder_data(
+                full_path=self.full_path,
+                key='notes', value=self.notes
+            )
+            
     
-        await self.story.change_folder_data(
+        await self.story.update_folder_data(
             full_path=self.full_path,
             key='is_expanded', value=self.expansion_tile.expanded
+        )
+        self.page.show_dialog(
+            ft.SnackBar(
+                ft.Container(
+                    textfield := TextField(
+                        self.notes, hint_text="Put folder notes here", label="Notes", expand=True, on_blur=update_notes, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+                        suffix_icon=ft.IconButton(ft.Icons.CLOSE, ft.Colors.ERROR, on_click=lambda: self.page.pop_dialog(), tooltip="Close"),
+                    ), 
+                    border_radius=4, bgcolor=ft.Colors.SURFACE,
+                    border=ft.Border.only(top=ft.BorderSide(1, ft.Colors.PRIMARY)),
+                    padding=ft.Padding.all(10)
+                ), 
+                bgcolor=ft.Colors.SURFACE, persist=True, padding=0,
+                on_dismiss=update_notes
+            )
         )
 
     
@@ -382,7 +408,7 @@ class RailFolder(ft.GestureDetector):
             color = e.control.data  
 
             # Change the data
-            await self.story.change_folder_data(self.full_path, 'color', color)
+            await self.story.update_folder_data(self.full_path, 'color', color)
             
             # Change our icon to match, apply the update
             self.story.tree_view_rail.reload_rail()
