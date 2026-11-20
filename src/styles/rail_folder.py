@@ -54,8 +54,29 @@ class RailFolder(ft.GestureDetector):
             on_enter=self._highlight,
             on_exit=self._stop_highlight,
         )
+        self.new_item_tf = ft.TextField(     
+            hint_text="", data="",                 # Hint text and data tag for logic                      
+            autofocus=True, dense=True,                 
+            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
+            visible=False,                                      # Hidden by default
+            text_style=ft.TextStyle(
+                size=14,
+                color=ft.Colors.ON_SURFACE,
+                weight=ft.FontWeight.BOLD,
+            ),                         # Text style for consistency
+            on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
+            on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
+            suffix_icon=ft.IconButton(
+                ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
+                on_click=self.submit_item,
+                mouse_cursor="click",
+            ),
+        )
         
-
+    # Called when clicking off the textfield and after submission
+    def on_new_item_blur(self, e=None):
+        self.new_item_tf.visible = False
+        self.new_item_tf.update()
         
 
     # Show our button to show options when we enter this folder
@@ -268,39 +289,54 @@ class RailFolder(ft.GestureDetector):
         ''' Shows the textfield for creating new item. Requires what type of item (folder, chapter, note, etc.) '''
 
         tag = str(e.control.data)
+                
+        # Make textfield visible, reset its value, and give it right data for logic
+        self.new_item_tf.visible = True
+        self.new_item_tf.value = None
+        self.new_item_tf.data = tag
+        self.new_item_tf.error = None
+        self.new_item_tf.label = None
+        self.new_item_tf.icon = None
         
         if tag == "canvas":
             self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story, self.full_path))
             return
 
-        async def submit_new_item(e=None):
-            self.page.pop_dialog()
-            name = input_ctrl.value
+        hint_text = tag.capitalize().replace("_", " ").replace(":", " ") + " Name"
 
-            if tag == "folder":
-                await self.story.create_folder(directory_path=self.full_path, name=name)
-            else:
-                await self.story.create_widget(directory_path=self.full_path, title=name, tag=tag)
+        # Expand and focus the tf (text field) for new item creation
+        if self.expansion_tile.expanded == False:
+            self.expansion_tile.expanded = True
+            self.expansion_tile.update()
+            await self.toggle_expand()
 
-        title = tag.capitalize().replace("_", " ") + " Name"
+        self.new_item_tf.hint_text = hint_text
+        self.new_item_tf.visible = True
+        self.new_item_tf.update()
+        await self.new_item_tf.focus()
 
-        input_ctrl = shad.Input(  
-            on_submit=submit_new_item,               # Called when enter is pressed
-            autofocus=True,
-            data=tag,
-        )
+    # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
+    async def submit_item(self, e):
+        ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
-        dlg = shad.Dialog(
-            title=title, 
-            content=input_ctrl,
-            actions=[
-                shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                shad.Button("Submit", on_click=submit_new_item, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-            ]
-        )
+        # Grab our title from the textfield
+        title = self.new_item_tf.value
+
+        # Protect against empty titles. They break things
+        if not title.strip():
+            return
         
-        self.page.show_dialog(dlg)
-    
+        tag = self.new_item_tf.data
+        if ":" in tag:
+            tag, chart_type = tag.split(":")
+            
+        if tag == "folder":
+            await self.story.create_folder(title, self.full_path)
+        else:
+            await self.story.create_widget(title, tag, self.full_path, chart_type=chart_type if tag == "chart" else None)
+
+        self.page.pop_dialog()  
+        
 
     # Called when rename button is clicked
     async def rename_clicked(self, e):
@@ -337,13 +373,11 @@ class RailFolder(ft.GestureDetector):
                     
                     self.is_unique = False
 
-           
-
             # Give us our error text if not unique
             if not self.is_unique:
-                text_field.error = "Folder name already exists"
+                text_field.error_text = "Folder name already exists"
             else:
-                text_field.error = None
+                text_field.error_text = None
 
             text_field.update()
 
@@ -525,10 +559,12 @@ class RailFolder(ft.GestureDetector):
                     ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
                     ft.Container(
                         ft.Icon(ft.Icons.INFO_OUTLINED, self.color),
-                        on_click=self.show_notes, visible=False,
-                        ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE,
+                        on_click=self.show_notes, 
+                        #on_click=show_new_item_tf,
+                        border_radius=4, bgcolor=ft.Colors.SURFACE, ink=True, 
                         shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE),
                         padding=ft.Padding.symmetric(horizontal=0, vertical=0),
+                        #visible=False
                     )
                 ], 
                 expand=True, spacing=6,
@@ -544,7 +580,7 @@ class RailFolder(ft.GestureDetector):
             adaptive=True,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
-            controls=load_directory_controls(
+            controls=[self.new_item_tf] + load_directory_controls(
                 story=self.story,
                 directory=self.full_path,
             ),

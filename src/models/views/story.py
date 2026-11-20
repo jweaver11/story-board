@@ -19,6 +19,8 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import flet_shadcn_ui as shad
 
+RAIL_RESIZER_WIDTH = 8
+
  
 class Story(ft.View):
 
@@ -34,7 +36,7 @@ class Story(ft.View):
         super().__init__(
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
         )  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
@@ -1024,25 +1026,33 @@ class Story(ft.View):
         self.canvas_rail = CanvasRail(self)
         self.tree_view_rail = ActiveRail(self) 
         self.workspace = Workspace(self)  
-        
+
+        def show_drag_handle(e):
+            resize_icon.visible = True
+            resize_icon.update()
+
+        def hide_drag_handle(e):
+            resize_icon.visible = False
+            resize_icon.update()
 
 
         # The actual resizer for the active rail (gesture detector)
         self.tree_view_rail_resizer = ft.GestureDetector(
             content=ft.Container(
-                width=10,   # Total width of the GD, so its easier to find with mouse
-                content=ft.VerticalDivider(2, 2),     # Original
-                padding=ft.Padding.only(left=8),  # Push the 2px divider ^ to the right side
-                bgcolor=ft.Colors.SURFACE
+                width=RAIL_RESIZER_WIDTH, 
+                content=ft.Column([
+                    resize_icon := ft.Icon(ft.Icons.MORE_VERT, ft.Colors.OUTLINE, RAIL_RESIZER_WIDTH, scale=ft.Scale(scale_x=1, scale_y=24 / RAIL_RESIZER_WIDTH), visible=False)
+                ], alignment=ft.MainAxisAlignment.CENTER, width=10),
+                bgcolor=ft.Colors.SURFACE, clip_behavior=ft.ClipBehavior.NONE,
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
             on_pan_update=resize_tree_view_rail, # Resize the active rail as app is dragging
             on_pan_end=lambda: app.settings.update_data(**{'story': {'tree_view_rail_width': self.tree_view_rail.width}}),  # Save the resize when app is done dragging
             drag_interval=20,
+            on_enter=show_drag_handle,
+            on_exit=hide_drag_handle,
             visible=not ft.context.page.platform.is_mobile()
         )
-
-        
 
         # Views render like columns, so we add elements top-down
         self.controls = [
@@ -1050,10 +1060,9 @@ class Story(ft.View):
             IsolatedRow([
                 
                 self.canvas_rail,
-                self.tree_view_rail,
+                ft.Container(self.tree_view_rail, bgcolor=ft.Colors.SURFACE),
                 self.tree_view_rail_resizer,
-                self.workspace,
-                #ft.Container(self.workspace, expand=True, gradient=dark_gradient)
+                ft.Container(self.workspace, expand=True, bgcolor=ft.Colors.SURFACE),
             ], spacing=0, expand=True)
         ]
 

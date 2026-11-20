@@ -34,7 +34,9 @@ class ActiveRail(ft.Container):
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            visible=not ft.context.page.platform.is_mobile()
+            visible=not ft.context.page.platform.is_mobile(),
+            border_radius=ft.BorderRadius.only(top_right=8, bottom_right=8),
+            border=ft.Border.only(right=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT))
         )
         
     # Reload our rail on startup
@@ -66,8 +68,8 @@ class ContentRail(ft.Column):
         
         self.story = story
 
-        # Textfield for creating new items (sub-categories, chapters, notes, characters, etc.)
-        self.new_item_textfield = ft.TextField(     
+        # Textfield for creating new folders and widgets
+        self.new_item_tf = ft.TextField(     
             hint_text="", data="",                 # Hint text and data tag for logic                      
             autofocus=True, dense=True,                 
             capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
@@ -79,7 +81,6 @@ class ContentRail(ft.Column):
             ),                         # Text style for consistency
             on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
             on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            #=None,
             suffix_icon=ft.IconButton(
                 ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
                 on_click=self.submit_item,
@@ -146,80 +147,49 @@ class ContentRail(ft.Column):
 
 
     # Called when new category button or menu option is clicked
-    async def new_item_clicked(self, e: ft.Event):
+    async def new_item_clicked(self, e: ft.Event[ft.Control]):
         ''' Handles setting our textfield for new category creation '''
 
-            
-        tag = e.control.data
-        
+        tag = str(e.control.data)
         
         # Make textfield visible, reset its value, and give it right data for logic
-        self.new_item_textfield.visible = True
-        self.new_item_textfield.value = None
-        self.new_item_textfield.data = tag
-        self.new_item_textfield.error = None
-        self.new_item_textfield.label = None
-        self.new_item_textfield.icon = None
+        self.new_item_tf.visible = True
+        self.new_item_tf.value = None
+        self.new_item_tf.data = tag
+        self.new_item_tf.error = None
+        self.new_item_tf.label = None
+        self.new_item_tf.icon = None
 
+        if tag == "canvas":
+            self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
+            return
 
-        match tag:
-            case "connection_map":
-                self.new_item_textfield.hint_text = "Connection Map Title"
-            
-            case "plot_point": 
-                self.new_item_textfield.hint_text = "Plot Point Title"
-            case "character" | "folder" | "item" | "object":
-                self.new_item_textfield.hint_text = f"{tag.capitalize()} Name"
-                if tag == "character":
-                    template_name = str(e.control.content)
-                    self.new_item_textfield.label = template_name
-
-            case "canvas":
-                await self.story.close_menu()
-                self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
-                return
-                        
-            case "canvas_board":
-                self.new_item_textfield.hint_text = "Canvas Board Title"
-            case "world":
-                self.new_item_textfield.hint_text = "World Title"
-                template_name = str(e.control.content)
-                self.new_item_textfield.label = f"{template_name}"
-            case "comic_preview":
-                self.new_item_textfield.hint_text = "Comic Preview Title"
-            case "plot_chart":
-                self.new_item_textfield.hint_text = "Plot Chart Title"
-            case _:
-                if ":" in tag:
-                    self.new_item_textfield.hint_text = f"{tag.split(':')[0].capitalize()} Title"
-                else:
-                    self.new_item_textfield.hint_text = f"{tag.capitalize()} Title"
+        hint_text = tag.capitalize().replace("_", " ") + " Name"
+        self.new_item_tf.hint_text = hint_text
 
         # Open the textfield early since we have to wait for async close menu
-        self.new_item_textfield.update()
-        await self.new_item_textfield.focus()
+        self.new_item_tf.update()
+        await self.new_item_tf.focus()
         
-        await self.story.close_menu()
-
 
     # Called when clicking off the textfield and after submission
-    def on_new_item_blur(self, e):
-        self.new_item_textfield.visible = False
-        self.new_item_textfield.update()
+    def on_new_item_blur(self, e=None):
+        self.new_item_tf.visible = False
+        self.new_item_tf.update()
 
 
     # Called whenever we submit a new item (Chapter, note, category, etc.) via enter key
-    async def submit_item(self, e):
+    async def submit_item(self, e=None):
         ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
         # Grab our title from the textfield
-        title = self.new_item_textfield.value
+        title = self.new_item_tf.value
 
         # Protect against empty titles. They break things
         if title is None or title.strip() == "":
             return
         
-        tag = self.new_item_textfield.data
+        tag = self.new_item_tf.data
         if ":" in tag:
             tag, chart_type = tag.split(":")
             
@@ -433,11 +403,11 @@ class ContentRail(ft.Column):
 
         # Build the content of our rail
         content = IsolatedListView(
-            scroll=ft.ScrollMode.AUTO,
+            scroll=ft.ScrollMode.HIDDEN,
             spacing=0, 
             expand=True,
             controls=[
-                ft.Container(self.new_item_textfield, margin=ft.Margin.only(left=10, right=10, top=6))
+                ft.Container(self.new_item_tf, margin=ft.Margin.only(left=10, right=10, top=6))
             ],
         )
         

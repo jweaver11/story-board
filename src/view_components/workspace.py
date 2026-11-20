@@ -28,7 +28,11 @@ class Workspace(ft.Container):
     def __init__(self, story: Story):
 
         # Set our container properties for the workspace
-        super().__init__(expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH)
+        super().__init__(
+            expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            border_radius=ft.BorderRadius.only(top_left=8, bottom_left=8),
+            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT))
+        )
 
         self.story: Story = story
 
