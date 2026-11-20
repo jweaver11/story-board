@@ -77,11 +77,11 @@ def create_home_view(page: ft.Page) -> ft.View:
             ft.Container(
                 expand=True,
                 alignment=ft.Alignment.CENTER,
-                #bgcolor=ft.Colors.SURFACE_CONTAINER_LOWEST,
                 content=ft.FloatingActionButton(
                     "Create New Story",
                     ft.Icons.ADD_OUTLINED,
                     on_click=handle_create_story,
+                    bgcolor=ft.Colors.SURFACE,
                     scale=1.5,
                     mouse_cursor=ft.MouseCursor.CLICK,
                     shape=ft.RoundedRectangleBorder(radius=10),  

@@ -65,7 +65,7 @@ class NoLabelTextField(TextField):
         self.dense = True
         self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
         self.text_style=ft.TextStyle(size=14)
-        self.multiline=True
+        self.multiline=kwargs.get('multiline', True)
         self.content_padding=ft.Padding.all(0)
         self.capitalization=ft.TextCapitalization.SENTENCES
         self.bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST

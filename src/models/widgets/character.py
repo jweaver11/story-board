@@ -206,23 +206,33 @@ class Character(Widget):
                 body.update()
 
         def create_field_ctrl(section_name: str, field_name: str, field_value: str) -> ft.Control:
-            return ft.Row(
-                spacing=0, vertical_alignment=ft.CrossAxisAlignment.START,
-                controls=[
-                    ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,),    # Label
-                    NoLabelTextField(   # Field value tf
-                        field_value, expand=True, cursor_color=ft.Colors.PRIMARY,
-                        on_blur=lambda e, fn=field_name: update_character_data(**{fn: e.control.value}), 
-                    ),
-                    ft.Container(   # Delete button
-                        ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
-                        on_click=delete_field, 
-                        data=(section_name, field_name), ink=True, shape=ft.BoxShape.CIRCLE,
-                        tooltip=f"Delete Field: {field_name}", 
-                    )
-                ]
+            def show_delete_button(e=None):
+                delete_button.visible = True
+                delete_button.update()
+            def hide_delete_button(e=None):
+                delete_button.visible = False
+                delete_button.update()
+            return ft.GestureDetector(
+                ft.Row(
+                    spacing=0, vertical_alignment=ft.CrossAxisAlignment.START,
+                    controls=[
+                        ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,),    # Label
+                        NoLabelTextField(   # Field value tf
+                            field_value, expand=True, cursor_color=ft.Colors.PRIMARY, multiline=False,
+                            on_blur=lambda e, fn=field_name: update_character_data(**{fn: e.control.value}), 
+                        ),
+                        delete_button := ft.Container(   # Delete button
+                            ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
+                            on_click=delete_field, visible=False,
+                            data=(section_name, field_name), ink=True, shape=ft.BoxShape.CIRCLE,
+                            tooltip=f"Delete Field: {field_name}", 
+                        )
+                    ]
+                ), 
+                on_enter=show_delete_button,
+                on_exit=hide_delete_button,
+                height=26
             )
-
         def create_section_ctrl(section_name: str, section_data: dict) -> list[ft.Control]:
 
             def hide_new_field_tf(e=None):
@@ -265,7 +275,7 @@ class Character(Widget):
                     ] if section_data else [
                         ft.Row([ft.Text("Click the button above to add fields to this section", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)])
                     ],
-                    tight=True, spacing=4
+                    tight=True, spacing=0
                 ),
                 data=section_name
             )

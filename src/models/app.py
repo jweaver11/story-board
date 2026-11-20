@@ -139,11 +139,11 @@ class App:
         # Sets the title of our app, padding, and maximizes the window
         page.padding = ft.Padding.only(top=0, left=0, right=0, bottom=0)    
 
+
         # Set the window size as maximized or not
         if app.settings.data.get('page', {}).get('is_maximized', False):
             page.window.maximized = True
         else:
-
             width = app.settings.data.get('page', {}).get('width', 1920)
             height = app.settings.data.get('page', {}).get('height', 1080)
             left = app.settings.data.get('page', {}).get('left', 0)
@@ -156,7 +156,6 @@ class App:
                 page.window.left = left
             if top is not None:
                 page.window.top = top
-
 
         # Set our logic when page window is resized
         page.on_resize = app.settings.page_resized
@@ -171,6 +170,7 @@ class App:
                 if app.settings.story:
                     app.settings.story.block_page()
                     await app.settings.save_story()
+                await app.settings.save_file()
                 
                 page.window.prevent_close = False
                 await page.window.destroy()
@@ -195,6 +195,8 @@ class App:
             file_name = saved_font.get('file_name')
             if font_name and file_name:
                 page.fonts[font_name] = f"/fonts/{file_name}"
+
+        page.update()   # Apply page configs
 
 
       # Called on app startup in main
