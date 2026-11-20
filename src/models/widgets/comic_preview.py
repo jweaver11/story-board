@@ -43,10 +43,7 @@ class ComicPreview(Widget):
 
                 'preview_direction': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical"),            # Default direction for comic preview, can be vertical or horizontal
                 'preview_background_color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "#00000000"),  # Background color behind images
-                'preview_spacing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0),                       # Spacing between images
                 'preview_scale': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 2),                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
-                'filter_quality': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('filter_quality', "medium"),                 # Filter quality for the images in the preview, can be low, medium, or high
-                'use_anti_aliasing': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('anti_aliasing', True),                  # Whether to use anti-aliasing when rendering the images in the preview
 
                 # List to hold our featured_panels of the canvases. Also allows png uploads
                 'featured_panels': [              
@@ -107,7 +104,7 @@ class ComicPreview(Widget):
             canvas_options = [
                 ft.Row([
                     shad.Checkbox(label=widget.data.get('title')),
-                    ft.Image(src=widget.get_snapshot_bytes("low"), width=192, height=108)
+                    ft.Image(src=widget.get_snapshot_bytes("low"), width=192, height=108, gapless_playback=True,)
                 ], data=widget_id)
                 for widget_id, widget in self.story.widgets.items() if widget.data.get('tag') == 'canvas'
             ]
@@ -159,11 +156,6 @@ class ComicPreview(Widget):
 
         # Returns the image control from the given string
         def build_preview_panel(idx: int, image_str: str) -> ft.Image:
-            filter_quality = {
-                "low": ft.FilterQuality.LOW,
-                "medium": ft.FilterQuality.MEDIUM,
-                "high": ft.FilterQuality.HIGH
-            }.get(self.data.get('filter_quality', "medium"), ft.FilterQuality.MEDIUM)
 
             # Better performance
             try:
@@ -186,7 +178,13 @@ class ComicPreview(Widget):
             except Exception:
                 pass  # fall back to original if conversion fails
 
-            return ft.Image(image_str, fit=ft.BoxFit.CONTAIN, expand=True, data=idx, filter_quality=filter_quality)
+            return shad.ContextMenu(
+                ft.Image(image_str, gapless_playback=True, fit=ft.BoxFit.CONTAIN, expand=True, data=idx, filter_quality=ft.FilterQuality.HIGH),
+                [
+                    shad.MenuItem("Delete Panel", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20), on_click=remove_panel, data=idx),
+                ],
+                open_on_tap=True
+            )
         
         # Returns a small image in the mini map with a delete button that appears on hover
         def build_minimap_panel(idx: int, image_str: str) -> ft.GestureDetector:
@@ -215,8 +213,8 @@ class ComicPreview(Widget):
                     ft.Stack([
                         ft.Row([]), # Fill up so we can drag from anywhere
                         ft.Image(
-                            thumb, fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
-                            filter_quality=ft.FilterQuality.LOW, 
+                            thumb, gapless_playback=True,fit=ft.BoxFit.CONTAIN, margin=ft.Margin.symmetric(horizontal=10), expand=True, 
+                            filter_quality=ft.FilterQuality.NONE, 
                             placeholder_src=thumb,
                             fade_in_animation=ft.Animation(50),
                             placeholder_fade_out_animation=ft.Animation(50)
@@ -237,9 +235,11 @@ class ComicPreview(Widget):
         async def update_minimap_indices():
             for i, ctrl in enumerate(panel_minimap.controls):
                 ctrl.content.content.controls[2].data = i 
+            for i, ctrl in enumerate(preview_panel_controls):
+                ctrl.items[0].data = i
         
         # Removes panel from data, minimap and both previews. Updates minimap indices to match new order
-        async def remove_panel(e: ft.Event):
+        async def remove_panel(e: ft.Event[ft.Control]):
             idx = e.control.data
             self.data['featured_panels'].pop(idx)
             self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
@@ -297,15 +297,7 @@ class ComicPreview(Widget):
                     vertical_preview_wrapper.visible = True
                     self.sidebar_header.controls[-1] = build_header_cm_button()
                 self.update()
-            # Adjusts the spacing between panels in the preview display
-            async def adjust_spacing(e: ft.Event):
-                close_popovers()
-                new_spacing = int(e.control.data)
-                self.update_data(**{'preview_spacing': new_spacing})
-                self.sidebar_header.controls[-1] = build_header_cm_button()
-                vertical_preview.spacing = new_spacing
-                horizontal_preview.spacing = new_spacing
-                self.update()
+            
                 
             # Adjusts the scaling of the preview display
             async def adjust_scaling(e: ft.Event):
@@ -327,48 +319,18 @@ class ComicPreview(Widget):
                 horizontal_preview.parent.bgcolor = new_color
                 self.update()
     
-            # Sets the filter quality of the preview display
-            async def set_filter_quality(e: ft.Event):
-                close_popovers()
-                new_quality = str(e.control.data)
-                self.update_data(**{'filter_quality': new_quality})
-                e.control.parent.content = f"Filter Quality: {new_quality.capitalize()}"
-                fq = {
-                    "low": ft.FilterQuality.LOW,
-                    "medium": ft.FilterQuality.MEDIUM,
-                    "high": ft.FilterQuality.HIGH
-                }.get(new_quality, ft.FilterQuality.MEDIUM)
-                for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                    preview_panel_controls[idx].filter_quality = fq
-                    panel_minimap.controls[idx].content.content.controls[1].filter_quality = fq
-                self.update()
-    
-            async def toggle_anti_aliasing(e: ft.Event):
-                close_popovers()
-                new_value = not self.data.get('use_anti_aliasing', True)
-                self.update_data(**{'use_anti_aliasing': new_value})
-                e.control.content = f"Anti-Aliasing: {str(new_value)}"
-                for idx, panel in enumerate(self.data.get('featured_panels', [])):
-                    preview_panel_controls[idx].anti_alias = new_value
-                    panel_minimap.controls[idx].content.content.controls[1].anti_alias = new_value
-                self.update()
+            
             def toggle_bgcolor_popover(e):
                 bgcolor_popover.open = not bgcolor_popover.open
                 self.update()
-            def toggle_preview_spacing_popover(e):
-                preview_spacing_popover.open = not preview_spacing_popover.open
-                self.update()
+            
             def toggle_preview_scaling_popover(e):
                 preview_scaling_popover.open = not preview_scaling_popover.open
                 self.update()
-            def toggle_image_filter_popover(e):
-                image_filter_popover.open = not image_filter_popover.open
-                self.update()
+            
             def close_popovers():
                 bgcolor_popover.open = False
-                preview_spacing_popover.open = False
                 preview_scaling_popover.open = False
-                image_filter_popover.open = False
                 self.update()
             return shad.ContextMenu(
                 HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
@@ -387,12 +349,6 @@ class ComicPreview(Widget):
                         ),
                         tooltip="Swap the preview direction between vertical and horizontal.",
                         on_click=toggle_preview_direction,
-                    ),
-                    shad.MenuItem(
-                        f"Anti-Aliasing: {self.data.get('use_anti_aliasing', True)}",
-                        leading=ft.Icon(ft.Icons.ANIMATION_OUTLINED, ft.Colors.PRIMARY, size=20),
-                        tooltip="If anti aliasing should be used when rendering images in the preview. Will affect performance and image quality.",
-                        on_click=toggle_anti_aliasing,
                     ),
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     bgcolor_popover := shad.Popover(
@@ -416,23 +372,7 @@ class ComicPreview(Widget):
                         on_dismiss=close_popovers
                     ), 
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-                    preview_spacing_popover := shad.Popover(
-                        shad.MenuItem(
-                            leading=ft.Icon(ft.Icons.SPACE_BAR_OUTLINED, ft.Colors.PRIMARY, size=20),
-                            content=ft.Row([ft.Text(f"Preview Spacing: {self.data.get('preview_spacing', 0)}"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            on_click=toggle_preview_spacing_popover,
-                            close_on_click=False,
-                        ),
-                        ft.Column([
-                            shad.MenuItem(
-                                content=ft.Text(str(i)),
-                                on_click=adjust_spacing, close_on_click=True, data=i,
-                                expand=True
-                            ) for i in range(0, 21) if i % 2 == 0
-                        ], tight=True, spacing=0, width=100),
-                        on_dismiss=close_popovers
-                    ),
-                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                    
                     preview_scaling_popover := shad.Popover(
                         shad.MenuItem(
                             leading=ft.Icon(ft.Icons.CROP_FREE_OUTLINED, ft.Colors.PRIMARY, size=20),
@@ -449,23 +389,7 @@ class ComicPreview(Widget):
                         ], tight=True, spacing=0, width=100),
                         on_dismiss=close_popovers
                     ),
-                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-                    image_filter_popover := shad.Popover(
-                        shad.MenuItem(
-                            leading=ft.Icon(ft.Icons.FILTER_OUTLINED, ft.Colors.PRIMARY, size=20),
-                            content=ft.Row([ft.Text(f"Image Filter Quality: {self.data.get('filter_quality', 'Medium').capitalize()}"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            on_click=toggle_image_filter_popover,
-                            close_on_click=False,
-                        ),
-                        ft.Column([
-                            shad.MenuItem(
-                                content=ft.Text(str(quality).capitalize()),
-                                data=quality,
-                                on_click=set_filter_quality, 
-                            ) for quality in ("low", "medium", "high")
-                        ], tight=True, spacing=0, width=100),
-                        on_dismiss=close_popovers
-                    ),
+                    
                 ],
                 open_on_tap=True
             )
@@ -477,7 +401,6 @@ class ComicPreview(Widget):
         vertical_preview = ft.ListView(
             preview_panel_controls,
             #preview_panel_controls.copy() if self.data.get('preview_direction', "vertical") == "vertical" else [],
-            spacing=self.data.get('preview_spacing', 0),
             #horizontal_alignment=ft.CrossAxisAlignment.CENTER, 
             expand=True, scroll=ft.ScrollMode.AUTO
         )
@@ -486,7 +409,6 @@ class ComicPreview(Widget):
         horizontal_preview = ft.ListView(
             preview_panel_controls,
             #preview_panel_controls.copy() if self.data.get('preview_direction', "vertical") == "horizontal" else [],
-            spacing=self.data.get('preview_spacing', 0), horizontal=True,
             #vertical_alignment=ft.CrossAxisAlignment.CENTER, 
             expand=True, scroll=ft.ScrollMode.AUTO
         )

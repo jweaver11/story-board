@@ -123,10 +123,7 @@ class Settings(ft.View):
                         'color': "primary",
                         'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
                         'preview_background_color': "#000000",  # Background color behind images
-                        'preview_spacing': 0,                       # Spacing between images
                         'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
-                        'filter_quality': "medium",                 # Filter quality for the images in the preview, can be low, medium, or high
-                        'anti_aliasing': True,                  # Whether to use anti-aliasing when rendering the images in the preview
                     },
                     'chart': {
                         'color': "primary",
@@ -784,17 +781,7 @@ class Settings(ft.View):
                             value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent")),
                         ),
 
-                        shad.Select(
-                            label="Panel Spacing",
-                            description="Spacing between panels in new comic previews.",
-                            options=[
-                                shad.SelectOption(
-                                    value=str(i), text=str(i)
-                                ) for i in range(0, 21) if i % 2 == 0
-                            ],
-                            on_change=lambda e: self.update_data(**{'widget_defaults': {'comic_preview': {'preview_spacing': int(e.control.value)}}}),
-                            value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_spacing', 0)),
-                        ),
+                        
 
                         shad.Select(
                             label="Preview Scale",

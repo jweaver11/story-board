@@ -294,6 +294,7 @@ class Widget(ft.Container):
                     # Update the image in our widget
                     self.select_image_button.content.content.content = ft.Image(
                         src=self.data.get('image_base64', ""),
+                        gapless_playback=True,
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
@@ -332,6 +333,7 @@ class Widget(ft.Container):
                 
                 self.select_image_button.content.content.content = ft.Image(
                     src=self.data.get('image_base64', ""),
+                    gapless_playback=True,
                     width=150,
                     height=150,
                     fit=ft.BoxFit.FILL,
@@ -744,6 +746,7 @@ class Widget(ft.Container):
                 ft.Container(
                     ft.Image(
                         src=self.data.get('image_base64', ""),
+                        gapless_playback=True,
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
