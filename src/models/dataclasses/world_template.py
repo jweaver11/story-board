@@ -6,10 +6,19 @@ def default_world_template_data() -> dict:
     return  {
         'Locations': {},
         'Lore': {},
-        'Power Systems': {},
+        'Magic & Technology': {},
         'Social Systems': {},
-        'Geography': {},
-        'Technology': {},
+        'Geography': {
+            'Flora': "",
+            'Fauna': ""
+        },
+        'Astronomy': {},
+        'Climate': {},
         'Governments': {},
+        'Species': {},
+        'Cultures': {},
+        'Religions': {},
+        'Languages': {},
+        'Economy': {},
         'Notes': {},
     }

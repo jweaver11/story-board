@@ -252,7 +252,7 @@ class Character(Widget):
             label_ctrl = ft.Row([
                 ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),   # Title
                 shad.ContextMenu(   # Options button
-                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
+                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True),
                     [
                         shad.MenuItem("New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show_new_field_tf),
                         shad.Separator(ft.Margin.symmetric(vertical=4)),
