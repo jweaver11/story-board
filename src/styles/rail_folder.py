@@ -70,9 +70,9 @@ class RailFolder(ft.GestureDetector):
 
     # Hide our button to show options when we exit this folder
     async def _stop_highlight(self, e=None):
-        self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
-        self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
-        self.expansion_tile.update()
+        #self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
+        #self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
+        #self.expansion_tile.update()
         return
         self.expansion_tile.trailing.visible = False
         self.expansion_tile.update()
@@ -228,20 +228,22 @@ class RailFolder(ft.GestureDetector):
 
     # Called when expanding/collapsing the directory
     async def toggle_expand(self, e=None):
-        ''' Makes sure our state and data match the updated expanded/collapsed state '''
+        ''' Makes sure our state and data match the updated expanded/collapsed state '''  
+    
+        await self.story.update_folder_data(
+            full_path=self.full_path,
+            key='is_expanded', value=self.expansion_tile.expanded
+        )
+        
 
+    async def show_notes(self, e=None):
         async def update_notes(e=None):
             self.notes = textfield.value
             await self.story.update_folder_data(
                 full_path=self.full_path,
                 key='notes', value=self.notes
             )
-            
-    
-        await self.story.update_folder_data(
-            full_path=self.full_path,
-            key='is_expanded', value=self.expansion_tile.expanded
-        )
+
         self.page.show_dialog(
             ft.SnackBar(
                 ft.Container(
@@ -517,8 +519,18 @@ class RailFolder(ft.GestureDetector):
 
         # The expansiontile that will hold everything
         self.expansion_tile = IsolatedExpansionTile(
-            title=ft.Row([
-                leading_control, ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS)], 
+            title=ft.Row(
+                [
+                    leading_control, 
+                    ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    ft.Container(
+                        ft.Icon(ft.Icons.INFO_OUTLINED, self.color),
+                        on_click=self.show_notes, visible=False,
+                        ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE,
+                        shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE),
+                        padding=ft.Padding.symmetric(horizontal=0, vertical=0),
+                    )
+                ], 
                 expand=True, spacing=6,
             ),
             dense=True,
@@ -535,7 +547,12 @@ class RailFolder(ft.GestureDetector):
             controls=load_directory_controls(
                 story=self.story,
                 directory=self.full_path,
-            )  
+            ),
+            
+            animation_style=ft.AnimationStyle(
+                ft.Duration(milliseconds=100), ft.Duration(milliseconds=100), 
+                ft.AnimationCurve.DECELERATE, ft.AnimationCurve.DECELERATE
+            )
         )    
 
         # Wrap in all in a drag target so we can drag to move widgets into different folders
