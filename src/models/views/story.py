@@ -159,19 +159,22 @@ class Story(ft.View):
             case "blank":   # None. Stories that are loaded (not just created) run this, so their content remains empty/unchanged
                 await self.create_widget("Summary", "manuscript", update=False)
             case "default":
+                content_directory = self.data.get('content_directory_path', '')
                 folders = (
-                    "Book 1",
-                    "Items", 
-                    "Maps",
-                    "Research",
-                    "Characters/Main",
-                    "Characters/Supporting",
-                    "Characters/Background",
+                    (None, "Book 1"),
+                    (None, "Items"), 
+                    (None, "Maps"),
+                    (None, "Research"),
+                    (None, "Characters"),
+                    (os.path.join(content_directory, "Characters"), "Main"),
+                    (os.path.join(content_directory, "Characters"), "Supporting"),
+                    (os.path.join(content_directory, "Characters"), "Background"),
                 )
                 content_directory = self.data.get('content_directory_path', '')
-                for folder in folders:
-                    path = os.path.join(content_directory, folder)
-                    os.makedirs(path, exist_ok=True)
+                for dir_path, name in folders:
+                    await self.create_folder(name, dir_path, update=False)
+                    
+                    #os.makedirs(path, exist_ok=True)
                 await self.create_widget("Summary", "manuscript", update=False)
             case _:
                 return
