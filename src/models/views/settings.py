@@ -122,7 +122,6 @@ class Settings(ft.View):
                     'comic_preview': {
                         'color': "primary",
                         'preview_direction': "vertical",            # Default direction for comic preview, can be vertical or horizontal
-                        'preview_background_color': "#000000",  # Background color behind images
                         'preview_scale': 2,                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
                     },
                     'chart': {
@@ -572,13 +571,6 @@ class Settings(ft.View):
             e.control.icon = ft.Icons.SWAP_VERT if new_direction == "vertical" else ft.Icons.SWAP_HORIZ
             e.control.update()
 
-        # Sets the color in data for each widget upon a change
-        def set_comic_preview_background_color(e: ft.Event[shad.Select]):
-            new_color = e.control.value.lower()
-            self.update_data(**{'widget_defaults': {'comic_preview': {'preview_background_color': new_color}}})
-            e.control.color = new_color
-            e.control.update()
-
         def toggle_plot_chart_spider_web_view(e: ft.Event[shad.Switch]):
             new_value = e.control.value
             self.data['widget_defaults']['plot_chart']['spider_web_view'] = new_value
@@ -769,20 +761,7 @@ class Settings(ft.View):
                     "Comic Preview",
                     "Default settings for new comic previews.",
                     content=ft.Column([
-                        shad.Select(
-                            label="Preview Backgroun Color", 
-                            description="Starting background color for new comic previews.",
-                            options=[
-                                shad.SelectOption(
-                                    value=color, text=color.capitalize()
-                                ) for color in colors
-                            ] + [shad.SelectOption(value="transparent", text="Transparent")],
-                            on_change=set_comic_preview_background_color,
-                            value=str(self.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "transparent")),
-                        ),
-
                         
-
                         shad.Select(
                             label="Preview Scale",
                             description="Scale of the preview display for new comic previews.",

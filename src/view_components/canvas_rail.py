@@ -48,7 +48,7 @@ class CanvasRail(ft.Container):
             padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE
+            bgcolor=ft.Colors.SURFACE, clip_behavior=ft.ClipBehavior.HARD_EDGE
         )
 
 

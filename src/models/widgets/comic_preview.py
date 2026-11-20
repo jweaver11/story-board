@@ -42,7 +42,6 @@ class ComicPreview(Widget):
                 'show_sidebar': True,   # Start showing sidebar
 
                 'preview_direction': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_direction', "vertical"),            # Default direction for comic preview, can be vertical or horizontal
-                'preview_background_color': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_background_color', "#00000000"),  # Background color behind images
                 'preview_scale': app.settings.data.get('widget_defaults', {}).get('comic_preview', {}).get('preview_scale', 2),                         # Scale of the images in the preview, 1 = 1:1, 2 = 2:1, etc. 
 
                 # List to hold our featured_panels of the canvases. Also allows png uploads
@@ -65,8 +64,6 @@ class ComicPreview(Widget):
         async def handle_add_canvas_panel(e):
 
             async def save_selections(_):
-
-                self.story.block_page()
             
                 # Go through each included canvas and add it to the featured panels
                 for control in canvas_options:
@@ -96,7 +93,6 @@ class ComicPreview(Widget):
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
                 self.update()
 
-                self.story.unblock_page()
                 self.page.pop_dialog()
                 
                 
@@ -110,9 +106,9 @@ class ComicPreview(Widget):
             ]
 
             dlg = shad.Dialog(
-                title="Select Included Canvases",
+                title="Select Canvases",
                 content=ft.Column(
-                    canvas_options,
+                    canvas_options if canvas_options else ft.Text("You have no canvases. Create one first to add them to the comic preview."),
                     tight=True,
                     scroll=ft.ScrollMode.AUTO
                 ),
@@ -128,7 +124,6 @@ class ComicPreview(Widget):
         # Handles uploading new panel(s) from external files
         async def handle_upload_panel(e: ft.Event):
             files = await ft.FilePicker().pick_files(allow_multiple=True, allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            self.story.block_page()
             if files:
                 for file in files:
                     file_path = file.path
@@ -151,7 +146,6 @@ class ComicPreview(Widget):
                         pass
                 self.update_data(**{'featured_panels': self.data.get('featured_panels', [])})
                 self.update()
-            self.story.unblock_page()
             
 
         # Returns the image control from the given string
@@ -181,6 +175,15 @@ class ComicPreview(Widget):
             return shad.ContextMenu(
                 ft.Image(image_str, gapless_playback=True, fit=ft.BoxFit.CONTAIN, expand=True, data=idx, filter_quality=ft.FilterQuality.HIGH),
                 [
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Add Canvases",
+                        on_click=handle_add_canvas_panel,
+                    ),
+                    shad.MenuItem(
+                        leading=ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY), content="Upload Image(s)",
+                        on_click=handle_upload_panel,
+                    ),
+                    shad.Separator(ft.Margin.symmetric(vertical=4)),
                     shad.MenuItem("Delete Panel", ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20), on_click=remove_panel, data=idx),
                 ],
                 open_on_tap=True
@@ -309,27 +312,12 @@ class ComicPreview(Widget):
                 horizontal_preview.parent.expand = new_scaling
                 self.update()
     
-            # Sets the background color of the preview display
-            async def set_preview_background_color(e: ft.Event):
-                close_popovers()
-                new_color = e.control.data
-                self.update_data(**{'preview_background_color': new_color})
-                self.sidebar_header.controls[-1] = build_header_cm_button()
-                vertical_preview.parent.bgcolor = new_color
-                horizontal_preview.parent.bgcolor = new_color
-                self.update()
-    
-            
-            def toggle_bgcolor_popover(e):
-                bgcolor_popover.open = not bgcolor_popover.open
-                self.update()
             
             def toggle_preview_scaling_popover(e):
                 preview_scaling_popover.open = not preview_scaling_popover.open
                 self.update()
             
             def close_popovers():
-                bgcolor_popover.open = False
                 preview_scaling_popover.open = False
                 self.update()
             return shad.ContextMenu(
@@ -350,27 +338,6 @@ class ComicPreview(Widget):
                         tooltip="Swap the preview direction between vertical and horizontal.",
                         on_click=toggle_preview_direction,
                     ),
-                    shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-                    bgcolor_popover := shad.Popover(
-                        shad.MenuItem(
-                            leading=ft.Icon(ft.Icons.COLOR_LENS_OUTLINED, self.data.get('preview_background_color', ft.Colors.PRIMARY), size=20),
-                            content=ft.Row([ft.Text("Background Color"), ft.Icon(ft.Icons.ARROW_RIGHT, ft.Colors.OUTLINE, size=16)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            on_click=toggle_bgcolor_popover,
-                            close_on_click=False,
-                        ),
-                        ft.Column([
-                            shad.MenuItem(
-                                content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
-                                on_click=set_preview_background_color, close_on_click=True, data=color,
-                                expand=True
-                            ) for color in colors
-                        ] + [shad.MenuItem(
-                            content=ft.Icon(ft.Icons.CIRCLE_OUTLINED, color="#00000000", size=20),
-                            on_click=set_preview_background_color, close_on_click=True, data="#00000000",
-                            expand=True
-                        )], tight=True, spacing=0, width=100, height=min(320, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO),
-                        on_dismiss=close_popovers
-                    ), 
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                     
                     preview_scaling_popover := shad.Popover(
@@ -416,14 +383,14 @@ class ComicPreview(Widget):
         # Wrapper for vertical preview, allows us to hide/show based on the preview_direction setting
         vertical_preview_wrapper = ft.Row([
             ft.Container(expand=1),
-            ft.Container(vertical_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(vertical_preview, bgcolor=ft.Colors.SURFACE, expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
         ], expand=True, visible=self.data.get('preview_direction', "vertical") == "vertical")
 
         # Wrapper for the horizontal preview, allows us to hide/show based on the preview_direction setting
         horizontal_preview_wrapper = ft.Column([
             ft.Container(expand=1),
-            ft.Container(horizontal_preview, bgcolor=self.data.get('preview_background_color', ft.Colors.BLACK), expand=self.data.get('preview_scale', 2)),
+            ft.Container(horizontal_preview, bgcolor=ft.Colors.SURFACE, expand=self.data.get('preview_scale', 2)),
             ft.Container(expand=1),
         ], expand=True, visible=self.data.get('preview_direction', "vertical") == "horizontal",)
 

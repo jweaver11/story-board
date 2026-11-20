@@ -265,7 +265,8 @@ def run_tutorial(story) -> list[ft.Control]:
                 tutorial_arrow.top = page.height - 360
 
             case 21:
-                tutorial_tip.value = "Tutorial Complete!\n\nGet out there and create your masterpiece!"
+                tutorial_title.value = "Tutorial Complete!"
+                tutorial_tip.value = "Get out there and create your masterpiece!"
                 tutorial_tip_container.left = page.width / 2 - 175
                 tutorial_tip_container.top = page.height / 2 - 150
                 tutorial_arrow.top = page.height - 100
@@ -287,6 +288,7 @@ def run_tutorial(story) -> list[ft.Control]:
 
     # Rails start hidden
     canvas_rail.visible = False
+    canvas_rail.width = 78
     tree_view_rail.visible = False
     tree_view_rail.width = 275  # Set size early since it fits well
     tree_view_rail_resizer.visible = False
@@ -317,7 +319,7 @@ def run_tutorial(story) -> list[ft.Control]:
             tutorial_title,
             tutorial_tip,
         ]),
-        width=350, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+        width=350, bgcolor=ft.Colors.SURFACE,
         left=page.width / 2 - 175, top=page.height / 2 - 150,
         animate_position=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
         shadow=ft.BoxShadow(1, 1, color=ft.Colors.SURFACE)

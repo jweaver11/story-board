@@ -34,7 +34,7 @@ class Story(ft.View):
         super().__init__(
             padding=ft.Padding.all(0),      # No padding for the page
             spacing=0,                                                      # No spacing between menubar and rest of page
-            bgcolor=ft.Colors.SURFACE
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH
         )  
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
