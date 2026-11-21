@@ -14,45 +14,38 @@ import math
 
 
 def sort_entries(entrys: list, entry_type: str="file") -> list:
-    ''' Sorts the passed in list by either default (os decide), alphabetically, color, or creattion date, as well as the reverse of these options (except default)'''
+    '''Sort folders or files by the selected rail sort method, preserving their controls.'''
     from models.app import app
     sort_method = app.settings.data.get('story', {}).get('rail_sort_method', 'default')
 
-    if entry_type == "folder":
-        match sort_method:
-            case "alphabetical":
-                return sorted(entrys, key=lambda x: x.title.lower())
-            case "alphabetical_reversed":
-                return sorted(entrys, key=lambda x: x.title.lower(), reverse=True)
-            case "color":
-                return sorted(entrys, key=lambda x: str(x.color).lower())
-            case "color_reversed":
-                return sorted(entrys, key=lambda x: str(x.color).lower(), reverse=True)
-            case "creation_date":
-                return sorted(entrys, key=lambda x: x.created_at)
-            case "creation_date_reversed":
-                return sorted(entrys, key=lambda x: x.created_at, reverse=True)
-            case _:
-                return entrys
+    if sort_method not in (
+        "alphabetical", "alphabetical_reversed",
+        "color", "color_reversed",
+        "creation_date", "creation_date_reversed",
+    ):
         return entrys
 
-    # For the files
-    else:
-        match sort_method:
-            case "alphabetical":
-                return sorted(entrys, key=lambda x: x.widget.data.get('title', '').lower())
-            case "alphabetical_reversed":
-                return sorted(entrys, key=lambda x: x.widget.data.get('title', '').lower(), reverse=True)
-            case "color":
-                return sorted(entrys, key=lambda x: x.widget.data.get('color', '').lower())
-            case "color_reversed":
-                return sorted(entrys, key=lambda x: x.widget.data.get('color', '').lower(), reverse=True)
-            case "creation_date":
-                return sorted(entrys, key=lambda x: x.widget.data.get('created_at', ''))
-            case "creation_date_reversed":
-                return sorted(entrys, key=lambda x: x.widget.data.get('created_at', ''), reverse=True)
-            case _:
-                return entrys
+    reverse = sort_method.endswith("_reversed")
+    method = sort_method.removesuffix("_reversed")
+
+    def sort_key(entry):
+        # Nested entries are wrapped with an indentation control in a row.
+        control = entry.controls[1] if isinstance(entry, ft.Row) else entry
+        if entry_type == "folder":
+            if method == "alphabetical":
+                return control.title.lower()
+            if method == "color":
+                return str(control.color).lower()
+            return control.created_at
+
+        data = control.widget.data
+        if method == "alphabetical":
+            return (data.get('title') or '').lower()
+        if method == "color":
+            return (data.get('color') or '').lower()
+        return data.get('created_at') or 0
+
+    return sorted(entrys, key=sort_key, reverse=reverse)
 
 
 
