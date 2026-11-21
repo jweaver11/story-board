@@ -74,6 +74,9 @@ class Workspace(ft.Container):
 
         # Rebuild widget to update page reference, set our new selected index to the end
         new_widget: Widget = self.story.rebuild_widget(widget)
+        if not new_widget:
+            print("Error rebuilding widget: ", widget.data.get('title', 'Untitled Manuscript'))
+            return
         new_selected_index = len(self.tab_bar.tabs)
 
         # Add the tab header + a cheap placeholder — NOT the heavy widget yet
@@ -118,11 +121,8 @@ class Workspace(ft.Container):
             case "map": icon = ft.Icons.MAP_OUTLINED
             case "world": icon = ft.Icons.PUBLIC_OUTLINED
             case "item": icon = ft.Icons.STAR_OUTLINE_ROUNDED
-            case "chart": 
-                if widget.data.get('chart_type', '') == 'bar':
-                    icon = ft.Icons.INSERT_CHART_OUTLINED 
-                else:
-                    icon = ft.CupertinoIcons.COMPASS
+            case "bar_chart": icon = ft.Icons.INSERT_CHART_OUTLINED 
+            case "radar_chart": icon = ft.CupertinoIcons.COMPASS
             case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
             case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case _: icon = ft.Icons.ERROR_OUTLINE
@@ -336,106 +336,3 @@ class Workspace(ft.Container):
             self.tabs.length = len(self.tab_bar.tabs)
             self.tabs.selected_index = 0
             return
-
-'''
-    # OLD --------------------------------------------------------------
-    # Arranges our widgets into the main pin
-    def arrange_widgets(self):
-        self.main_pin.clear()
-        visible_widgets = [w for w in self.story.widgets.values() if w.data.get('visible', False)]
-        sorted_widgets = sorted(visible_widgets, key=lambda w: w.data.get('index', 0))
-        for i, w in enumerate(sorted_widgets):
-            if w.data.get('visible', False):
-
-                # Rebuild and add the widget to the main pin
-                widget = self.story.rebuild_widget(w)  
-                widget.update_data(**{'index': i})
-                self.main_pin.append(widget)
-
-    
-
-    # Reloads the workspace
-    def reload_workspace(self, update: bool=True):
-
-        self.page.run_task(self.story.block_page)
-
-        self.arrange_widgets()
-
-        # If we're empty, skip all logic
-        if len(self.main_pin) <= 0:
-            self.content = None
-            if update:
-                self.update()
-            self.page.run_task(self.story.unblock_page)
-            return
-
-        # Sets our new index when switching tabs
-        async def tab_change(e: ft.Event):
-            from models.widgets.canvas import Canvas
-
-            # Save new selected index
-            self.story.update_data(**{'workspace_selected_index': e.data})
-
-
-            for idx, widget in enumerate(self.main_pin):
-                if idx == e.data:
-                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                    tabs.content.controls[0].update()  
-
-                # Make it so canvases don't redraw unneccesarily when switching tabs
-                if isinstance(widget, Canvas):
-                    widget.skip_first_resize = True
-
-        sel_idx = int(self.story.data.get('workspace_selected_index', 0))
-
-        # Tabs that hold our workspace
-        tabs = ft.Tabs(
-            expand=True, 
-            length=len(self.main_pin),
-            selected_index=sel_idx if sel_idx < len(self.main_pin) else len(self.main_pin) - 1,  
-            on_change=tab_change,
-            animation_duration=100,
-            content=ft.Column([
-                ft.TabBar(
-                    tabs=[widget.tab for widget in self.main_pin], scrollable=True, indicator_color=ft.Colors.ON_SURFACE_VARIANT, divider_height=2
-                ), 
-                ft.TabBarView(
-                    #controls=[widget.master_stack for widget in self.main_pin],
-                    controls=[widget for widget in self.main_pin],
-                    expand=True
-                )
-            ], expand=True, spacing=0),
-        )   
-
-        
-
-        # Check our last widget. If its index is 999, it was just added and needs its data updated
-        if self.main_pin[-1].data.get('index', -1) == 999:   
-            #tabs.selected_index = len(self.main_pin) - 1    # Set the selected index
-            #self.story.data['workspace_selected_index'] = len(self.main_pin) - 1 
-            #self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
-            #tabs.content.controls[0].indicator_color = self.main_pin[-1].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-            pass
-            
-
-        else:
-            for widget in self.main_pin:
-                if widget.data.get('index', -1) == self.story.data.get('workspace_selected_index', 0):
-                    tabs.content.controls[0].indicator_color = widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
-                    tabs.selected_index = widget.data.get('index', 0)
-                    break
-
-        # If our selected index is out of range (The active tab was last and just hidden), make the last tab active
-        if int(self.story.data.get('workspace_selected_index', 0)) >= len(self.main_pin):
-            tabs.selected_index = len(self.main_pin) - 1
-            self.story.update_data(**{'workspace_selected_index': len(self.main_pin) - 1})  # Update our story data to reflect the new selected index
-
-
-        # Set our tabs as the content
-        self.content = tabs
-
-        if update:
-            self.update()
-        
-        self.page.run_task(self.story.unblock_page)
-'''

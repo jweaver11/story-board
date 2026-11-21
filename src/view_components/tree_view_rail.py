@@ -170,14 +170,12 @@ class ContentRail(ft.Column):
             return
         
         tag = self.new_item_tf.data
-        if ":" in tag:
-            tag, chart_type = tag.split(":")
             
-        
         if tag == "folder":
             await self.story.create_folder(name=title)
         else:
-            await self.story.create_widget(title, tag, chart_type=chart_type if tag == "chart" else None)
+            await self.story.create_widget(title, tag)
+            
 
         self.page.pop_dialog()  
 
@@ -268,12 +266,12 @@ class ContentRail(ft.Column):
             
             shad.MenuItem(
                 leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY, size=20), content="Radar Chart",
-                data="chart:radar", on_click=self.new_item_clicked, close_on_click=True,
+                data="radar_chart", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new world for your story. Choose from templates or create a default world."
             ),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.INSERT_CHART_OUTLINED_OUTLINED, ft.Colors.PRIMARY, size=20), content="Bar Chart",
-                data="chart:bar", on_click=self.new_item_clicked, close_on_click=True,
+                data="bar_chart", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new world for your story. Choose from templates or create a default world."
             ),
             shad.MenuItem(

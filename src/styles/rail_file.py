@@ -36,11 +36,8 @@ class RailFile(ft.GestureDetector):
             case "connection_map": self.icon = ft.Icons.LINK_OUTLINED
             case "item": self.icon = ft.Icons.STAR_OUTLINE_ROUNDED 
             case "comic_preview": self.icon = ft.Icons.SLIDESHOW_OUTLINED
-            case "chart": 
-                if widget.data.get('chart_type', None) == "bar":
-                    self.icon = ft.Icons.INSERT_CHART_OUTLINED
-                else:
-                    self.icon = ft.CupertinoIcons.COMPASS
+            case "bar_chart": self.icon = ft.Icons.INSERT_CHART_OUTLINED 
+            case "radar_chart": self.icon = ft.CupertinoIcons.COMPASS
             case "plot_chart": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case _: self.icon = ft.Icons.ERROR_OUTLINE
 

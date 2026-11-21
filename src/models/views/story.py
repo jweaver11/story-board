@@ -427,7 +427,8 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
         from models.widgets.item import Item
-        from models.widgets.chart import Chart
+        from models.widgets.bar_chart import BarChart
+        from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
@@ -534,8 +535,15 @@ class Story(ft.View):
                                     story=self,
                                     data=widget_data,
                                 )
-                            case "chart":
-                                widget = Chart(
+                            case "radar_chart":
+                                widget = RadarChart(
+                                    title=widget_data.get('title', 'Untitled Manuscript'),
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
+                            case "bar_chart":
+                                widget = BarChart(
                                     title=widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
@@ -695,7 +703,7 @@ class Story(ft.View):
         self.page.show_dialog(dlg)
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict={}, chart_type: str="bar", update: bool=True):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict={}, update: bool=True):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.manuscript import Manuscript
         from models.widgets.note import Note
@@ -706,7 +714,8 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
         from models.widgets.item import Item
-        from models.widgets.chart import Chart
+        from models.widgets.bar_chart import BarChart
+        from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
@@ -741,8 +750,10 @@ class Story(ft.View):
                 widget = CanvasBoard(title, directory_path, self, data, True)   
             case "item":
                 widget = Item(title, directory_path, self, data, True)  
-            case "chart":
-                widget = Chart(title, directory_path, self, data, True, type=chart_type)
+            case "radar_chart":
+                widget = RadarChart(title, directory_path, self, data, True)
+            case "bar_chart":
+                widget = BarChart(title, directory_path, self, data, True)
             case "comic_preview":
                 widget = ComicPreview(title, directory_path, self, data, True)
             case "plot_chart":
@@ -779,7 +790,8 @@ class Story(ft.View):
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
         from models.widgets.item import Item
-        from models.widgets.chart import Chart
+        from models.widgets.bar_chart import BarChart
+        from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
 
@@ -876,8 +888,16 @@ class Story(ft.View):
                     is_new=widget.is_new
                 )
 
-            case "chart":
-                new_widget = Chart(
+            case "radar_chart":
+                new_widget = RadarChart(
+                    title=widget.data.get('title', 'Untitled Manuscript'),
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_new=widget.is_new
+                )
+            case "bar_chart":
+                new_widget = BarChart(
                     title=widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
