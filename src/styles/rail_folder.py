@@ -138,6 +138,7 @@ class RailFolder(ft.GestureDetector):
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas for sketching, drawing, or visual note taking",
+                visible=False
             ),
             shad.MenuItem(
                 content=ft.Row([

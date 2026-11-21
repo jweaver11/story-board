@@ -30,8 +30,11 @@ class Workspace(ft.Container):
         # Set our container properties for the workspace
         super().__init__(
             expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-            border_radius=ft.BorderRadius.only(top_left=8, bottom_left=8),
-            border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT))
+            #border_radius=ft.BorderRadius.only(top_left=8, bottom_left=8),
+            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            border_radius=6,
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            margin=ft.Margin.only(bottom=6, right=6),
         )
 
         self.story: Story = story

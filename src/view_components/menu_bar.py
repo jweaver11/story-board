@@ -28,7 +28,7 @@ class MenuBar(ft.Container):
         self.story = story
 
         super().__init__(
-            border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
+            #border=ft.Border.only(bottom=ft.BorderSide(width=1, color=ft.Colors.OUTLINE_VARIANT)),
             bgcolor=ft.Colors.SURFACE,
         )
 

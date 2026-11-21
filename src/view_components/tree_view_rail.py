@@ -33,10 +33,14 @@ class ActiveRail(ft.Container):
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE,
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             visible=not ft.context.page.platform.is_mobile(),
-            border_radius=ft.BorderRadius.only(top_right=8, bottom_right=8),
-            border=ft.Border.only(right=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT))
+            #border_radius=ft.BorderRadius.only(top_right=8, bottom_right=8),
+            #border=ft.Border.only(right=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+            border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
+            border_radius=6,
+            margin=ft.Margin.only(left=6, bottom=6),
         )
         
     # Reload our rail on startup
@@ -289,6 +293,7 @@ class ContentRail(ft.Column):
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas for sketching, drawing, or visual note taking",
+                visible=False
             ),
             shad.MenuItem(
                 content=ft.Row([

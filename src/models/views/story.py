@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import flet_shadcn_ui as shad
 
-RAIL_RESIZER_WIDTH = 8
+RAIL_RESIZER_WIDTH = 6
 
  
 class Story(ft.View):
@@ -1013,8 +1013,8 @@ class Story(ft.View):
             # Clamp rail
             if self.tree_view_rail.width <= 120:
                 self.tree_view_rail.width = 120
-            elif self.tree_view_rail.width > 600:
-                self.tree_view_rail.width = 600
+            elif self.tree_view_rail.width > self.page.width / 2:
+                self.tree_view_rail.width = self.page.width / 2
             self.tree_view_rail.update()     
 
         # Handles keyboard events for the story
@@ -1071,7 +1071,7 @@ class Story(ft.View):
                 width=RAIL_RESIZER_WIDTH, 
                 content=ft.Column([
                     resize_icon := ft.Icon(ft.Icons.MORE_VERT, ft.Colors.OUTLINE, RAIL_RESIZER_WIDTH, scale=ft.Scale(scale_x=1, scale_y=24 / RAIL_RESIZER_WIDTH), visible=False)
-                ], alignment=ft.MainAxisAlignment.CENTER, width=10),
+                ], alignment=ft.MainAxisAlignment.CENTER, width=RAIL_RESIZER_WIDTH),
                 bgcolor=ft.Colors.SURFACE, clip_behavior=ft.ClipBehavior.NONE,
             ),
             mouse_cursor=ft.MouseCursor.RESIZE_LEFT_RIGHT,  # Show horizontal resize cursor when hovering over the resizer
@@ -1086,13 +1086,17 @@ class Story(ft.View):
         # Views render like columns, so we add elements top-down
         self.controls = [
             self.menubar,
-            IsolatedRow([
+            ft.Container(
+                bgcolor=ft.Colors.SURFACE,
+                expand=True,
+                content=IsolatedRow([
                 
-                self.canvas_rail,
-                ft.Container(self.tree_view_rail, bgcolor=ft.Colors.SURFACE),
-                self.tree_view_rail_resizer,
-                ft.Container(self.workspace, expand=True, bgcolor=ft.Colors.SURFACE),
-            ], spacing=0, expand=True)
+                    self.canvas_rail,
+                    self.tree_view_rail,
+                    self.tree_view_rail_resizer,
+                    self.workspace,
+                ], spacing=0, expand=True)
+            ),
         ]
 
 
