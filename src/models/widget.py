@@ -403,7 +403,8 @@ class Widget(ft.Container):
 
         # If we're already visible, focus our tab
         if self.data.get('visible', False) == True:
-            await self.story.workspace.set_active_widget(self.data.get('id'))
+            await self.story.workspace.focus_widget(self.data.get('id'))
+            self.story.set_active_widget_id(self.data.get('id'))
             return
         
         # Update our data to be visible
@@ -411,6 +412,7 @@ class Widget(ft.Container):
         await self.save_file()  # We lose state tracking upon being shown since we get rebuilt, so force a save to maintain data
 
         await self.story.workspace.add_widget_to_workspace(self)  # Adds ourselves to the workspace and focus our tab
+        self.story.set_active_widget_id(self.data.get('id'))
        
     # Called to hide the widget from the workspace
     async def hide_widget(self, e=None):

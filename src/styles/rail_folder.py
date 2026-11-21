@@ -568,7 +568,7 @@ class RailFolder(ft.GestureDetector):
             expanded=self.is_expanded,
             tile_padding=ft.Padding(6, 2, 6, 2),
             icon_color=self.color, adaptive=True,
-            controls_padding=ft.Padding(8, 0, 0, 0),       # Keeps all sub children indented slightly
+            controls_padding=ft.Padding(20, 0, 0, 0),       # Keeps all sub children indented slightly
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,

@@ -53,7 +53,7 @@ class Workspace(ft.Container):
         return self.tab_view.controls[self.tabs.selected_index]
 
     # Sets a passed in widget as the active widget in the workspace, focusing its tab and handling data changes
-    async def set_active_widget(self, widget_id: str):
+    async def focus_widget(self, widget_id: str):
         widget = self.story.get_widget_by_id(widget_id)
         if not widget:
             return

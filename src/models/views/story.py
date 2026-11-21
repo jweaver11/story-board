@@ -83,7 +83,7 @@ class Story(ft.View):
         # Set our route after we have generated an id if we are a new Story
         self.route = return_safe_name(f"/{self.data.get('id', '')}")
         self.template = template
-        self.active_widget: str = ""    # Widget ID of the currently visible widget in the main workspace
+        self.active_widget_id: str = ""    # Widget ID of the currently visible widget in the main workspace
         
         # State for storying mouse coords
         self.mouse_x: int = 0
@@ -154,6 +154,13 @@ class Story(ft.View):
     # Get widget object by its unique ID.
     def get_widget_by_id(self, id: str) -> ft.Control:
         return self.widgets.get(id, None)
+
+    # Sets the active widget ID for the story
+    def set_active_widget_id(self, widget_id: str):
+        self.active_widget_id = widget_id
+
+    def get_active_widget(self):
+        return self.get_widget_by_id(self.active_widget_id)
 
     # Creates our template content based on the selected template
     async def create_template_content(self):
