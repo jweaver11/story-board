@@ -452,33 +452,13 @@ class RailFolder(ft.GestureDetector):
 
     async def _move_folder(self, folder: 'RailFolder', new_parent_path: str):
         ''' Moves a folder and all its contents to a new parent directory '''
-        
-        # Prevent moving a folder into itself or its children
-        if new_parent_path.startswith(folder.full_path):
-            #print("Error: Cannot move a folder into itself or its subfolders")
-            return
-        
-        # Prevent moving a folder to its current location
-        if new_parent_path == os.path.dirname(folder.full_path):
-            return
-        
-        # Get the folder name
-        folder_name = os.path.basename(folder.full_path)
-        new_folder_path = os.path.join(new_parent_path, folder_name)
-        
+
+        new_folder_path = os.path.join(new_parent_path, os.path.basename(folder.full_path))
         try:
-            # Move the folder using shutil
-            import shutil
-            shutil.move(folder.full_path, new_folder_path)
-            
-            # Update folder metadata in story data to maintain state
-            await self.story.move_folder(folder.full_path, new_folder_path)
-            
-            # Reload the rail to reflect the changes
-            self.story.tree_view_rail.reload_rail()
-            
-        except Exception as ex:
-            print(f"Error moving folder: {ex}")
+            if await self.story.move_folder(folder.full_path, new_folder_path):
+                self.story.tree_view_rail.reload_rail()
+        except (OSError, ValueError) as ex:
+            self.page.show_dialog(shad.Toast(f"Error moving folder: {ex}", variant=shad.ToastVariant.DESTRUCTIVE))
 
     async def toggle_notes(self, e=None):
         self.notes_popover.open = not self.notes_popover.open

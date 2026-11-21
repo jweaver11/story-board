@@ -164,7 +164,7 @@ class Widget(ft.Container):
     
         # Delete our old file
         if await self.delete_file():
-
+ 
             # If it was successful, update our directory path and key, then save our new file
             
             self.update_data(**{'directory_path': new_directory})

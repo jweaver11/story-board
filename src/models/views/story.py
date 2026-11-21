@@ -290,48 +290,51 @@ class Story(ft.View):
             print(f"Error changing folder data: {e}")
 
     # Called when moving a folder to a new location
-    async def move_folder(self, old_path: str, new_path: str):
-        ''' Moves a folder and updates all folder metadata in story data '''
-        
+    async def move_folder(self, old_path: str, new_path: str) -> bool:
+        '''Moves a folder and updates its folder and widget paths.'''
+        old_norm = os.path.normcase(os.path.abspath(old_path))
+        new_norm = os.path.normcase(os.path.abspath(new_path))
+        if old_norm == new_norm:
+            return False
+        if new_norm.startswith(old_norm + os.sep):
+            raise ValueError("Cannot move a folder into itself or its subfolders")
+        if os.path.lexists(new_path):
+            raise FileExistsError(f"Destination already exists: {new_path}")
+
+        def relocated_path(path: str):
+            path_norm = os.path.normcase(os.path.abspath(path))
+            if path_norm == old_norm:
+                return new_path
+            if path_norm.startswith(old_norm + os.sep):
+                return os.path.join(new_path, os.path.relpath(path, old_path))
+            return None
+
         try:
-            # Normalize paths for comparison
-            old_norm = os.path.normcase(os.path.normpath(old_path))
-            new_norm = os.path.normcase(os.path.normpath(new_path))
-            
-            folders = self.data.get('folders', {})
-            folders_to_update = {}
-            
-            # Find all folders that need updating (moved folder + all subfolders)
-            for folder_path in list(folders.keys()):
-                folder_norm = os.path.normcase(os.path.normpath(folder_path))
-                
-                # Check if this is the moved folder or a subfolder of it
-                if folder_norm == old_norm or folder_norm.startswith(old_norm + os.sep):
-                    # Calculate new path for this folder
-                    if folder_norm == old_norm:
-                        # This is the main folder being moved
-                        updated_path = new_norm
-                    else:
-                        # This is a subfolder, calculate its new path
-                        relative_path = folder_norm[len(old_norm) + len(os.sep):]
-                        updated_path = os.path.join(new_norm, relative_path)
-                    
-                    # Store the metadata from old path to new path
-                    folders_to_update[updated_path] = folders[folder_path]
-                    # Remove the old path entry
-                    del folders[folder_path]
-            
-            # Update the folders dict with new paths
-            folders.update(folders_to_update)
-            
-            # Save the updated folders data
-            self.update_data(**{'folders': folders})
-            await self.save_file()
-            
-            #print(f"Updated folder metadata: {old_path} → {new_path}")
-            
-        except Exception as e:
-            print(f"Error moving folder in story data: {e}")
+            shutil.move(old_path, new_path)
+        except shutil.Error as exc:
+            raise OSError(f"Could not move folder: {exc}") from exc
+
+        folders = self.data.get('folders', {})
+        folders_to_update = {}
+        for folder_path in list(folders):
+            updated_path = relocated_path(folder_path)
+            if updated_path is not None:
+                folders_to_update[updated_path] = folders.pop(folder_path)
+        folders.update(folders_to_update)
+        self.update_data(**{'folders': folders})
+
+        moved_widgets = []
+        for widget in self.widgets.values():
+            widget_path = widget.data.get('directory_path')
+            updated_path = relocated_path(widget_path) if widget_path else None
+            if updated_path is not None:
+                widget.update_data(**{'directory_path': updated_path})
+                moved_widgets.append(widget)
+
+        for widget in moved_widgets:
+            await widget.save_file()
+        await self.save_file()
+        return True
 
     def rename(self, new_title: str):
         ''' Renames the story '''

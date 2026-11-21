@@ -117,33 +117,13 @@ class ContentRail(ft.Column):
     # Helper method to move a folder to a new directory
     async def _move_folder_to_directory(self, folder, new_directory: str):
         ''' Moves a folder and all its contents to a new directory '''
-        
-        # Prevent moving a folder into itself or its children
-        if new_directory.startswith(folder.full_path):
-            self.page.show_dialog(shad.Toast("Cannot move a folder into itself or its subfolders", variant=shad.ToastVariant.DESTRUCTIVE))
-            return
-        
-        # Prevent moving a folder to its current location
-        if new_directory == os.path.dirname(folder.full_path):
-            return
-        
-        # Get the folder name
-        folder_name = os.path.basename(folder.full_path)
-        new_folder_path = os.path.join(new_directory, folder_name)
-        
+
+        new_folder_path = os.path.join(new_directory, os.path.basename(folder.full_path))
         try:
-            # Move the folder using shutil
-            import shutil
-            shutil.move(folder.full_path, new_folder_path)
-            
-            # Update folder metadata in story data to maintain state
-            await self.story.move_folder(folder.full_path, new_folder_path)
-            
-            # Reload the rail to reflect the changes
-            self.story.tree_view_rail.reload_rail()
-            
-        except Exception as ex:
-            print(f"Error moving folder: {str(ex)}")
+            if await self.story.move_folder(folder.full_path, new_folder_path):
+                self.story.tree_view_rail.reload_rail()
+        except (OSError, ValueError) as ex:
+            self.page.show_dialog(shad.Toast(f"Error moving folder: {ex}", variant=shad.ToastVariant.DESTRUCTIVE))
 
 
     # Called when new category button or menu option is clicked
