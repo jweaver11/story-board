@@ -56,7 +56,6 @@ class RailFile(ft.GestureDetector):
         super().__init__(
             on_enter = self._highlight,
             on_exit = self._stop_highlight,
-            #on_secondary_tap = lambda _: self.widget.story.open_menu(self.get_menu_options()),
             on_tap = self.widget.show_widget,
             mouse_cursor = ft.MouseCursor.CLICK,
         )
@@ -169,14 +168,6 @@ class RailFile(ft.GestureDetector):
         
         leading_control = ft.Icon(self.icon, color=self.icon_color, margin=ft.Margin.only(left=6))
 
-
-        #self.options_button = ft.IconButton(
-            #icon=ft.Icons.MORE_HORIZ_ROUNDED,
-            #opacity=0,
-            #on_click=lambda _: self.widget.story.open_menu(self.get_menu_options()),
-            #mouse_cursor=ft.MouseCursor.CLICK,
-            #visual_density=ft.VisualDensity.COMPACT
-        #)
         def hide_edit_title_tf(e=None):
             self.edit_title_tf.visible = False
             self.title_text.visible = True

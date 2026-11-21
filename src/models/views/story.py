@@ -94,8 +94,6 @@ class Story(ft.View):
         self.tree_view_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
-        self.menu: ft.Container         # Container that sits in the overlay and gets menu options passed into it
-        self.outside_menu_detector: ft.GestureDetector      # Sets under the menu to handle closing and opening the menu
         self.blocker: ft.Container  # Blocks the page while we do intense loads
 
         # Block the app from any interactions during rebuilds
@@ -108,9 +106,6 @@ class Story(ft.View):
         self.widgets: dict = {} 
 
         ft.context.page.run_task(self.create_template_content)
-
-        # Controller for text shapes (canvas), labels and location labels (maps)
-        # Canvas shapes get updated with this in real time if they are being edited
 
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
@@ -927,57 +922,6 @@ class Story(ft.View):
 
         return new_widget
 
-
-    # Called clicking outside the menu to close it
-    async def close_menu(self, e=None):
-        ''' Closes our right click menu when clicking outside of it '''
-        
-        if self.menu.visible:
-            self.menu.visible = False
-            self.menu.update()
-        if self.close_menu_detector.visible:
-            self.close_menu_detector.visible = False
-            self.close_menu_detector.update()
-
-    def close_menu_instant(self, e=None):
-        ''' Closes our right click menu when clicking outside of it '''
-       
-        if self.menu.visible:
-            self.menu.visible = False
-            self.menu.update()
-        if self.close_menu_detector.visible:
-            self.close_menu_detector.visible = False
-            self.close_menu_detector.update()
- 
-    # Called to open a right click menu in the page overlay
-    def open_menu(self, menu_options: list):
-        ''' Sets our menu and close menu detector to visible, sets their content and position '''
-
-        # Skip if no options to show, cuz why bother
-        if len(menu_options) == 0:
-            return
-        
-        # If we already have a menu open, close it before opening the new menu
-        if self.menu.visible:
-            self.close_menu_instant()
-
-        # Adjust mouse positions if the menu would go off screen
-        if self.mouse_x + 160 > self.page.width:
-            self.mouse_x -= 160
-        if self.mouse_y + 230 > self.page.height:
-            self.mouse_y -= 115
-
-        # Set the content and position
-        self.menu.content.controls = menu_options
-        self.menu.left = self.mouse_x
-        self.menu.top = self.mouse_y
-
-        # Set visible
-        self.menu.visible = True
-        self.close_menu_detector.visible = True
-        self.close_menu_detector.update()
-        self.menu.update()
-
     # Blocks the page from interacting while intense loading is being done
     def block_page(self, e=None):
         return
@@ -1090,35 +1034,4 @@ class Story(ft.View):
                 ], spacing=0, expand=True)
             ),
         ]
-
-
-        # Our container that sits on top of the self.page overlay when right clicking options. Starts invisible
-        self.menu = ft.Container(
-            left=self.mouse_x, top=self.mouse_y,   # Positions the menu at the mouse location
-            border_radius=4, visible=False,
-            bgcolor=ft.Colors.SURFACE_CONTAINER,
-            width=200, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-            shadow=ft.BoxShadow(0, 1, offset=ft.Offset(0, 1), ),
-            content=ft.Column(
-                spacing=0,
-                controls=[]
-            ),
-        )
-
-        # Outside gesture detector to close the menu when clicking outside the menu container
-        self.close_menu_detector = ft.GestureDetector(
-            expand=True, visible=False,
-            on_tap_down=self.close_menu,
-            on_secondary_tap_down=self.close_menu,
-        )
-        
-
-        # Overlay is a stack, so add the detector, then the menu container
-        self.page.overlay.extend([
-            self.close_menu_detector,
-            self.menu,
-            self.blocker
-        ])
-
-        self.page.update()
     

@@ -445,11 +445,6 @@ class Map(Widget):
             # Add text if in text mode
             else:
                 await self.add_text(e)
-        #else:
-            #self.story.open_menu(self.get_new_item_options())
-
-
-
 
 
     # Handles all pan start events
