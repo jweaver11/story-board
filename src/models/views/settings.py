@@ -116,7 +116,7 @@ class Settings(ft.View):
                     'plot_chart': {
                         'color': "primary",
                         'node_color': "white",
-                        'spider_web_view': False,   # If the plot chart is in spider web view or not
+                        'view_mode': "curved",   # If the plot chart is in spider web view or not
                         'export_file_type': ".json"   # Default export file type for plotlines
                     },
                     'comic_preview': {
@@ -571,10 +571,10 @@ class Settings(ft.View):
             e.control.icon = ft.Icons.SWAP_VERT if new_direction == "vertical" else ft.Icons.SWAP_HORIZ
             e.control.update()
 
-        def toggle_plot_chart_spider_web_view(e: ft.Event[shad.Switch]):
+        def toggle_plot_chart_view_mode(e: ft.Event[shad.Select]):
             new_value = e.control.value
-            self.data['widget_defaults']['plot_chart']['spider_web_view'] = new_value
-            self.update_data(**{'widget_defaults': {'plot_chart': {'spider_web_view': new_value}}})
+            self.data['widget_defaults']['plot_chart']['view_mode'] = new_value
+            self.update_data(**{'widget_defaults': {'plot_chart': {'view_mode': new_value}}})
 
         def update_note_card_size(e: ft.Event[shad.Select]):
             new_size = e.control.value.lower()
@@ -868,11 +868,15 @@ class Settings(ft.View):
                 Card(
                     "Plot Chart",
                     "Default settings for new plot charts.",
-                    content=shad.Switch(
-                        label="Straight Line Connections",
-                        sublabel="If new connections between nodes in a plot chart should be straight lines.",
-                        on_change=toggle_plot_chart_spider_web_view,
-                        margin=ft.Margin.only(top=10),
+                    content=shad.Select(
+                        label="View Mode",
+                        value=self.data.get('widget_defaults', {}).get("plot_chart", {}).get('view_mode', "curved"),
+                        on_change=toggle_plot_chart_view_mode,
+                        options=[
+                            shad.SelectOption(value="curved", text="Curved"),
+                            shad.SelectOption(value="zigzag", text="ZigZag"),
+                            shad.SelectOption(value="straight", text="Straight"),
+                        ],
                     ),
                 ),
                 Card(

@@ -45,7 +45,7 @@ class PlotChart(Widget):
                 'tag': "plot_chart",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('color'),
 
-                'spider_web_view': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('spider_web_view', False),   # If the plot chart is in spider web view or not
+                'view_mode': app.settings.data.get('widget_defaults', {}).get('plot_chart', {}).get('view_mode', False),   # If the plot chart is in spider web view or not
 
                 'nodes': [],
                   # List of all our Nodes/events
@@ -427,7 +427,7 @@ class PlotChart(Widget):
             end_x, end_y = self.end_position
 
             # Straight edges between nodes
-            if self.widget.data.get('spider_web_view', False):
+            if self.widget.data.get('view_mode', '') == "straight":
                 # Adjust for in/out nodes
                 if start_x < end_x:
                     start_x += NODE_WIDTH / 2
@@ -441,22 +441,29 @@ class PlotChart(Widget):
                     cv.Path.LineTo(end_x, end_y),
                 ]
 
-            # Three-node turns
-            else:
-                # Adjust for in/out nodes
-                #if start_x > end_x:
-                    #end_x += NODE_WIDTH / 2
-               #else:
-                    #start_x += NODE_WIDTH / 2
-                
-    
+            # ZigZags between nodes
+            elif self.widget.data.get('view_mode', '') == "zigzag":
                 mid_x = (start_x + end_x) / 2
-                mid_y = (start_y + end_y) / 2
                 self.elements = [
                     cv.Path.MoveTo(start_x, start_y),
                     cv.Path.LineTo(mid_x, start_y),
                     cv.Path.LineTo(mid_x, end_y),
                     cv.Path.LineTo(end_x, end_y),
+                ]
+
+            # Curved edges between nodes
+            else:
+                direction = 1 if start_x < end_x else -1
+                start_x += direction * NODE_WIDTH / 2
+                end_x -= direction * NODE_WIDTH / 2
+                handle_length = max(abs(end_x - start_x) / 2, CONNECTOR_WIDTH)
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y),
+                    cv.Path.CubicTo(
+                        start_x + direction * handle_length, start_y,
+                        end_x - direction * handle_length, end_y,
+                        x=end_x, y=end_y
+                    ),
                 ]
 
 
@@ -529,9 +536,9 @@ class PlotChart(Widget):
             async def _create_node(e: ft.Event):
                 await self.create_node(e)
 
-            async def _toggle_view_mode(e: ft.Event):
-                self.data['spider_web_view'] = not self.data.get('spider_web_view', False)
-                self.update_data(**{'spider_web_view': self.data.get('spider_web_view', False)})
+            async def set_highlight_connector(e: ft.Event[shad.MenuItem]):
+                highlight_connector = e.control.data
+                self.update_data(**{'view_mode': highlight_connector})
                 for edge in self.edge_canvas.shapes:
                     if isinstance(edge, self.Edge):
                         edge.draw_edge()
@@ -545,14 +552,23 @@ class PlotChart(Widget):
                     on_click=_create_node,
                     #data="right_click"
                 ),
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                ft.Row([ft.Text(f"Views", italic=True)], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)),
+
                 shad.MenuItem(
-                    "Toggle Connections",
-                    leading=ft.Icon(
-                        ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED if self.data.get('spider_web_view', False) == True else ft.Icons.SHOW_CHART,
-                        ft.Colors.PRIMARY, size=20
-                    ),
-                    on_click=_toggle_view_mode,
-                    tooltip="Toggle between spider web connections and 3 line connections"
+                    "Curved", data="curved",
+                    leading=ft.Icon(ft.Icons.GESTURE, ft.Colors.PRIMARY, size=20),
+                    on_click=set_highlight_connector,
+                ),
+                shad.MenuItem(
+                    "ZigZag", data="zigzag",
+                    leading=ft.Icon(ft.Icons.SHOW_CHART, ft.Colors.PRIMARY, size=20),
+                    on_click=set_highlight_connector,
+                ),
+                shad.MenuItem(
+                    "Straight", data="straight",
+                    leading=ft.Icon(ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    on_click=set_highlight_connector,
                 ),
             ]
             
