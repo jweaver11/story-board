@@ -89,9 +89,8 @@ class Story(ft.View):
         self.mouse_x: int = 0
         self.mouse_y: int = 0
             
-        # Declare our UI elements before we create them later. They are stored as objects so we can reload them when needed
+        # Our UI Elements
         self.menubar: ft.Container     # Menu bar at top of page
-        self.canvas_rail: ft.Container      # Rail on left side showing our 6 workspaces
         self.tree_view_rail: ft.Container    # Rail showing whichever workspace is selected
         self.workspace: ft.Container       # Main workspace area where our pins display our widgets
 
@@ -642,10 +641,6 @@ class Story(ft.View):
             app.settings.update_data(**{'widget_defaults': wd_data})        
             
 
-        # Path to folder or widget if we right clicked an item to export
-        initial_path = os.path.abspath(os.path.normpath(e.control.data)) if e.control.data else ""
-        await self.close_menu()
-
         active_widget = self.workspace.get_active_widget()
         if active_widget and hasattr(active_widget, "save_file"):
             await active_widget.save_file() # Make sure widget is saved
@@ -673,7 +668,8 @@ class Story(ft.View):
                 width=100, on_change=set_widget_default_type,
                 options=[
                     shad.SelectOption(".png"),
-                ]
+                ],
+                visible=False
             )
             
         ], vertical_alignment=ft.CrossAxisAlignment.START, spacing=30)
@@ -998,7 +994,6 @@ class Story(ft.View):
     def build(self) -> list[ft.Control]:
         ''' Builds our 'view' (page) that consists of our menubar, rails, and workspace '''
         from view_components.menu_bar import MenuBar
-        from view_components.canvas_rail import CanvasRail
         from view_components.tree_view_rail import ActiveRail
         from view_components.workspace import Workspace
         from models.app import app
@@ -1052,7 +1047,6 @@ class Story(ft.View):
 
         # Create our menubar, workspaces rail, active rail, and workspace objects
         self.menubar = MenuBar(self)
-        self.canvas_rail = CanvasRail(self)
         self.tree_view_rail = ActiveRail(self) 
         self.workspace = Workspace(self)  
 
@@ -1090,8 +1084,6 @@ class Story(ft.View):
                 bgcolor=ft.Colors.SURFACE,
                 expand=True,
                 content=IsolatedRow([
-                
-                    self.canvas_rail,
                     self.tree_view_rail,
                     self.tree_view_rail_resizer,
                     self.workspace,

@@ -288,12 +288,15 @@ class ContentRail(ft.Column):
             shad.MenuItem(
                 content=ft.Row([
                     ft.Text("Canvas"), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
-                            tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                    ft.Text("\t\tComing Soon", color=ft.Colors.OUTLINE, italic=True, size=12), 
+                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, visible=False
+                            #tooltip="This feature is still in early development and may not work as expected. Proceed with caution.",
+                            #tooltip="Coming Soon."
+                        )], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas for sketching, drawing, or visual note taking",
-                visible=False
+                disabled=True
             ),
             shad.MenuItem(
                 content=ft.Row([

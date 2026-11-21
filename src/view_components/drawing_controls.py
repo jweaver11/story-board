@@ -7,7 +7,7 @@ from flet_color_pickers import ColorLabelType, ColorPicker, PaletteType
 import math
 import flet.canvas as cv
 from utils.safe_string_checker import return_safe_name
-from models.views.story import Story
+from models.widget import Widget
 
 tool_icons = {
     'brush': ft.Icons.BRUSH_ROUNDED,
@@ -35,12 +35,12 @@ tool_icons = {
 NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Class so we can store our all workspaces rail as an object inside of app
-class CanvasRail(ft.Container):
+class DrawingControls(ft.Container):
     
     # Constructor for our all_workspaces_rail object. Needs a page reference passed in
-    def __init__(self, story: Story):
+    def __init__(self, widget: Widget):
 
-        self.story = story
+        self.widget = widget
        
         # Style our rail (container)
         super().__init__(
@@ -117,9 +117,9 @@ class CanvasRail(ft.Container):
                 
         # Updates the mouse cursor or all visible canvases based on updated tool mode
         def set_canvas_mouse_cursor():
-            if self.story is None:
+            if self.widget.story is None:
                 return
-            for widget in self.story.workspace.tab_view.controls:
+            for widget in self.widget.story.workspace.tab_view.controls:
                 if not widget.data: # Protect empty
                     return
                 if widget.data.get('tag') == "canvas":
@@ -128,9 +128,9 @@ class CanvasRail(ft.Container):
 
         # Checks all our widgets. If any of them are manipulating a tool, we paint it on the canvas if switching from tool to draw mode
         def update_canvas_tool_preview():
-            if self.story is None:
+            if self.widget.story is None:
                 return
-            for widget in self.story.workspace.tab_view.controls:
+            for widget in self.widget.story.workspace.tab_view.controls:
                 if not widget.data: # Protect empty
                     return
                 if widget.data.get('tag') == "canvas":

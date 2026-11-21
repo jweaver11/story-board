@@ -283,22 +283,6 @@ class MenuBar(ft.Container):
             # Open our dialog in the overlay
             ft.context.page.show_dialog(dlg)
 
-        def toggle_show_canvas_rail(e: ft.Event[ft.MenuItemButton]):
-            ''' Toggles the visibility of the canvas rail on the left side of the page '''
-            new_value = not app.settings.data.get('story', {}).get('show_canvas_rail', False)
-            app.settings.update_data(**{'story': {'show_canvas_rail': new_value}})
-            if new_value:
-                e.control.leading.icon = ft.Icons.VISIBILITY_OUTLINED
-            else:
-                e.control.leading.icon = ft.Icons.VISIBILITY_OFF_OUTLINED
-            if self.story is not None:
-                if new_value:
-                    self.story.canvas_rail.width = 78
-                else:
-                    self.story.canvas_rail.width = 0
-                self.story.canvas_rail.update()
-            e.control.update()
-
         async def handle_settings_clicked(e=None):
             ''' Goes to the settings page '''
             if self.page.route == "/tutorial":
@@ -405,15 +389,6 @@ class MenuBar(ft.Container):
                     leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, size=20),
                     disabled=self.story is None,
                     on_click=handle_rename_story,
-                ),
-                shad.MenuItem(
-                    "Drawing Controls", 
-                    leading=ft.Icon(
-                        ft.Icons.VISIBILITY_OUTLINED if app.settings.data.get('story', {}).get('show_canvas_rail', False) else ft.Icons.VISIBILITY_OFF_OUTLINED,
-                        ft.Colors.PRIMARY, size=20
-                    ),
-                    disabled=self.story is None,
-                    on_click=toggle_show_canvas_rail,
                 ),
                 shad.MenuItem(
                     "Export",
