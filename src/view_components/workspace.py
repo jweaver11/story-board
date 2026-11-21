@@ -270,6 +270,7 @@ class Workspace(ft.Container):
         #selected_index = self.tabs.selected_index
         if 0 <= new_selected_index < len(self.tab_view.controls):
             if hasattr(new_active_widget, 'transform_iv') and new_active_widget.iv is not None:
+                return
                 await new_active_widget.transform_iv()
 
     # Saves the active widget on certain calls

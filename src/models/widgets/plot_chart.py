@@ -14,8 +14,15 @@ from constants import FIXED_STACK_WIDTH, FIXED_STACK_HEIGHT, FIXED_STACK_PADDING
 import uuid
 from styles.text_fields import NoLabelTextField
 import flet_shadcn_ui as shad
+import math
+
 
 NODE_STACK_PADDING = 200
+NODE_WIDTH = 200
+NODE_HEIGHT = 200
+
+CONNECTOR_WIDTH = 16
+CONNECTOR_HEIGHT = 30
 
 class PlotChart(Widget):
 
@@ -69,14 +76,34 @@ class PlotChart(Widget):
             self.widget = widget
             position = data.get('position', (NODE_STACK_PADDING, NODE_STACK_PADDING))
 
+            self.highlight_ctrl: ft.Container = ft.Container()
+
             super().__init__(
                 left=position[0],
                 top=position[1],
-                width=150, data=data, height=150,
-                offset=ft.Offset(0, -1),
+                width=NODE_WIDTH, height=NODE_HEIGHT,
+                data=data,
+                on_enter=self.handle_enter_node, 
+                on_exit=self.handle_exit_node,
+                offset=ft.Offset(-0.5, -0.5),   # So we sit in the middle of our actual position
                 animate_position=ft.Animation(250, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-                on_hover=self.widget.set_mouse_coords,
             )
+
+        def handle_enter_node(self, e=None):
+            ''' Highlight the node when mouse enters it and set it correctly '''
+            if self.widget.source_node:
+                self.highlight_ctrl.shadow = ft.BoxShadow(5, 10, ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE))
+                self.highlight_ctrl.update()
+                self.widget.target_node = self.data.get('id', '')
+            
+
+        def handle_exit_node(self, e=None):
+            ''' Remove the highlight from the node when mouse exits it, and unmark us as a target '''
+            if self.widget.target_node == self.data.get('id', ''):
+                self.widget.target_node = None
+            self.highlight_ctrl.shadow = None
+            self.highlight_ctrl.update()
+            
 
         # Moves the node on the stack and updates the drawing that connects the edges
         async def move_node(self, e: ft.DragUpdateEvent):
@@ -88,8 +115,8 @@ class PlotChart(Widget):
             # Clamp
             if self.left < FIXED_STACK_PADDING:
                 self.left = FIXED_STACK_PADDING
-            elif self.left > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150:
-                self.left = FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150
+            elif self.left > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - NODE_WIDTH:
+                self.left = FIXED_STACK_WIDTH - FIXED_STACK_PADDING - NODE_WIDTH
             if self.top < NODE_STACK_PADDING:
                 self.top = NODE_STACK_PADDING
             elif self.top > FIXED_STACK_HEIGHT - 50:
@@ -123,17 +150,9 @@ class PlotChart(Widget):
         def node_menu_options(self) -> list[shad.MenuItem]:
             
             return [
-                 
-                shad.MenuItem(
-                    on_click=self.rename_clicked,
-                    content="Rename", 
-                    leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
-                    data=self.data.get('id', ''),
-                ),
-                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(
                     on_click=self.delete_clicked,
-                    content="Delete",
+                    content="Delete Node",
                     leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
                 )
             ] 
@@ -165,25 +184,23 @@ class PlotChart(Widget):
         # Builds our node
         def build(self):
             
-            async def _highlight_node(e: ft.PointerEvent):
-                # If we are dragging, update our target as this node side
-                if self.widget.source_node:   # Only highlight if we're dragging from another node
-                    self.widget.target_node = e.control.data.get('id')
-                    #self.widget.target_side = e.control.data.get('side')
+            def handle_enter_connector(e: ft.PointerEvent[ft.GestureDetector]):
+                ''' Highlight the connector when we enter it, and set it as the target node if we're dragging from another node.'''
+                if self.widget.source_node:   
+                    self.widget.target_node = e.control.data
 
                 # Visual highlight
                 e.control.content.shadow = ft.BoxShadow(10, 20, ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE))
                 e.control.update()
-            async def _stop_highlight_node(e: ft.PointerEvent):
-                # Reset state trackers
+            def handle_exit_connector(e: ft.PointerEvent[ft.GestureDetector]):
+                ''' Set us as not the target node and stop highlighting'''
                 self.widget.target_node = None
-                #self.widget.target_side = None
-                # Highlight reset
                 e.control.content.shadow = None
                 e.control.update()
+                self.handle_enter_node()    # Call enter to re-set the state tracking if we are dragging
 
             # Creates our new edge (link) between nodes
-            async def _create_new_edge(e: ft.PointerEvent):
+            def _create_new_edge(e: ft.PointerEvent[ft.GestureDetector]):
                 
                 # Remove our visual feedback
                 self.page.overlay.pop()
@@ -193,14 +210,11 @@ class PlotChart(Widget):
                 if not self.widget.source_node or not self.widget.target_node:
                     self.widget.source_node = None
                     self.widget.target_node = None
-                    #self.widget.source_side = None
-                    #self.widget.target_side = None
-                    await _stop_highlight_node(e)   # Stops the highlight
+                    handle_exit_connector(e)   # Stops the highlight
                     return  
                 
                 # Don't allow connections to self
                 if self.widget.source_node == self.widget.target_node:    # Don't allow connections to self
-                    #self.page.show_dialog(SnackBar("Cannot connct a node to itself."))
                     return  
                 
                 # If the edge already exists, delete it
@@ -244,11 +258,9 @@ class PlotChart(Widget):
                 # Reset state trackers
                 self.widget.source_node = None
                 self.widget.target_node = None
-                #self.widget.source_side = None
-                #self.widget.target_side = None
 
                 # Re-render page to show new edge
-                await _stop_highlight_node(e)   # Stops the highlight
+                handle_exit_connector(e)   # Stops the highlight
 
                 # Add edge to the canvas
                 self.widget.edge_canvas.shapes.append(
@@ -262,8 +274,8 @@ class PlotChart(Widget):
                 
 
             # Update our state trackers for new edges and show visual feedback
-            async def start_new_edge(e: ft.PointerEvent):
-                self.widget.source_node = e.control.data.get('id', '')
+            async def start_new_edge(e: ft.PointerEvent[ft.Control]):
+                self.widget.source_node = e.control.data
                 #self.widget.source_side = e.control.data.get('side')
                 self.page.overlay.append(
                     ft.Container(
@@ -287,9 +299,6 @@ class PlotChart(Widget):
                 line.y2 = e.global_position.y
                 self.page.overlay[-1].update()
 
-            
-                
-
             def _save_title(e: ft.Event[ft.TextField]):
                 for node_data in self.widget.data.get('nodes', []):
                     if node_data.get('id', '') == self.data.get('id', ''):
@@ -306,127 +315,84 @@ class PlotChart(Widget):
                         break
                 self.widget.update_data(**{'nodes': self.widget.data.get('nodes', [])})
 
+            # Returns a connectino point for each side of the node
+            def build_connector(side: str = "left"):
+                return ft.GestureDetector(
+                    ft.Container(
+                        ft.Icon(
+                            ft.Icons.KEYBOARD_ARROW_LEFT_OUTLINED if side == "right" else ft.Icons.KEYBOARD_ARROW_RIGHT_OUTLINED, 
+                            ft.Colors.PRIMARY, size=CONNECTOR_WIDTH - 2,
+                        ), 
+                        height=CONNECTOR_HEIGHT, width=CONNECTOR_WIDTH, border=ft.Border.all(1, color=ft.Colors.OUTLINE),
+                        border_radius=40, bgcolor=ft.Colors.GREY_700,
+                    ), 
+                    mouse_cursor=ft.MouseCursor.PRECISE,
+                    data=self.data.get('id'),                        
+                    on_enter=handle_enter_connector,  
+                    on_pan_start=start_new_edge,   
+                    on_pan_update=_update_line,   
+                    on_pan_end=_create_new_edge,  
+                    on_exit=handle_exit_connector,  
+                    drag_interval=20,
+                    left=0 if side == "left" else None,
+                    right=0 if side == "right" else None,
+                )
+
+
             # Text field for editing the node's description
             self.description_ctrl = SmallTextField(
                 self.data.get('description', ''),
                 expand=True, 
                 on_blur=_save_description,
+                enable_interactive_selection=False
             )
 
             self.title_tf = NoLabelTextField(
                 value=self.data.get('label', ''),
                 on_blur=_save_title,
                 text_align=ft.TextAlign.CENTER,
-                expand=True, 
+                margin=ft.Margin.only(top=12),
             )
 
-            if False == True:   # Shad option if i want it later
-                self.title_tf = ft.TextField(
-                    value=self.data.get('label', ''),
-                    on_blur=_save_title,
-                    text_align=ft.TextAlign.CENTER,
-                    expand=True, 
-                    dense=True,
-                    border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-                    text_style=ft.TextStyle(size=14),
-                    multiline=True,
-                    content_padding=ft.Padding.all(0),
-                    capitalization=ft.TextCapitalization.SENTENCES,
-                )
+            self.highlight_ctrl = ft.Container(
+                expand=True, #shadow=ft.BoxShadow(0, 1, blur_style=ft.BlurStyle.OUTER),
+                bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                border_radius=8, 
+                padding=ft.Padding.only(top=0, bottom=8, left=8, right=8),
+                alignment=ft.Alignment.TOP_CENTER,
+                left=CONNECTOR_WIDTH / 2, right=CONNECTOR_WIDTH / 2, top=0, bottom=0,
+                content=ft.Column([
+                    self.title_tf,      # Title text field
+                    ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),     # Divider between title and description
+                    self.description_ctrl,  # Description text field
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
+            )
+
+            drag_handle = ft.GestureDetector(     # GD for moving the node via pan events
+                ft.Icon(ft.Icons.REMOVE, ft.Colors.OUTLINE),
+                on_pan_update=self.move_node,
+                on_pan_end=self.save_position,
+                mouse_cursor=ft.MouseCursor.MOVE,
+                drag_interval=20,
+                top=0, 
+                offset=ft.Offset(0, -0.25)
+            )
 
             # Our nodes content. Column with label, divider, description text field, and connection points
             self.content = shad.ContextMenu(
-                ft.Container(
-                    ft.Column([
-                        ft.GestureDetector(
-                            ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                            on_pan_update=self.move_node,
-                            on_pan_end=self.save_position,
-                            mouse_cursor=ft.MouseCursor.MOVE,
-                            drag_interval=20,
-                            on_double_tap=self.rename_clicked,
-                        ),
-                        ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2),
-                        self.description_ctrl,
-                        ft.Row([
-                            ft.GestureDetector(
-                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                                mouse_cursor=ft.MouseCursor.PRECISE,
-                                data={'id': self.data.get('id'), 'side': "left"},                            
-                                on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
-                                on_pan_start=start_new_edge,   # Show line to follow mouse
-                                on_pan_update=_update_line,   # Update line to follow mouse
-                                on_pan_end=_create_new_edge,  
-                                on_exit=_stop_highlight_node, 
-                                drag_interval=20, 
-                            ),
-                            ft.GestureDetector(
-                                ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                                mouse_cursor=ft.MouseCursor.PRECISE,
-                                data={'id': self.data.get('id'), 'side': "right"},                        
-                                on_enter=_highlight_node,  
-                                on_pan_start=start_new_edge,   
-                                on_pan_update=_update_line,   
-                                on_pan_end=_create_new_edge,  
-                                on_exit=_stop_highlight_node,  
-                                drag_interval=20,
-                            ),
-                            
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=6),
-                    expand=True, shadow=ft.BoxShadow(0, 1, blur_style=ft.BlurStyle.OUTER),
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                    border_radius=8, 
-                    padding=ft.Padding.all(8),
-                    alignment=ft.Alignment.TOP_CENTER,
+                items=self.node_menu_options(),
+                content=ft.Stack(   # Stack to hold our connectors and node
+                    alignment=ft.Alignment.CENTER, clip_behavior=ft.ClipBehavior.NONE,
+                    controls=[
+                        self.highlight_ctrl,
+                        drag_handle,
+                        build_connector("left"),
+                        build_connector("right"),
+                    ]
                 ),
-                self.node_menu_options(),
             )
-
-            return  # Shad option if i want it later
-            self.content = shad.ContextMenu(
-                shad.Card(
-                    padding=8,
-                    title=ft.GestureDetector(
-                        ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                        on_pan_update=self.move_node,
-                        on_pan_end=self.save_position,
-                        mouse_cursor=ft.MouseCursor.MOVE,
-                        drag_interval=20,
-                        on_double_tap=self.rename_clicked,
-                    ),
-                    description=shad.Separator(ft.Margin.symmetric(vertical=4)),
-                    content=self.description_ctrl,
-                    footer=ft.Row([
-                        ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                            mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'id': self.data.get('id'), 'side': "left"},                            
-                            on_enter=_highlight_node,   # Highlight and set target source trackers if we enter a node while dragging from another
-                            on_pan_start=start_new_edge,   # Show line to follow mouse
-                            on_pan_update=_update_line,   # Update line to follow mouse
-                            on_pan_end=_create_new_edge,  
-                            on_exit=_stop_highlight_node, 
-                            drag_interval=20, 
-                        ),
-                        ft.GestureDetector(
-                            ft.Container(ft.Icon(ft.Icons.CIRCLE_OUTLINED, ft.Colors.ON_SURFACE, scale=1.25), shape=ft.BoxShape.CIRCLE), 
-                            mouse_cursor=ft.MouseCursor.PRECISE,
-                            data={'id': self.data.get('id'), 'side': "right"},                        
-                            on_enter=_highlight_node,  
-                            on_pan_start=start_new_edge,   
-                            on_pan_update=_update_line,   
-                            on_pan_end=_create_new_edge,  
-                            on_exit=_stop_highlight_node,  
-                            drag_interval=20,
-                        ),
-                        
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    
-                    
-                ),
-                self.node_menu_options(),
-            )
+            
+            
                 
         
     # Class for the Edges/Links between our nodes that show up as a line on the edge_canvas
@@ -444,11 +410,13 @@ class PlotChart(Widget):
         def draw_edge(self):
             self.start_position = None
             self.end_position = None
-            for node in self.widget.data.get('nodes', []):
-                if node['id'] == self.source_node:
-                    self.start_position = node.get('position', (0, 0))
-                elif node['id'] == self.target_node:
-                    self.end_position = node.get('position', (0, 0))
+
+            # Go find our start and end position based on the node data
+            for node_data in self.widget.data.get('nodes', []):
+                if node_data.get('id') == self.source_node:
+                    self.start_position = node_data.get('position', (0, 0))
+                elif node_data.get('id') == self.target_node:
+                    self.end_position = node_data.get('position', (0, 0))
 
             # Catch errors
             if not self.start_position or not self.end_position:
@@ -458,19 +426,15 @@ class PlotChart(Widget):
             start_x, start_y = self.start_position
             end_x, end_y = self.end_position
 
-            # Offset half way up node connector icons
-            start_y -= 20
-            end_y -= 20
-
             # Straight edges between nodes
             if self.widget.data.get('spider_web_view', False):
                 # Adjust for in/out nodes
                 if start_x < end_x:
-                    start_x += 140  # 1FIXED_STACK_PADDING width - 10 for mid node
-                    end_x += 10
+                    start_x += NODE_WIDTH / 2
+                    end_x -= NODE_WIDTH / 2
                 else:
-                    end_x += 140
-                    start_x += 10
+                    end_x += NODE_WIDTH / 2
+                    start_x -= NODE_WIDTH / 2
                      
                 self.elements = [
                     cv.Path.MoveTo(start_x, start_y),
@@ -480,12 +444,14 @@ class PlotChart(Widget):
             # Three-node turns
             else:
                 # Adjust for in/out nodes
-                if start_x > end_x:
-                    end_x += 150
-                else:
-                    start_x += 150
+                #if start_x > end_x:
+                    #end_x += NODE_WIDTH / 2
+               #else:
+                    #start_x += NODE_WIDTH / 2
+                
     
                 mid_x = (start_x + end_x) / 2
+                mid_y = (start_y + end_y) / 2
                 self.elements = [
                     cv.Path.MoveTo(start_x, start_y),
                     cv.Path.LineTo(mid_x, start_y),
@@ -503,8 +469,8 @@ class PlotChart(Widget):
         # Clamp
         if self.new_node_position[0] < FIXED_STACK_PADDING:
             self.new_node_position = (FIXED_STACK_PADDING, self.new_node_position[1])
-        elif self.new_node_position[0] > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150:
-            self.new_node_position = (FIXED_STACK_WIDTH - FIXED_STACK_PADDING - 150, self.new_node_position[1])
+        elif self.new_node_position[0] > FIXED_STACK_WIDTH - FIXED_STACK_PADDING - NODE_WIDTH:
+            self.new_node_position = (FIXED_STACK_WIDTH - FIXED_STACK_PADDING - NODE_WIDTH, self.new_node_position[1])
         if self.new_node_position[1] < NODE_STACK_PADDING:
             self.new_node_position = (self.new_node_position[0], NODE_STACK_PADDING)
         elif self.new_node_position[1] > FIXED_STACK_HEIGHT - 50:
@@ -665,4 +631,5 @@ class PlotChart(Widget):
         ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
 
     def did_mount(self):
+        return
         self.page.run_task(self.transform_iv)
