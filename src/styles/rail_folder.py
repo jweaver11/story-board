@@ -27,14 +27,12 @@ class RailFolder(ft.GestureDetector):
         color: str = "primary",                                 # Color of the folder icon
         created_at: float = 0,                                  # Creation timestamp of the folder
         notes: str = "",                                           # Notes for the folder
-        in_base_directory: bool = False,                            # Optional parent directory tile, if there is one
     ):
         
         # Reference for all our passed in data
         self.full_path = full_path
         self.title = title
         self.story = story
-        self.in_base_directory = in_base_directory
         self.color = color
         self.created_at = created_at
         self.is_expanded = is_expanded
@@ -238,6 +236,11 @@ class RailFolder(ft.GestureDetector):
                 content=f"Rename {self.title}", 
                 on_click=self.rename_clicked,
             ),
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.EDIT_NOTE_OUTLINED, self.color, size=20), 
+                content="Open Notes", 
+                on_click=self.toggle_notes,
+            ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20), 
@@ -255,31 +258,7 @@ class RailFolder(ft.GestureDetector):
             full_path=self.full_path,
             key='is_expanded', value=self.expansion_tile.expanded
         )
-        
-
-    async def show_notes(self, e=None):
-        async def update_notes(e=None):
-            self.notes = textfield.value
-            await self.story.update_folder_data(
-                full_path=self.full_path,
-                key='notes', value=self.notes
-            )
-
-        self.page.show_dialog(
-            ft.SnackBar(
-                ft.Container(
-                    textfield := TextField(
-                        self.notes, hint_text="Put folder notes here", label="Notes", expand=True, on_blur=update_notes, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
-                        suffix_icon=ft.IconButton(ft.Icons.CLOSE, ft.Colors.ERROR, on_click=lambda: self.page.pop_dialog(), tooltip="Close"),
-                    ), 
-                    border_radius=4, bgcolor=ft.Colors.SURFACE,
-                    border=ft.Border.only(top=ft.BorderSide(1, ft.Colors.PRIMARY)),
-                    padding=ft.Padding.all(10)
-                ), 
-                bgcolor=ft.Colors.SURFACE, persist=True, padding=0,
-                on_dismiss=update_notes
-            )
-        )
+    
 
     
 
@@ -539,33 +518,64 @@ class RailFolder(ft.GestureDetector):
         except Exception as ex:
             print(f"Error moving folder: {ex}")
 
+    async def toggle_notes(self, e=None):
+        self.notes_popover.open = not self.notes_popover.open
+        self.notes_popover.update()
+        await self.notes_text.focus()
+
     # Called when we need to reload this directory tile
     def build(self):
         from utils.load_directory import load_directory_controls
 
-        # Leading icon control with border if we are in a subdirectory
-        leading_control = ft.Container(
-            ft.Icon(ft.Icons.FOLDER_OUTLINED, color=self.color),
-            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.in_base_directory == False else None,
-            padding=ft.Padding.only(left=6)
+            
+
+        
+        async def update_notes(e=None):
+            self.notes = self.notes_text.value
+            await self.story.update_folder_data(
+                full_path=self.full_path,
+                key='notes', value=self.notes
+            )
+            #notes_tooltip.message = self.notes
+            #notes_tooltip.update()
+
+            
+
+        self.notes_text = shad.Textarea(
+            value=self.notes, on_blur=update_notes, width=300, autofocus=True,
+            label=ft.Row([
+                ft.Text(f"{self.title} Notes"), 
+                shad.Button(
+                    ft.Icon(ft.Icons.CLOSE, ft.Colors.OUTLINE, size=16), 
+                    height=24, size=shad.ButtonSize.SM, variant=shad.ButtonVariant.GHOST, 
+                    on_click=self.toggle_notes, gap=0
+                )
+            ], width=300, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            resizable=False,
         )
 
+        self.notes_popover = shad.Popover(
+            ft.IconButton(
+                ft.Icons.EDIT_NOTE_OUTLINED, self.color, 20, height=24, width=24,
+                on_click=self.toggle_notes, padding=0,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), padding=0),
+                visible=False
+            ),
+            self.notes_text,
+        )
+
+        sub_folder_controls = load_directory_controls(
+            story=self.story,
+            directory=self.full_path,
+        )
 
         # The expansiontile that will hold everything
         self.expansion_tile = IsolatedExpansionTile(
             title=ft.Row(
                 [
-                    leading_control, 
+                    ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),
                     ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                    ft.Container(
-                        ft.Icon(ft.Icons.INFO_OUTLINED, self.color),
-                        on_click=self.show_notes, 
-                        #on_click=show_new_item_tf,
-                        border_radius=4, bgcolor=ft.Colors.SURFACE, ink=True, 
-                        shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE),
-                        padding=ft.Padding.symmetric(horizontal=0, vertical=0),
-                        #visible=False
-                    )
+                    self.notes_popover,
                 ], 
                 expand=True, spacing=6,
             ),
@@ -573,18 +583,16 @@ class RailFolder(ft.GestureDetector):
             collapsed_shape=ft.RoundedRectangleBorder(radius=4),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
-            tile_padding=ft.Padding(0, 0, 0, 0),
+            tile_padding=ft.Padding(6, 0, 6, 0),
             icon_color=self.color,
-            controls_padding=ft.Padding(10, 0, 0, 0),       # Keeps all sub children indented
+            controls_padding=ft.Padding(4, 0, 0, 0),       # Keeps all sub children indented
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             adaptive=True,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
-            controls=[self.new_item_tf] + load_directory_controls(
-                story=self.story,
-                directory=self.full_path,
-            ),
-            
+            controls=[self.new_item_tf] + sub_folder_controls if sub_folder_controls else [
+                ft.Text("Folder is empty", color=ft.Colors.OUTLINE, italic=True),
+            ] + [ft.Divider(height=8, thickness=2, color=ft.Colors.TRANSPARENT, trailing_indent=8)],
             animation_style=ft.AnimationStyle(
                 ft.Duration(milliseconds=100), ft.Duration(milliseconds=100), 
                 ft.AnimationCurve.DECELERATE, ft.AnimationCurve.DECELERATE
@@ -596,8 +604,13 @@ class RailFolder(ft.GestureDetector):
             group="widgets",
             on_accept=self.on_drag_accept,
             content=shad.ContextMenu(
-                self.expansion_tile,
-                items=self.menu_items()
+                ft.Container(
+                    content=self.expansion_tile,
+                    theme=ft.Theme(hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)),
+                    dark_theme=ft.Theme(hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)),
+                ),
+                items=self.menu_items(),
+                #open_on_tap=True
             ),
         )
 

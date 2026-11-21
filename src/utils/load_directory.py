@@ -113,9 +113,13 @@ def load_directory_controls(
                 color=color, 
                 is_expanded=is_expanded,
                 created_at=created_at,
-                in_base_directory=in_base_directory,
                 notes=notes,
             )
+            if in_base_directory == False:
+                new_folder = ft.Row([
+                    ft.Container(bgcolor=ft.Colors.OUTLINE_VARIANT, width=2, height=40, clip_behavior=ft.ClipBehavior.NONE),
+                    new_folder
+                ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 
             directory_ctrls.append(new_folder)
 
@@ -140,10 +144,14 @@ def load_directory_controls(
             if widget is not None:
 
                 # Create the file item
-                file = RailFile(
-                    widget,
-                    in_base_directory=in_base_directory,
-                )       
+                file = RailFile(widget)       
+
+                if in_base_directory == False:
+                    file.expand = True
+                    file = ft.Row([
+                        ft.Container(bgcolor=ft.Colors.OUTLINE_VARIANT, width=2, height=29, clip_behavior=ft.ClipBehavior.NONE),
+                        file
+                    ], spacing=0)
 
                 file_ctrls.append(file)
 

@@ -17,13 +17,11 @@ class RailFile(ft.GestureDetector):
     def __init__(
         self, 
         widget: Widget, 
-        in_base_directory: bool = False,
     ):
         
         
         # Set our widget reference and tag
         self.widget = widget
-        self.in_base_directory = in_base_directory
         tag = widget.data.get('tag', None)
 
         match tag:
@@ -172,11 +170,7 @@ class RailFile(ft.GestureDetector):
     def build(self):
 
         
-        leading_control = ft.Container(
-            ft.Icon(self.icon, color=self.icon_color),
-            border=ft.Border.only(left=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)) if self.in_base_directory == False else None,
-            padding=ft.Padding.only(left=6)
-        )
+        leading_control = ft.Icon(self.icon, color=self.icon_color, margin=ft.Margin.only(left=6))
 
 
         #self.options_button = ft.IconButton(
