@@ -51,6 +51,8 @@ class MapLocation(MiniWidget):
                 'notes': [
                     {'label': 'Type', 'value': ""},
                     {'label': 'Lore', 'value': ""},
+                    {'label': 'Weather', 'value': ""},
+                    {'label': 'Environment', 'value': ""}
                 ]
             })
 

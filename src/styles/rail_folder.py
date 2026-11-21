@@ -188,10 +188,10 @@ class RailFolder(ft.GestureDetector):
                     on_click=toggle_color_popover,
                     close_on_click=False,
                 ),
-                ft.Column(self._get_color_options(), tight=True, spacing=0, width=100, height=min(500, ft.context.page.height * 0.3), scroll=ft.ScrollMode.AUTO)
+                ft.Column(self._get_color_options(), tight=True, spacing=0, width=100, height=min(500, ft.context.page.height * 0.5), scroll=ft.ScrollMode.AUTO)
             ), 
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-        
+
             # Rename the folder
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.color, size=20), 

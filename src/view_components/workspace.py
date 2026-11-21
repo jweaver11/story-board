@@ -52,6 +52,17 @@ class Workspace(ft.Container):
             return self.tab_view.controls[len(self.tab_bar.tabs) - 1]  
         return self.tab_view.controls[self.tabs.selected_index]
 
+    # Sets a passed in widget as the active widget in the workspace, focusing its tab and handling data changes
+    async def set_active_widget(self, widget_id: str):
+        widget = self.story.get_widget_by_id(widget_id)
+        if not widget:
+            return
+        if widget.data.get('index', 999) >= len(self.tab_view.controls):
+            widget.data['index'] = len(self.tab_view.controls) - 1
+            widget.update_data(**{'index': widget.data['index']})
+        await self.tabs.move_to(widget.data.get('index', 0), animation_duration=100)  # Select the new widget tab
+        self.story.update_data(**{'workspace_selected_index': widget.data.get('index', 0)})
+
     # Adds a new widget to the workspace
     async def add_widget_to_workspace(self, widget: Widget):
 
