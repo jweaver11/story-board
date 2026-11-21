@@ -619,7 +619,14 @@ class MenuBar(ft.Container):
             #disabled=is_connecting,
             #items=get_cloud_sync_
             style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
-            menu_padding=0
+            menu_padding=0,
+            popup_animation_style=ft.AnimationStyle(
+                ft.Duration(milliseconds=200),
+                ft.Duration(milliseconds=200),
+                ft.AnimationCurve.DECELERATE, 
+                ft.AnimationCurve.DECELERATE
+            )
+            #popup_animation_style=ft.AnimationStyle.no_animation()
         )
         
         set_cloud_button()

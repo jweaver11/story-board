@@ -341,8 +341,8 @@ class Template(Widget):
 
         self.content = data_column
 
+        
         return
-
 
         def segment_changed(e):
             tabs.selected_index = e.control.selected_index
