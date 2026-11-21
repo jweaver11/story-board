@@ -424,6 +424,7 @@ class Story(ft.View):
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
+        from models.widgets.kanban import Kanban
 
         # If we are being re-loaded after settings or another story, clear our content so we can load it fresh
         self.widgets.clear()
@@ -552,6 +553,13 @@ class Story(ft.View):
 
                             case "plot_chart":
                                 widget = PlotChart(
+                                    title=widget_data.get('title', 'Untitled Manuscript'),
+                                    directory_path=dir_path,
+                                    story=self,
+                                    data=widget_data,
+                                )
+                            case "kanban":
+                                widget = Kanban(
                                     title=widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
@@ -708,6 +716,7 @@ class Story(ft.View):
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
+        from models.widgets.kanban import Kanban
 
         
         if directory_path is None:
@@ -748,6 +757,8 @@ class Story(ft.View):
                 widget = ComicPreview(title, directory_path, self, data, True)
             case "plot_chart":
                 widget = PlotChart(title, directory_path, self, data, True)
+            case "kanban":
+                widget = Kanban(title, directory_path, self, data, True)
             case _:
                 print(f"Error creating widget {title}: Invalid tag {tag}")
 
@@ -784,6 +795,7 @@ class Story(ft.View):
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
+        from models.widgets.kanban import Kanban
 
         tag = widget.data.get('tag', None)
         new_widget = None
@@ -905,6 +917,14 @@ class Story(ft.View):
 
             case "plot_chart":
                 new_widget = PlotChart(
+                    title=widget.data.get('title', 'Untitled Manuscript'),
+                    directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
+                    story=self,
+                    data=widget.data,
+                    is_new=widget.is_new
+                )
+            case "kanban":
+                new_widget = Kanban(
                     title=widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,

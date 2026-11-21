@@ -238,6 +238,11 @@ class ContentRail(ft.Column):
                 tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
             ), 
             shad.MenuItem(
+                leading=ft.Icon(ft.Icons.VIEW_KANBAN_OUTLINED, ft.Colors.PRIMARY, size=20), content="Kanban",
+                data="kanban", on_click=self.new_item_clicked, close_on_click=True,
+                tooltip="Create a new Kanban board for your story."
+            ),
+            shad.MenuItem(
                 leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY, size=20), content="Plotline",
                 data="plotline", on_click=self.new_item_clicked, close_on_click=True, 
                 tooltip="Create a new plotline to visualize and expand upon your sequence of events in your story"

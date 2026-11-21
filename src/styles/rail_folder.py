@@ -77,11 +77,15 @@ class RailFolder(ft.GestureDetector):
                 data="character", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new character for your story."
             ),
-            
             shad.MenuItem(      
                 leading=ft.Icon(ft.Icons.LIBRARY_BOOKS_OUTLINED, ft.Colors.PRIMARY, size=20), content="Note", 
                 data="note", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new note for Ideas, Themes, Research, Points of Interest, etc.",
+            ), 
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.VIEW_KANBAN_OUTLINED, ft.Colors.PRIMARY, size=20), content="Kanban",
+                data="kanban", on_click=self.new_item_clicked, close_on_click=True,
+                tooltip="Create a new Kanban board for your story."
             ), 
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.TIMELINE_OUTLINED, ft.Colors.PRIMARY, size=20), content="Plotline",
