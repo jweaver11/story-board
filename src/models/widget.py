@@ -706,16 +706,6 @@ class Widget(ft.Container):
             ], expand=True, spacing=0)
         )
 
-        
-
-        # OLD
-        #ft.IconButton(      # Open the settings fo this type of widget
-            #ft.Icons.SETTINGS_OUTLINED, self.data.get('color', ft.Colors.PRIMARY),
-            #on_click=self.open_widget_settings, 
-            #mouse_cursor=ft.MouseCursor.CLICK,
-            #tooltip=f"Open Settings for {self.data.get('tag', '').capitalize()} widgets."
-        #),
-
 
     # Builds functionality for widget
     def build(self):

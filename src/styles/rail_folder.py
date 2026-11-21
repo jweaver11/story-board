@@ -303,7 +303,7 @@ class RailFolder(ft.GestureDetector):
             for key in self.story.data['folders'].keys():
 
                 # If there is no change, skip the checks
-                if new_name.capitalize() == self.title:
+                if new_name == self.title:
                     break
 
                 # Give us our would-be path to compare
@@ -487,7 +487,7 @@ class RailFolder(ft.GestureDetector):
         self.new_item_tf = ft.TextField(     
             hint_text="", data="",                 # Hint text and data tag for logic                      
             autofocus=True, dense=True,                 
-            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
+            capitalization=ft.TextCapitalization.SENTENCES,     # Capitalize sentences for names
             visible=False,                                      # Hidden by default
             text_style=ft.TextStyle(
                 size=14,
