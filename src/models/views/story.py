@@ -159,7 +159,7 @@ class Story(ft.View):
     def set_active_widget_id(self, widget_id: str):
         self.active_widget_id = widget_id
 
-    def get_active_widget(self):
+    def get_active_widget(self) -> ft.Control:
         return self.get_widget_by_id(self.active_widget_id)
 
     # Creates our template content based on the selected template

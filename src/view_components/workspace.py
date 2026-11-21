@@ -91,6 +91,7 @@ class Workspace(ft.Container):
         new_widget.update_data(**{'index': new_selected_index})
         self.story.update_data(**{'workspace_selected_index': new_selected_index})
         self.tab_bar.indicator_color = new_widget.data.get('color', ft.Colors.PRIMARY)
+        self.story.set_active_widget_id(new_widget.data.get('id'))
 
         # Flutter only has to render a blank Container first
         self.update()
@@ -180,6 +181,7 @@ class Workspace(ft.Container):
 
         # Make sure indicator color is updated
         self.tab_bar.indicator_color = self.tab_view.controls[self.tabs.selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+        self.story.set_active_widget_id(self.tab_view.controls[self.tabs.selected_index].data.get('id'))
 
         # Update the workspace and the tab_indices to reflect shiften positions
         self.update()
@@ -233,17 +235,19 @@ class Workspace(ft.Container):
         self.tab_bar.update()
 
     # Handles a click event on a tab in the workspace
-    async def tab_click(self, e: ft.Event):
+    async def save_widget(self, e: ft.Event):
         """Save the active widget before Flet switches to another tab."""
-        selected_index = self.tabs.selected_index
-        if 0 <= selected_index < len(self.tab_view.controls):
-            selected_widget = self.tab_view.controls[selected_index]
-            if hasattr(selected_widget, 'save_file'):
-                await selected_widget.save_file()
+        widget = self.story.get_active_widget()
+        if not widget:
+            print("Error finding active widget in save_widget")
+            return
+        await widget.save_file()
+        
             
     
     # Sets our new selected index when we change tabs and updates the tab bar indicator color to match the new selected tab
     async def tab_change(self, e: ft.Event):
+        ''' Set our new '''
 
         # Save new selected index
         new_selected_index = int(e.data)
@@ -251,14 +255,18 @@ class Workspace(ft.Container):
 
         # Set the new selected index and indicator color, then update
         self.tabs.selected_index = new_selected_index
-        self.tab_bar.indicator_color = self.tab_view.controls[new_selected_index].data.get('color', ft.Colors.ON_SURFACE_VARIANT)
+        new_active_widget = self.tab_view.controls[new_selected_index]
+        if not new_active_widget:
+            print("Error: New active widget not found in tab change")
+            return
+        self.story.set_active_widget_id(new_active_widget.data.get('id'))
+        self.tab_bar.indicator_color = new_active_widget.data.get('color', ft.Colors.ON_SURFACE_VARIANT)
         self.update()
 
-        selected_index = self.tabs.selected_index
-        if 0 <= selected_index < len(self.tab_view.controls):
-            selected_widget = self.tab_view.controls[selected_index]
-            if hasattr(selected_widget, 'transform_iv') and selected_widget.iv is not None:
-                await selected_widget.transform_iv()
+        #selected_index = self.tabs.selected_index
+        if 0 <= new_selected_index < len(self.tab_view.controls):
+            if hasattr(new_active_widget, 'transform_iv') and new_active_widget.iv is not None:
+                await new_active_widget.transform_iv()
 
     # Saves the active widget on certain calls
     async def save_active_widget(self):
@@ -297,13 +305,16 @@ class Workspace(ft.Container):
         # Go through them all, update their index to be accurate now
         for i, widget in enumerate(sorted_visible_widgets):
             widget.update_data(**{'index': i})
+            if i == selected_idx:
+                self.story.set_active_widget_id(widget.data.get('id'))
+            
 
         # Build at tab bar with tabs for each widget
         self.tab_bar = ft.TabBar(
             tabs=[self.create_widget_tab_ctrl(widget) for widget in sorted_visible_widgets],    # Gives a tab for each widget
             scrollable=True, indicator_color=indicator_color, divider_height=2,
             enable_feedback=False, 
-            on_click=self.tab_click,
+            on_click=self.save_widget,
             label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
         )
 
