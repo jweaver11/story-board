@@ -49,52 +49,14 @@ class RailFolder(ft.GestureDetector):
         super().__init__(
             mouse_cursor=ft.MouseCursor.CLICK,
             exclude_from_semantics=True, expand=True,
-            on_enter=self._highlight,
-            on_exit=self._stop_highlight,
         )
-        self.new_item_tf = ft.TextField(     
-            hint_text="", data="",                 # Hint text and data tag for logic                      
-            autofocus=True, dense=True,                 
-            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
-            visible=False,                                      # Hidden by default
-            text_style=ft.TextStyle(
-                size=14,
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-            ),                         # Text style for consistency
-            on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
-            on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            suffix_icon=ft.IconButton(
-                ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
-                on_click=self.submit_item,
-                mouse_cursor="click",
-            ),
-        )
+        
         
     # Called when clicking off the textfield and after submission
     def on_new_item_blur(self, e=None):
         self.new_item_tf.visible = False
         self.new_item_tf.update()
         
-
-    # Show our button to show options when we enter this folder
-    async def _highlight(self, e=None):
-        return
-        self.expansion_tile.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        self.expansion_tile.collapsed_bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        self.expansion_tile.update()
-        return
-        self.expansion_tile.trailing.visible = True
-        self.expansion_tile.update()
-
-    # Hide our button to show options when we exit this folder
-    async def _stop_highlight(self, e=None):
-        #self.expansion_tile.bgcolor = ft.Colors.TRANSPARENT
-        #self.expansion_tile.collapsed_bgcolor = ft.Colors.TRANSPARENT
-        #self.expansion_tile.update()
-        return
-        self.expansion_tile.trailing.visible = False
-        self.expansion_tile.update()
 
     def new_items(self) -> list[shad.MenuItem]:
         return [
@@ -299,7 +261,7 @@ class RailFolder(ft.GestureDetector):
         ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
         # Grab our title from the textfield
-        title = self.new_item_tf.value
+        title = self.new_item_tf.value or ""
 
         # Protect against empty titles. They break things
         if not title.strip():
@@ -539,10 +501,27 @@ class RailFolder(ft.GestureDetector):
                 full_path=self.full_path,
                 key='notes', value=self.notes
             )
-            #notes_tooltip.message = self.notes
-            #notes_tooltip.update()
+            self.notes_tooltip.message = self.notes
+            self.notes_tooltip.update()
 
-            
+        self.new_item_tf = ft.TextField(     
+            hint_text="", data="",                 # Hint text and data tag for logic                      
+            autofocus=True, dense=True,                 
+            capitalization=ft.TextCapitalization.WORDS,     # Capitalize sentences for names
+            visible=False,                                      # Hidden by default
+            text_style=ft.TextStyle(
+                size=14,
+                color=ft.Colors.ON_SURFACE,
+                weight=ft.FontWeight.BOLD,
+            ),                         # Text style for consistency
+            on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
+            on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
+            suffix_icon=ft.IconButton(
+                ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
+                on_click=self.submit_item,
+                mouse_cursor="click",
+            ),
+        )
 
         self.notes_text = shad.Textarea(
             value=self.notes, on_blur=update_notes, width=300, autofocus=True,
@@ -572,41 +551,48 @@ class RailFolder(ft.GestureDetector):
             directory=self.full_path,
         )
 
-        # The expansiontile that will hold everything
-        self.expansion_tile = IsolatedExpansionTile(
-            title=shad.ContextMenu(
-                ft.GestureDetector(
+        if not sub_folder_controls:
+            sub_folder_controls = [
+                ft.Container(
+                    ft.Text(f"Add items to {self.title}", color=ft.Colors.OUTLINE, italic=True, size=12), 
+                    border=ft.Border.only(left=ft.BorderSide(width=2, color=ft.Colors.OUTLINE_VARIANT)),
+                    padding=ft.Padding.only(left=6), height=29, alignment=ft.Alignment.CENTER_LEFT,
+                    on_click=self.new_item_clicked
+                )
+            ]
+
+        self.notes_tooltip = shad.Tooltip(  # Tooltip when hovering over title of expansion tile
+            message=self.notes, wait_duration=ft.Duration(milliseconds=750),
+            content=shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
+                ft.GestureDetector( # Catch primary clicks to open expansion tile since cm blocks them
                     ft.Row(
                         [
-                            ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),
+                            ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),  # icon
                             ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                            self.notes_popover,
+                            self.notes_popover, # Shows the popover for the textarea for the notes
                         ], 
                         expand=True, spacing=6,
                     ),
                     on_tap_down=open_expansion_tile,
                 ),
                 items=self.menu_items(),
-                    
-                
             ),
+        )
+
+        # The expansiontile that will hold everything
+        self.expansion_tile = IsolatedExpansionTile(
+            title=self.notes_tooltip,
             dense=True, min_tile_height=0,
             collapsed_shape=ft.RoundedRectangleBorder(radius=4),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
-            tile_padding=ft.Padding(6, 0, 6, 0),
+            tile_padding=ft.Padding(6, 2, 6, 2),
             icon_color=self.color, adaptive=True,
-            controls_padding=ft.Padding(6, 0, 0, 0),       # Keeps all sub children indented slightly
+            controls_padding=ft.Padding(8, 0, 0, 0),       # Keeps all sub children indented slightly
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
-            controls=[self.new_item_tf] + sub_folder_controls if sub_folder_controls else [
-                ft.Container(
-                    ft.Text("Folder is empty", color=ft.Colors.OUTLINE, italic=True), 
-                    border=ft.Border.only(left=ft.BorderSide(width=2, color=ft.Colors.OUTLINE_VARIANT)),
-                    padding=ft.Padding.only(left=6), height=29, alignment=ft.Alignment.CENTER_LEFT
-                ),
-            ],
+            controls=[self.new_item_tf] + sub_folder_controls,
             animation_style=ft.AnimationStyle(
                 ft.Duration(milliseconds=100), ft.Duration(milliseconds=100), 
                 ft.AnimationCurve.DECELERATE, ft.AnimationCurve.DECELERATE
@@ -621,11 +607,11 @@ class RailFolder(ft.GestureDetector):
                 content=self.expansion_tile,
                 theme=ft.Theme(
                     hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
-                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=2),
+                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=0),   # Clamp the padding on the tile down
                 ),
                 dark_theme=ft.Theme(
                     hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
-                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=2),
+                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=0),   # Clamp the padding on the tile down
                 ),
             ),
                 
@@ -642,6 +628,8 @@ class RailFolder(ft.GestureDetector):
                 ], expand=True)
             ),
         )
+
+        
         
         # Set the content
         self.content = draggable

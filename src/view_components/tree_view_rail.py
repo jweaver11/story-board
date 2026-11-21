@@ -183,7 +183,7 @@ class ContentRail(ft.Column):
         ''' Sets our state to submitting, and creates new item if unique. Father is either Plotline or arc for creating mini widgets '''
 
         # Grab our title from the textfield
-        title = self.new_item_tf.value
+        title = self.new_item_tf.value or ""
 
         # Protect against empty titles. They break things
         if title is None or title.strip() == "":
