@@ -536,9 +536,9 @@ class PlotChart(Widget):
             async def _create_node(e: ft.Event):
                 await self.create_node(e)
 
-            async def set_highlight_connector(e: ft.Event[shad.MenuItem]):
-                highlight_connector = e.control.data
-                self.update_data(**{'view_mode': highlight_connector})
+            async def set_view_mode(e: ft.Event[shad.MenuItem]):
+                view_mode = e.control.data
+                self.update_data(**{'view_mode': view_mode})
                 for edge in self.edge_canvas.shapes:
                     if isinstance(edge, self.Edge):
                         edge.draw_edge()
@@ -558,17 +558,17 @@ class PlotChart(Widget):
                 shad.MenuItem(
                     "Curved", data="curved",
                     leading=ft.Icon(ft.Icons.GESTURE, ft.Colors.PRIMARY, size=20),
-                    on_click=set_highlight_connector,
+                    on_click=set_view_mode,
                 ),
                 shad.MenuItem(
                     "ZigZag", data="zigzag",
                     leading=ft.Icon(ft.Icons.SHOW_CHART, ft.Colors.PRIMARY, size=20),
-                    on_click=set_highlight_connector,
+                    on_click=set_view_mode,
                 ),
                 shad.MenuItem(
                     "Straight", data="straight",
                     leading=ft.Icon(ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED, ft.Colors.PRIMARY, size=20),
-                    on_click=set_highlight_connector,
+                    on_click=set_view_mode,
                 ),
             ]
             

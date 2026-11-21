@@ -38,6 +38,7 @@ class ConnectionMap(Widget):
 
                 'show_sidebar': False,  # Start hidden so our toast notification is more visible
                 'show_alert': True,
+                'view_mode': app.settings.data.get('widget_defaults', {}).get('connection_map', {}).get('view_mode', "curved"),
                 'widgets': {
                     #'id': (position) # Widget id, tied to a position
                 },
@@ -70,9 +71,6 @@ class ConnectionMap(Widget):
             self.position = position
             self.ref_widget = ref_widget
 
-            
-
-        
             self.rename_tf: NoLabelTextField
             
 
@@ -534,15 +532,43 @@ class ConnectionMap(Widget):
 
             if not self.start_position or not self.end_position:
                 return
-            
-            self.mid_position = ((self.start_position[0] + self.end_position[0]) / 2, (self.start_position[1] + self.end_position[1]) / 2)
-                
-            self.elements = [
-                cv.Path.MoveTo(self.start_position[0], self.start_position[1]), 
-                cv.Path.LineTo(self.end_position[0], self.end_position[1]), 
-            ]
-            self.paint = ft.Paint(self.color, stroke_width=3, style="stroke", anti_alias=True)
-            return
+
+            # Unpack into local vars so we don't mutate the stored tuples
+            start_x, start_y = self.start_position
+            end_x, end_y = self.end_position
+            self.paint = ft.Paint(self.color, stroke_width=3, style="stroke", anti_alias=True)  # Update our paint
+
+            # Straight edges between nodes
+            if self.widget.data.get('view_mode', '') == "straight":
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y), 
+                    cv.Path.LineTo(end_x, end_y), 
+                ]
+
+            # ZigZags between nodes
+            elif self.widget.data.get('view_mode', '') == "zigzag":
+                mid_x = (start_x + end_x) / 2
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y),
+                    cv.Path.LineTo(mid_x, start_y),
+                    cv.Path.LineTo(mid_x, end_y),
+                    cv.Path.LineTo(end_x, end_y),
+                ]
+
+            # Curved edges between nodes
+            else:
+                direction = 1 if start_x < end_x else -1
+                start_x += direction 
+                end_x -= direction 
+                handle_length = abs(end_x - start_x) / 2
+                self.elements = [
+                    cv.Path.MoveTo(start_x, start_y),
+                    cv.Path.CubicTo(
+                        start_x + direction * handle_length, start_y,
+                        end_x - direction * handle_length, end_y,
+                        x=end_x, y=end_y
+                    ),
+                ]
             
 
     class ConnectionIcon(ft.GestureDetector):
@@ -691,18 +717,18 @@ class ConnectionMap(Widget):
             )
 
     def build_map_ctrls(self):
+        ''' Builds the connection map controls for the widgets on the map. '''
+
         # Update our mouse cursor when interacting with the drag target
         def show_accept_mc(e: ft.Event[ft.DragTarget]):
             e.control.content.mouse_cursor = ft.MouseCursor.GRABBING if self.page.platform == ft.PagePlatform.MACOS else ft.MouseCursor.CLICK
             e.control.update()
             
-
         # Reset our mouse cursor when leaving the drag target
         def hide_accept_mc(e: ft.Event[ft.DragTarget]):
             e.control.content.mouse_cursor = None
             e.control.update()
             
-
         # Adds the widget to the stack if its not there
         def accept_drag(e: ft.DragTargetEvent):
             
@@ -789,6 +815,39 @@ class ConnectionMap(Widget):
                 on_leave=hide_accept_mc
             ),
         )
+
+    def get_menu_options(self) -> list[ft.Control]:
+        async def set_view_mode(e: ft.Event[shad.MenuItem]):
+            view_mode = e.control.data
+            self.update_data(**{'view_mode': view_mode})
+            # Update any edges connected to this widgetacter node as we move
+            for connection in self.edges_canvas.shapes:
+                if isinstance(connection, self.ConnectionEdge):
+                    connection.draw_connection()
+                    connection.update()
+
+        return [
+            ft.Row([ft.Text(f"Views", italic=True)], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)),
+            shad.MenuItem(
+                "Curved", data="curved",
+                leading=ft.Icon(ft.Icons.GESTURE, ft.Colors.PRIMARY, size=20),
+                on_click=set_view_mode,
+            ),
+            shad.MenuItem(
+                "ZigZag", data="zigzag",
+                leading=ft.Icon(ft.Icons.SHOW_CHART, ft.Colors.PRIMARY, size=20),
+                on_click=set_view_mode,
+            ),
+            shad.MenuItem(
+                "Straight", data="straight",
+                leading=ft.Icon(ft.Icons.VERTICAL_DISTRIBUTE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                on_click=set_view_mode,
+            ),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            ft.Row([
+                ft.Text("Drag widgets from the rail to add them to the map.", italic=True, color=ft.Colors.ON_SURFACE_VARIANT, size=12, width=100, text_align=ft.TextAlign.CENTER)
+            ], alignment=ft.MainAxisAlignment.CENTER)
+        ]
             
 
     # Called after any changes happen to the data that need to be reflected in the UI
@@ -799,11 +858,8 @@ class ConnectionMap(Widget):
 
         # Canvas that shows the drawn lines between widgets for their connections and icons
         self.edges_canvas = cv.Canvas(
-            content=ft.GestureDetector(
-                on_tap=lambda: self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8))),
-                on_secondary_tap=lambda: self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8))),
-                width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
-            ), expand=True)
+            expand=True, width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT
+        )
 
         # Create the stack to hold our bank, widgetacter nodes, and connections canvas
         self.connections_stack = ft.Stack(
@@ -835,7 +891,12 @@ class ConnectionMap(Widget):
 
 
         self.content = ft.Stack([
-            self.iv,
+            shad.ContextMenu(
+                self.iv,
+                self.get_menu_options(),
+                expand=True,
+                open_on_tap=True
+            ),
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 
                 spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
@@ -853,5 +914,6 @@ class ConnectionMap(Widget):
         if self.data.get('show_alert', True) == True:
             self.page.show_dialog(shad.Toast("Drag widgets from the rail to add them to the map.", duration=ft.Duration(seconds=8)))
             self.update_data(**{'show_alert': False})
+        return
         self.page.run_task(self.transform_iv)
         

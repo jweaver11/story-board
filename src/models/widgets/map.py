@@ -112,6 +112,7 @@ class Map(Widget):
         self.location_stack: ft.Stack
         self.label_stack: ft.Stack
         self.map_controller: ft.GestureDetector
+        self.context_menu: shad.ContextMenu
 
         # Sidebar elements
         self.sidebar_locked_toggle_button: ft.MenuItemButton
@@ -215,7 +216,6 @@ class Map(Widget):
             self.position = (self.left, self.top)
             self.widget.data.get('labels', {}).get(self.id, {}).update({'position': self.position})
             self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
-            self.widget.set_mouse_coords(e)     # Reset the menu position
             self.stop_highlight()
 
         # Returns our options for our label
@@ -1018,6 +1018,8 @@ class Map(Widget):
         self.location_stack.controls.append(new_location)   # Add to stack
         self.location_stack.update()   # Update stack
         await new_location.show_mini_widget()   # Show in sidebar
+        self.context_menu.items = self.get_new_item_options()
+        self.map_controller.update()
     
     # Creates our label control in data and on the location stack
     async def create_label(self, e: ft.Event[ft.Button]=None):
@@ -1039,6 +1041,8 @@ class Map(Widget):
         # Add to stack and update
         self.label_stack.controls.append(self.Label(self, new_data))
         self.label_stack.update()
+        self.context_menu.items = self.get_new_item_options()
+        self.map_controller.update()
     
     def create_sidebar_body_ctrls(self) -> list[ft.Control]:
         
@@ -1255,6 +1259,8 @@ class Map(Widget):
                 self.page.pop_dialog()
 
             close_popovers()
+            self.context_menu.items = self.get_new_item_options()
+            self.map_controller.update()
 
             canvas_id: str = None
         
@@ -1279,6 +1285,8 @@ class Map(Widget):
         # Uploads an image and sets it as the background image for our map
         async def handle_set_bg_image(e: ft.Event[ft.MenuItemButton]):
             close_popovers()
+            self.context_menu.items = self.get_new_item_options()
+            self.map_controller.update()
             
             files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
@@ -1305,6 +1313,8 @@ class Map(Widget):
 
         # Set our built in options, or none, to set no background image
         def handle_set_built_in_image(e: ft.Event[ft.MenuItemButton]):
+            self.context_menu.items = self.get_new_item_options()
+            self.map_controller.update()
             close_popovers()
 
             self.update_data(**{'background_image': e.control.data, 'background_color': None})
@@ -1334,6 +1344,8 @@ class Map(Widget):
                 self.page.pop_dialog()
 
             close_popovers()
+            self.context_menu.items = self.get_new_item_options()
+            self.map_controller.update()
             color = self.data.get('background_color', ft.Colors.PRIMARY)
             color_picker = ColorPicker(
                 self.data.get('background_color', ft.Colors.PRIMARY) if self.data.get('bg_type') == "color" else ft.Colors.PRIMARY,
@@ -1404,7 +1416,7 @@ class Map(Widget):
                     ),
                     shad.MenuItem(      
                         leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY), content="Select Canvas", 
-                        on_click=set_canvas_bg_image,
+                        on_click=set_canvas_bg_image, visible=False,
                         tooltip="Select a canvas to use as the background for this map",
                     ), 
                     shad.MenuItem(      # Folders
@@ -1449,7 +1461,6 @@ class Map(Widget):
     # Also sets our mouse coordinates for the menu to open at the right place
     def set_mouse_coords(self, e: ft.PointerEvent):
         self.new_location_position = (e.local_position.x, e.local_position.y)
-        super().set_mouse_coords(e)
 
     
     async def toggle_locked(self, e=None):
@@ -1458,7 +1469,7 @@ class Map(Widget):
         self.update_data(**{'locked': new_locked})
         
         self.map_controller.mouse_cursor = ft.MouseCursor.PRECISE if new_locked else None
-        self.map_controller.content.items = self.get_new_item_options()
+        self.context_menu.items = self.get_new_item_options()
         self.map_controller.update()
 
     # Creates our header controls for the sidebar, including our settings button
@@ -1547,19 +1558,22 @@ class Map(Widget):
             width=self.map_width, height=self.map_height,
         )
 
+        self.context_menu = shad.ContextMenu(
+            ft.Container(expand=True, ignore_interactions=True),
+            items=self.get_new_item_options(),
+            open_on_tap=True
+        )
+
         self.map_controller = ft.GestureDetector(
-            shad.ContextMenu(
-                ft.Container(expand=True, ignore_interactions=True),
-                items=self.get_new_item_options(),
-            ),
+            self.context_menu,
             mouse_cursor=ft.MouseCursor.PRECISE if self.data.get('locked', False) else None, 
             expand=True,
 
             # Drawing event handlers
             on_tap=self.handle_tap,
-            on_pan_start=self.handle_pan_start,
-            on_pan_update=self.handle_pan_update,
-            on_pan_end=self.handle_pan_end,
+            #on_pan_start=self.handle_pan_start,
+            #on_pan_update=self.handle_pan_update,
+            #on_pan_end=self.handle_pan_end,
             
             # Non-drawing event handlers
             on_hover=self.set_mouse_coords,

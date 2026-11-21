@@ -142,6 +142,7 @@ class Settings(ft.View):
                     },
                     'connection_map': {
                         'color': "primary",
+                        'view_mode': "curved",   # If the connection map is in straight, zigzag, or curved view
                         'export_file_type': ".json"   # Default export file type for plotlines
                     }
                 },
@@ -571,10 +572,11 @@ class Settings(ft.View):
             e.control.icon = ft.Icons.SWAP_VERT if new_direction == "vertical" else ft.Icons.SWAP_HORIZ
             e.control.update()
 
-        def toggle_plot_chart_view_mode(e: ft.Event[shad.Select]):
+        def set_widget_view_mode(e: ft.Event[shad.Select]):
             new_value = e.control.value
-            self.data['widget_defaults']['plot_chart']['view_mode'] = new_value
-            self.update_data(**{'widget_defaults': {'plot_chart': {'view_mode': new_value}}})
+            widget_tag = e.control.data or "plot_chart"
+            self.data['widget_defaults'][widget_tag]['view_mode'] = new_value
+            self.update_data(**{'widget_defaults': {widget_tag: {'view_mode': new_value}}})
 
         def update_note_card_size(e: ft.Event[shad.Select]):
             new_size = e.control.value.lower()
@@ -871,7 +873,23 @@ class Settings(ft.View):
                     content=shad.Select(
                         label="View Mode",
                         value=self.data.get('widget_defaults', {}).get("plot_chart", {}).get('view_mode', "curved"),
-                        on_change=toggle_plot_chart_view_mode,
+                        on_change=set_widget_view_mode,
+                        data="plot_chart",
+                        options=[
+                            shad.SelectOption(value="curved", text="Curved"),
+                            shad.SelectOption(value="zigzag", text="ZigZag"),
+                            shad.SelectOption(value="straight", text="Straight"),
+                        ],
+                    ),
+                ),
+                Card(
+                    "Connection Map",
+                    "Default settings for new connection maps.",
+                    content=shad.Select(
+                        label="View Mode",
+                        value=self.data.get('widget_defaults', {}).get("connection_map", {}).get('view_mode', "curved"),
+                        on_change=set_widget_view_mode,
+                        data="connection_map",
                         options=[
                             shad.SelectOption(value="curved", text="Curved"),
                             shad.SelectOption(value="zigzag", text="ZigZag"),
