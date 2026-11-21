@@ -527,7 +527,10 @@ class RailFolder(ft.GestureDetector):
     def build(self):
         from utils.load_directory import load_directory_controls
 
-            
+        async def open_expansion_tile(e=None):
+            self.expansion_tile.expanded = not self.expansion_tile.expanded
+            self.expansion_tile.update()
+            await self.toggle_expand()
 
         
         async def update_notes(e=None):
@@ -571,28 +574,39 @@ class RailFolder(ft.GestureDetector):
 
         # The expansiontile that will hold everything
         self.expansion_tile = IsolatedExpansionTile(
-            title=ft.Row(
-                [
-                    ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),
-                    ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                    self.notes_popover,
-                ], 
-                expand=True, spacing=6,
+            title=shad.ContextMenu(
+                ft.GestureDetector(
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),
+                            ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                            self.notes_popover,
+                        ], 
+                        expand=True, spacing=6,
+                    ),
+                    on_tap_down=open_expansion_tile,
+                ),
+                items=self.menu_items(),
+                    
+                
             ),
-            dense=True,
+            dense=True, min_tile_height=0,
             collapsed_shape=ft.RoundedRectangleBorder(radius=4),
             visual_density=ft.VisualDensity.COMPACT,
             expanded=self.is_expanded,
             tile_padding=ft.Padding(6, 0, 6, 0),
-            icon_color=self.color,
-            controls_padding=ft.Padding(4, 0, 0, 0),       # Keeps all sub children indented
+            icon_color=self.color, adaptive=True,
+            controls_padding=ft.Padding(6, 0, 0, 0),       # Keeps all sub children indented slightly
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
-            adaptive=True,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
             controls=[self.new_item_tf] + sub_folder_controls if sub_folder_controls else [
-                ft.Text("Folder is empty", color=ft.Colors.OUTLINE, italic=True),
-            ] + [ft.Divider(height=8, thickness=2, color=ft.Colors.TRANSPARENT, trailing_indent=8)],
+                ft.Container(
+                    ft.Text("Folder is empty", color=ft.Colors.OUTLINE, italic=True), 
+                    border=ft.Border.only(left=ft.BorderSide(width=2, color=ft.Colors.OUTLINE_VARIANT)),
+                    padding=ft.Padding.only(left=6), height=29, alignment=ft.Alignment.CENTER_LEFT
+                ),
+            ],
             animation_style=ft.AnimationStyle(
                 ft.Duration(milliseconds=100), ft.Duration(milliseconds=100), 
                 ft.AnimationCurve.DECELERATE, ft.AnimationCurve.DECELERATE
@@ -603,15 +617,18 @@ class RailFolder(ft.GestureDetector):
         drag_target = ft.DragTarget(
             group="widgets",
             on_accept=self.on_drag_accept,
-            content=shad.ContextMenu(
-                ft.Container(
-                    content=self.expansion_tile,
-                    theme=ft.Theme(hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)),
-                    dark_theme=ft.Theme(hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)),
+            content=ft.Container(
+                content=self.expansion_tile,
+                theme=ft.Theme(
+                    hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
+                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=2),
                 ),
-                items=self.menu_items(),
-                #open_on_tap=True
+                dark_theme=ft.Theme(
+                    hover_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
+                    list_tile_theme=ft.ListTileTheme(min_vertical_padding=2),
+                ),
             ),
+                
         )
 
         draggable = ft.Draggable(

@@ -117,7 +117,7 @@ def load_directory_controls(
             )
             if in_base_directory == False:
                 new_folder = ft.Row([
-                    ft.Container(bgcolor=ft.Colors.OUTLINE_VARIANT, width=2, height=40, clip_behavior=ft.ClipBehavior.NONE),
+                    ft.Container(bgcolor=ft.Colors.OUTLINE_VARIANT, width=2, height=29, clip_behavior=ft.ClipBehavior.NONE),
                     new_folder
                 ], spacing=0, vertical_alignment=ft.CrossAxisAlignment.START)
 

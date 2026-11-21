@@ -211,7 +211,7 @@ class RailFile(ft.GestureDetector):
                     ], spacing=6),
                     border_radius=4,
                     on_click=self.widget.show_widget,
-                    padding=ft.Padding.only(top=2, bottom=2),
+                    padding=ft.Padding.symmetric(vertical=2),
                 ),
                 items=self.get_menu_options(),
                 open_on_long_press=True if ft.context.page.platform.is_mobile() else False, 
