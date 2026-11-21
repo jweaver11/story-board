@@ -127,7 +127,6 @@ class MapLocation(MiniWidget):
 
     # Overrite parent method of renaming if called from sidebar
     async def handle_rename(self, e=None):
-        await self.widget.story.close_menu()
         await self.map_label_tf.focus()
 
     # Handles deleting our location from the map and data
@@ -291,6 +290,12 @@ class MapLocation(MiniWidget):
             ), 
             shad.Separator(ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, self.data.get('color', "primary"), size=20),
+                content="Show Info",
+                on_click=self.show_mini_widget,
+            ),
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
                 on_click=self.handle_delete,
                 leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
                 content=f"Delete {self.data.get('title')}",
@@ -398,6 +403,7 @@ class MapLocation(MiniWidget):
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY),
                 content="Set Canvas",
                 on_click=set_canvas_as_image,
+                visible=False,
             ),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY),
@@ -466,7 +472,6 @@ class MapLocation(MiniWidget):
         # Updates state and close any open menus
         async def start_drag(e=None):
             self.is_dragging = True
-            await self.widget.story.close_menu()
             
         
         # Set our position on the map

@@ -134,6 +134,12 @@ class PlotlinePlotPoint(MiniWidget):
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
+                leading=ft.Icon(ft.Icons.INFO_OUTLINE, ft.Colors.PRIMARY, size=20),
+                content="Show Info",
+                on_click=self.show_mini_widget,
+            ),
+            shad.Separator(ft.Margin.symmetric(vertical=4)),
+            shad.MenuItem(
                 on_click=self.handle_delete,
                 content=f"Delete {self.data.get('title')}",
                 leading=ft.Icon(ft.Icons.DELETE_OUTLINE_ROUNDED, ft.Colors.ERROR, size=20),
@@ -397,7 +403,6 @@ class PlotlinePlotPoint(MiniWidget):
             ft.GestureDetector(
                 self.icon, 
                 on_enter=self.highlight, on_exit=self.stop_highlight, 
-                on_pan_start=self.widget.story.close_menu,
                 on_pan_update=self.move_plot_point, on_pan_end=self.save_position,
                 on_tap=self.show_mini_widget,
                 mouse_cursor=ft.MouseCursor.CLICK,

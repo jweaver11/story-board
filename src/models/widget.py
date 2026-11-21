@@ -375,6 +375,7 @@ class Widget(ft.Container):
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 content="Set Canvas",
                 on_click=set_canvas_as_image,
+                visible=False
             ),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
