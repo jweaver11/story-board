@@ -148,8 +148,28 @@ class PlotChart(Widget):
 
         # Opens a menu with our options when right clicking a node
         def node_menu_options(self) -> list[shad.MenuItem]:
+
+            def sever_connections(e=None):
+                # Logic to sever connections for this node
+                node_id = self.data.get('id', '')
+                self.widget.data['edges'] = [
+                    edge for edge in self.widget.data.get('edges', [])
+                    if edge.get('source', '') != node_id and edge.get('target', '') != node_id
+                ]
+                self.widget.edge_canvas.shapes = [
+                    shape for shape in self.widget.edge_canvas.shapes
+                    if not (isinstance(shape, self.widget.Edge) and (shape.source_node == node_id or shape.target_node == node_id))
+                ]
+                self.widget.update_data(**{'edges': self.widget.data.get('edges', [])})
+                self.widget.update()
             
             return [
+                shad.MenuItem(
+                    on_click=sever_connections,
+                    content="Sever Connections", 
+                    leading=ft.Icon(ft.Icons.LINK_OFF_OUTLINED, ft.Colors.PRIMARY, size=20),
+                ),
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(
                     on_click=self.delete_clicked,
                     content="Delete Node",
