@@ -70,7 +70,8 @@ class Map(Widget):
                 'show_sidebar': True,
 
                 # Info about the map
-                'locked': app.settings.data.get('widget_defaults', {}).get('map', {}).get('locked'),      # Whether we're in draw mode or not
+                #'locked': app.settings.data.get('widget_defaults', {}).get('map', {}).get('locked'),      # Whether we're in draw mode or not
+                'locked': False,    # TODO: These are flipped
                 'background_image': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_image'),    # The background image of the map
                 'background_color': app.settings.data.get('widget_defaults', {}).get('map', {}).get('background_color'),
 
@@ -282,7 +283,6 @@ class Map(Widget):
             
             # Saves the labels value
             async def save_label(e: ft.Event[ft.TextField]):
-                await self.widget.story.close_menu()
                 self.label = e.control.value
                 self.widget.data.get('labels', {}).get(self.id, {}).update({'label': self.label})
                 self.widget.update_data(**{'labels': self.widget.data.get('labels', {})})
@@ -1004,7 +1004,6 @@ class Map(Widget):
 
     # Creates our location control in data, on the location_stack, and focuses it in the sidebar
     async def create_location(self, e: ft.Event[ft.Button]=None):
-        await self.story.close_menu()   # Close menu
         # Create the new location and add it to data
         new_location = MapLocation(
             widget=self,
@@ -1022,7 +1021,6 @@ class Map(Widget):
     
     # Creates our label control in data and on the location stack
     async def create_label(self, e: ft.Event[ft.Button]=None):
-        await self.story.close_menu()
 
         # Create default data
         new_id = str(uuid.uuid4())
@@ -1443,6 +1441,7 @@ class Map(Widget):
                 leading=ft.Icon(ft.Icons.LOCK_OUTLINED if not self.data.get('locked', False) else ft.Icons.LOCK_OPEN_OUTLINED, ft.Colors.PRIMARY, size=20),
                 content="Lock Map" if not self.data.get('locked') else "Unlock Map",
                 on_click=self.toggle_locked,
+                visible=False
             ),
             
         ]
@@ -1473,6 +1472,7 @@ class Map(Widget):
             on_click=self.undo_task,
             disabled=True,
             tooltip="Undo drawing",
+            visible=False
         )
         self.redo_button = ft.IconButton(
             ft.Icons.REDO_OUTLINED,
@@ -1481,6 +1481,7 @@ class Map(Widget):
             on_click=self.redo_task,
             disabled=True,
             tooltip="Redo drawing",
+            visible=False
         )
 
 

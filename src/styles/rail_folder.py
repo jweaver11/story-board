@@ -104,15 +104,14 @@ class RailFolder(ft.GestureDetector):
                 tooltip="Create a new world for your story."
             ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Map"), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
-                            tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                content="Map",
                 leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                trailing=ft.Icon(
+                    ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, size=14, 
+                    tooltip="Drawing capabilities coming soon."),
                 data="map", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
             ),
-            
             shad.MenuItem(
                 leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY, size=20), content="Radar Chart",
                 data="radar_chart", on_click=self.new_item_clicked, close_on_click=True,
@@ -129,33 +128,32 @@ class RailFolder(ft.GestureDetector):
                 tooltip="Visualize the connections between the characters in your story"
             ),  
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            ft.Row([ft.Text(f"Comic", italic=True)], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)),
+            ft.Row(
+                [
+                    ft.Text(f"Comic", italic=True),
+                    ft.Text("(coming soon)", italic=True, color=ft.Colors.OUTLINE)
+                ], 
+                alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)
+            ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Canvas"), 
-                    ft.Text("\t\tComing Soon", color=ft.Colors.OUTLINE, italic=True, size=12), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, visible=False
-                            #tooltip="This feature is still in early development and may not work as expected. Proceed with caution."
-                            #tooltip="Coming Soon."
-                        )], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                content="Canvas",
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas for sketching, drawing, or visual note taking",
                 disabled=True
             ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Canvas Board"), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
-                            tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                content="Canvas Board",
                 leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY, size=20), 
                 data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas Board to organize your panels and plan your story visually",
+                disabled=True
             ),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY, size=20), content="Comic Preview", 
                 data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Preview the panels in your story as a comic strip",
+                disabled=True
             ),
         ]
 
@@ -375,8 +373,6 @@ class RailFolder(ft.GestureDetector):
 
         self.page.show_dialog(dlg)
 
-        # Clears our popup menu button and applies to the UI
-        await self.story.close_menu()
 
     def _get_color_options(self, e=None) -> list[ft.Control]:
         ''' Returns a list of all available colors for icon changing '''
@@ -391,7 +387,6 @@ class RailFolder(ft.GestureDetector):
             
             # Change our icon to match, apply the update
             self.story.tree_view_rail.reload_rail()
-            await self.story.close_menu() 
 
         # List for our colors when formatted
         color_controls = [] 

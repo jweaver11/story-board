@@ -66,7 +66,6 @@ class MiniWidget(ft.GestureDetector):
 
     async def set_icon_size(self, e: ft.Event[ft.MenuItemButton]):
         ''' Sets the size of our icon on the map '''
-        await self.widget.story.close_menu()
         self.update_data(**{'icon_size': e.control.data})
         if e.control.data == "Small":
             self.icon.size = 30
@@ -81,7 +80,6 @@ class MiniWidget(ft.GestureDetector):
             
     # Called by delete buttons to delete ourselves from data. Children deal with the UI
     async def handle_delete(self, e=None):
-        await self.widget.story.close_menu()
         self.widget.data['mini_widgets_data'].pop(self.data.get('id', ''))
         self.widget.update_data(**{'mini_widgets_data': self.widget.data.get('mini_widgets_data', {})})
 

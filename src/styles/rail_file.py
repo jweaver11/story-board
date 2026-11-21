@@ -66,7 +66,6 @@ class RailFile(ft.GestureDetector):
         ''' Pops open a column of the menu options for this tree view item'''
 
         async def handle_rename(e=None):
-            await self.widget.story.close_menu()
             self.edit_title_tf.visible = True
             self.title_text.visible = False
             self.update()
@@ -106,9 +105,7 @@ class RailFile(ft.GestureDetector):
                 ]
             )
 
-            await self.widget.story.close_menu()
             self.page.show_dialog(dlg)
-            await self.widget.story.close_menu()
 
         file_path = os.path.join(
             self.widget.data.get('directory_path', ''),

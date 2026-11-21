@@ -20,6 +20,7 @@ import os
 import flet_shadcn_ui as shad
 from styles.highlight_button import HighlightButton
 from styles.colors import colors
+from utils.drawing_controls import DrawingControls
 
 MAX_SHAPES_BEFORE_CAPTURE = 30
 SKETCH_SIZE = (500, 500)
@@ -481,9 +482,17 @@ class CanvasBoard(Widget):
                 label_style=ft.TextStyle(weight=ft.FontWeight.BOLD, italic=True, size=16, color=ft.Colors.PRIMARY),
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
             )
+
+            description_text = shad.Textarea(
+                #min_height=500,
+                value=str(panel_data.get('description', "")), 
+                data=panel_idx, width=500,
+                on_blur=update_description,
+                label="Description", resizable=False, height=500
+            )
                         
             return ft.Container(
-                ft.Column([
+                ft.Row([
                     #ft.Row([undo_button, panel_options_cm, redo_button], width=500, alignment=ft.MainAxisAlignment.CENTER),
                     ft.Container(
                         sketch_canvas,  
@@ -493,8 +502,9 @@ class CanvasBoard(Widget):
                         tooltip="Drawing disabled while panel is tied to a canvas" if panel_data.get('canvas_id') else None,
                         ignore_interactions=True if panel_data.get('locked') else False
                     ),
-                    description_tf
-                ], spacing=0, tight=True),
+                    #description_tf
+                    description_text
+                ], tight=True),
                 data=panel_idx, padding=10,
                 border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT)
             )
@@ -521,11 +531,14 @@ class CanvasBoard(Widget):
         self.description_tf.hint_style = ft.TextStyle(italic=True)
 
         self.panels_row = ft.Row(build_panel_row(), spacing=0, run_spacing=0, expand=True, wrap=True)
+
+        drawing_controls = DrawingControls(self)
         
         # Body of the tab, which is the content of flet container
         body = ft.Column(
             expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            controls=[                 
+            controls=[      
+                ft.Container(content=drawing_controls, bgcolor=ft.Colors.SURFACE, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=6, margin=ft.Margin.all(6)),       
                 ft.Column([self.panels_row], spacing=0, expand=True, scroll=ft.ScrollMode.AUTO),
                 ft.Row([self.description_tf], spacing=0)
             ])

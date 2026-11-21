@@ -358,11 +358,11 @@ class MenuBar(ft.Container):
                 await self.story.handle_export() 
             
 
-        def highlight(e):
-            e.control.content.bgcolor = ft.Colors.with_opacity(0.25, ft.Colors.BLUE_400)
+        def highlight(e: ft.Event[ft.GestureDetector]):
+            e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
             e.control.update()
 
-        def unhighlight(e):
+        def unhighlight(e: ft.Event[ft.GestureDetector]):
             e.control.content.bgcolor = None
             e.control.update()
     
@@ -593,7 +593,7 @@ class MenuBar(ft.Container):
             tooltip="Google Drive options",
             #disabled=is_connecting,
             #items=get_cloud_sync_
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK),
+            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=6)),
             menu_padding=0,
             popup_animation_style=ft.AnimationStyle(
                 ft.Duration(milliseconds=200),

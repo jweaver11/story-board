@@ -277,7 +277,6 @@ class Widget(ft.Container):
 
         # Called when clicking our upload image button 
         async def upload_image(e: ft.Event):
-            await self.story.close_menu()   # Close menu
 
             files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if files:
@@ -365,7 +364,6 @@ class Widget(ft.Container):
 
         # Resets our image to nothing and our button to the placeholder
         async def clear_image(e: ft.Event):
-            await self.story.close_menu()   # Close menu
             self.update_data(**{'image_base64': ""})
             self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150)
             self.select_image_button.update()
@@ -563,7 +561,6 @@ class Widget(ft.Container):
 
     async def handle_export(self) -> bytes:
         ''' Returns a screenshot of the widget as bytes. Only widgets that have a canvas or image can return a screenshot '''
-        await self.story.close_menu()
 
         # Build a copy of us to show in the dialog, since we may be hidden
         copy_widget = self.story.rebuild_widget(self)

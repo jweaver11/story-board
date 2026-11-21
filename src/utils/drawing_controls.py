@@ -35,21 +35,23 @@ tool_icons = {
 NEGATIVE_NUMBER_FILTER = ft.InputFilter(allow=True, regex_string=r"^-?[0-9]*$")
 
 # Class so we can store our all workspaces rail as an object inside of app
-class DrawingControls(ft.Container):
+class DrawingControls(ft.Row):
     
     # Constructor for our all_workspaces_rail object. Needs a page reference passed in
     def __init__(self, widget: Widget):
 
         self.widget = widget
+
+        super().__init__()
        
         # Style our rail (container)
-        super().__init__(
-            alignment=ft.Alignment.CENTER,  # Aligns content to the 
-            padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
-            animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
-            border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
-            bgcolor=ft.Colors.SURFACE, clip_behavior=ft.ClipBehavior.HARD_EDGE
-        )
+        #super().__init__(
+            #alignment=ft.Alignment.CENTER,  # Aligns content to the 
+            #padding=ft.Padding.only(bottom=10, right=6, left=6, top=10),
+            #animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+            #border=ft.Border(right=ft.BorderSide(2, ft.Colors.OUTLINE_VARIANT)),
+            #bgcolor=ft.Colors.SURFACE, clip_behavior=ft.ClipBehavior.HARD_EDGE
+        #)
 
 
     # Called mostly when re-ordering or collapsing the rail. Also called on start
@@ -2265,23 +2267,11 @@ class DrawingControls(ft.Container):
 
         # Sets our content as a column. This will fill our width and hold...
         # Either our list of workspaces, or a reorderable list of our workspaces
-        self.content = ft.Column(
-            #[ft.Row([self.rail_label], alignment=ft.MainAxisAlignment.CENTER)] + 
-            drawing_controls,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            #[ft.Container(expand=True), ft.Row([self.collapse_icon_button], alignment=ft.MainAxisAlignment.END)],
-            #horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            #spacing=20,
-        )
+        self.controls = drawing_controls
 
         # If mobile, this will be shown on menubar instead
         self.visible = not self.page.platform.is_mobile()
 
-        # If the user has set to hide the canvas rail, then hide it on startup
-        if app.settings.data.get('story', {}).get('show_canvas_rail', False) == True:
-            self.width = 78
-        else:
-            self.width = 0
 
 
     

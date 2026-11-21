@@ -255,7 +255,6 @@ class Story(ft.View):
 
             if self.data.get('selected_rail', "content") != "canvas":
                 self.tree_view_rail.reload_rail()
-            self.close_menu_instant()
            
 
         # Handle errors

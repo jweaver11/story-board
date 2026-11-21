@@ -860,6 +860,7 @@ class Settings(ft.View):
                             value=self.data.get('widget_defaults', {}).get('map', {}).get('locked', False),
                             label="Locked", sublabel="If new maps start locked in order to prevent drawing.",
                             on_change=lambda e: self.update_data(**{'widget_defaults': {'map': {'locked': e.control.value}}}),
+                            visible=False,
                         ),
                     ], margin=ft.Margin.only(top=10), spacing=20),
                 ),

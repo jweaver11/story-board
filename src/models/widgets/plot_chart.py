@@ -160,7 +160,6 @@ class PlotChart(Widget):
 
             self.widget.update_data(**{'nodes': self.widget.data.get('nodes', []), 'edges': self.widget.data.get('edges', [])})
 
-            await self.widget.story.close_menu()
             self.widget.update()
 
         # Builds our node
@@ -264,7 +263,6 @@ class PlotChart(Widget):
 
             # Update our state trackers for new edges and show visual feedback
             async def start_new_edge(e: ft.PointerEvent):
-                await self.widget.story.close_menu()
                 self.widget.source_node = e.control.data.get('id', '')
                 #self.widget.source_side = e.control.data.get('side')
                 self.page.overlay.append(
@@ -342,7 +340,6 @@ class PlotChart(Widget):
                     ft.Column([
                         ft.GestureDetector(
                             ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                            on_pan_start=self.widget.story.close_menu,
                             on_pan_update=self.move_node,
                             on_pan_end=self.save_position,
                             mouse_cursor=ft.MouseCursor.MOVE,
@@ -392,7 +389,6 @@ class PlotChart(Widget):
                     padding=8,
                     title=ft.GestureDetector(
                         ft.Container(self.title_tf, ignore_interactions=True, expand=True),
-                        on_pan_start=self.widget.story.close_menu,
                         on_pan_update=self.move_node,
                         on_pan_end=self.save_position,
                         mouse_cursor=ft.MouseCursor.MOVE,
@@ -568,7 +564,6 @@ class PlotChart(Widget):
                 await self.create_node(e)
 
             async def _toggle_view_mode(e: ft.Event):
-                await self.story.close_menu()
                 self.data['spider_web_view'] = not self.data.get('spider_web_view', False)
                 self.update_data(**{'spider_web_view': self.data.get('spider_web_view', False)})
                 for edge in self.edge_canvas.shapes:

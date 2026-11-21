@@ -94,7 +94,6 @@ class Note(Widget):
                     self.update_data(**{'card_data': self.data['card_data']})
                     card_row.controls[idx].content.bgcolor = ft.Colors.with_opacity(0.05, new_color)
                     card_row.controls[idx].content.update()
-                    await self.story.close_menu()
 
             async def handle_strikethrough(e: ft.Event[ft.Control]):
                 close_popovers()

@@ -573,7 +573,6 @@ class ConnectionMap(Widget):
                         self.widget.update_data(**{'connections': self.widget.data['connections']})
                 self.build_icon()
                 self.update()
-                await self.widget.story.close_menu()
 
             async def _delete_connection(e: ft.Event):
                 for connection in self.widget.data['connections']:
@@ -592,7 +591,6 @@ class ConnectionMap(Widget):
                         self.widget.update_data(**{'connections': self.widget.data['connections']})
                 self.build_icon()
                 self.update()
-                await self.widget.story.close_menu()
 
                 # Update the lines color as well
                 for edge in self.widget.edges_canvas.shapes:

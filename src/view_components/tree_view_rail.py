@@ -189,7 +189,6 @@ class ContentRail(ft.Column):
         ''' Handles setting our textfield for new character creation '''
 
         # Close the menu (if ones is open), which will update the page as well
-        self.story.close_menu_instant()   
         self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
 
     # Called every time the mouse moves over our rail
@@ -259,15 +258,14 @@ class ContentRail(ft.Column):
                 tooltip="Create a new world for your story."
             ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Map"), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
-                            tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                content="Map",
                 leading=ft.Icon(ft.Icons.MAP_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                trailing=ft.Icon(
+                    ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.OUTLINE, size=14, 
+                    tooltip="Drawing capabilities coming soon."),
                 data="map", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Map to visualize the locations of your story and the layout of your world",
             ),
-            
             shad.MenuItem(
                 leading=ft.Icon(ft.CupertinoIcons.COMPASS, ft.Colors.PRIMARY, size=20), content="Radar Chart",
                 data="radar_chart", on_click=self.new_item_clicked, close_on_click=True,
@@ -284,33 +282,32 @@ class ContentRail(ft.Column):
                 tooltip="Visualize the connections between the characters in your story"
             ),  
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            ft.Row([ft.Text(f"Comic", italic=True)], alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)),
+            ft.Row(
+                [
+                    ft.Text(f"Comic", italic=True),
+                    ft.Text("(coming soon)", italic=True, color=ft.Colors.OUTLINE)
+                ], 
+                alignment=ft.MainAxisAlignment.CENTER, margin=ft.Margin.only(bottom=4)
+            ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Canvas"), 
-                    ft.Text("\t\tComing Soon", color=ft.Colors.OUTLINE, italic=True, size=12), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, visible=False
-                            #tooltip="This feature is still in early development and may not work as expected. Proceed with caution.",
-                            #tooltip="Coming Soon."
-                        )], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                content="Canvas",
                 leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
                 data="canvas", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas for sketching, drawing, or visual note taking",
                 disabled=True
             ),
             shad.MenuItem(
-                content=ft.Row([
-                    ft.Text("Canvas Board"), 
-                    ft.Icon(ft.Icons.ERROR_OUTLINE_OUTLINED, ft.Colors.ERROR, scale=0.8, 
-                            tooltip="This feature is still in early development and may not work as expected. Proceed with caution.")], spacing=6),
+                content="Canvas Board",
                 leading=ft.Icon(ft.Icons.SPACE_DASHBOARD_OUTLINED, ft.Colors.PRIMARY, size=20), 
                 data="canvas_board", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Create a new Canvas Board to organize your panels and plan your story visually",
+                disabled=True
             ),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.SLIDESHOW_OUTLINED, ft.Colors.PRIMARY, size=20), content="Comic Preview", 
                 data="comic_preview", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Preview the panels in your story as a comic strip",
+                disabled=True
             ),
         ]
 
@@ -355,11 +352,11 @@ class ContentRail(ft.Column):
     def build(self) -> ft.Control:
         ''' Reloads the content rail '''
 
-        def highlight(e):
-            e.control.content.bgcolor = ft.Colors.with_opacity(0.25, ft.Colors.BLUE_400)
+        def highlight(e: ft.Event[ft.GestureDetector]):
+            e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
             e.control.update()
 
-        def unhighlight(e):
+        def unhighlight(e: ft.Event[ft.GestureDetector]):
             e.control.content.bgcolor = None
             e.control.update()
 
