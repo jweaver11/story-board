@@ -422,11 +422,10 @@ class Story(ft.View):
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
         from models.widgets.canvas_board import CanvasBoard
-        from models.widgets.character import Character
+        from models.widgets.template import Template
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
-        from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
@@ -494,8 +493,8 @@ class Story(ft.View):
                                     data=widget_data,
                                 )
                             case "character":
-                                widget = Character(
-                                    widget_data.get('title', 'Untitled Manuscript'),
+                                widget = Template(
+                                    title=widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
                                     data=widget_data,
@@ -515,7 +514,7 @@ class Story(ft.View):
                                     data=widget_data,
                                 )
                             case "world":
-                                widget = World(
+                                widget = Template(
                                     title=widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
@@ -696,18 +695,17 @@ class Story(ft.View):
         self.page.show_dialog(dlg)
         
     # Called to create a new widget based on tag (document, note, character, etc)
-    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict=None, chart_type: str="bar", update: bool=True):
+    async def create_widget(self, title: str, tag: str, directory_path: str=None, data: dict={}, chart_type: str="bar", update: bool=True):
         ''' Creates our new widget based on the tag passed in and directory_path passed in'''
         from models.widgets.manuscript import Manuscript
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
         from models.widgets.canvas_board import CanvasBoard
-        from models.widgets.character import Character
+        from models.widgets.template import Template
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
         from models.widgets.item import Item
-        from models.widgets.world import World
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
         from models.widgets.plot_chart import PlotChart
@@ -727,7 +725,8 @@ class Story(ft.View):
                 d = {'canvas_data': data} if data is not None else None
                 widget = Canvas(title,  directory_path, self, d, True)
             case "character":
-                widget = Character(title, directory_path, self, data, True)
+                data['tag'] = 'character'
+                widget = Template(title, directory_path, self, data, True)
             case "plotline":
                 widget = Plotline(title, directory_path, self, data, True)
             case "map":
@@ -736,7 +735,8 @@ class Story(ft.View):
             case "connection_map":
                 widget = ConnectionMap(title, directory_path, self, data, True)
             case "world":
-                widget = World(title, directory_path, self, data, True)
+                data['tag'] = 'world'
+                widget = Template(title, directory_path, self, data, True)
             case "canvas_board":
                 widget = CanvasBoard(title, directory_path, self, data, True)   
             case "item":
@@ -774,11 +774,10 @@ class Story(ft.View):
         from models.widgets.note import Note
         from models.widgets.canvas import Canvas
         from models.widgets.canvas_board import CanvasBoard
-        from models.widgets.character import Character
+        from models.widgets.template import Template
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
-        from models.widgets.world import World
         from models.widgets.item import Item
         from models.widgets.chart import Chart
         from models.widgets.comic_preview import ComicPreview
@@ -815,8 +814,8 @@ class Story(ft.View):
                 )
                 
             case "character":
-                new_widget = Character(
-                    widget.data.get('title', 'Untitled Manuscript'),
+                new_widget = Template(
+                    title=widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,
                     data=widget.data,
@@ -842,7 +841,7 @@ class Story(ft.View):
                 )
                 
             case "world":
-                new_widget = World(
+                new_widget = Template(
                     title=widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,

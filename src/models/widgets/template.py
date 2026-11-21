@@ -1,94 +1,50 @@
-''' 
-Our widget class that displays our world and lore information. Essentially, all information not displayed visually on the maps goes here
-Maps can tie into one widget 'world' widget
+'''
+Most model classes really container 2 models: the character model itself and the associated widget model.
+Inside of the 'data' dict, we store our characters model for the manipulative data...
+the app will change. Everything else is built upon program launch so we can display it in the UI.
 '''
 
-import os
 import flet as ft
+import os
 from models.widget import Widget
 from models.views.story import Story
 from models.app import app
 from utils.safe_string_checker import return_safe_name
-from PIL import Image
-from io import BytesIO
-import base64
-from styles.text_fields import TextField, NoLabelTextField
-from models.dataclasses.world_template import default_world_template_data
-from styles.snack_bar import SnackBar
+
+import flet.canvas as cv
 import asyncio
+from styles.text_fields import TextField, NoLabelTextField
+from models.dataclasses.character_template import default_character_template_data
 import flet_shadcn_ui as shad
 from styles.highlight_button import HighlightButton
 
 
-class World(Widget):
 
+class Template(Widget):
     # Constructor
     def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
-        
-        # Initialize from our parent class 'Widget'. 
+
+        # Parent class constructor
         super().__init__(
             title = title,  
-            directory_path = directory_path,  
-            story = story,       
-            data = data,  
-            is_new = is_new  
+            directory_path = directory_path, 
+            story = story,   
+            data = data,   
+            is_new = is_new 
         )
-        
+
         # If we're new, give default values for our data 
         if self.is_new == True:
             self.data.update({
                 # Widget data
-                'tag': "world",     
-                'color': app.settings.data.get('widget_defaults', {}).get('world', {}).get('color'),   
+                'tag': data.get('tag', "character"),    # Grabs either character or world
+                'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
 
-                # World data
-                'world_data': app.settings.data.get('world_template', default_world_template_data()),
-            }
-        )
- 
+                'section_data': app.settings.data.get(f'{data.get("tag", "character")}_template', default_character_template_data()),
 
-    # Called to find a canvas and load a snapshot from all its layers
-    def _set_canvas_snapshot(self, canvas_key: str) -> str:
+            })         
 
-        capture_list = []
-        for widget in self.story.widgets.values():
-            if widget.data['key'] == canvas_key:
-                for layer in widget.data.get('canvas_data', {}).get('Layers', []):
-                    if layer.get('capture', ""):
-                        capture_list.append(layer['capture'])
-                break
-
-        
-        if not capture_list:
-            return ""
-
-        images = []
-        for capture in capture_list:
-            try:
-                image_bytes = base64.b64decode(capture)
-                image = Image.open(BytesIO(image_bytes)).convert("RGBA")
-                images.append(image)
-            except Exception:
-                continue
-
-        if not images:
-            return ""
-
-        width, height = images[0].size
-        merged = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-
-        for image in images:
-            if image.size != (width, height):
-                image = image.resize((width, height), Image.Resampling.LANCZOS)
-            merged = Image.alpha_composite(merged, image)
-
-        output = BytesIO()
-        merged.save(output, format="PNG")
-        return base64.b64encode(output.getvalue()).decode("utf-8")
-    
-        
-
-   # Called after any changes happen to the data that need to be reflected in the UI
+    # Called after any changes happen to the data that need to be reflected in the UI
     def build(self): #this is the edit view currently
         ''' Reloads/Rebuilds our widget based on current data '''
 
@@ -99,23 +55,23 @@ class World(Widget):
 
 
         # Called when a field is changed in edit mode
-        def update_world_data(**kwargs):
+        def update_section_data(**kwargs):
             ''' Updates the character data dict or up to one sub dict '''
 
             for key, value in kwargs.items():
-                if 'world_data' not in self.data:
-                    self.data['world_data'] = {}
+                if 'section_data' not in self.data:
+                    self.data['section_data'] = {}
 
-                if key in self.data['world_data']:
-                    self.data['world_data'][key] = value
+                if key in self.data['section_data']:
+                    self.data['section_data'][key] = value
                 else:
                     # Check if this key is in a sub dict, and update it there if it is
-                    for sub_key, sub_dict in self.data['world_data'].items():
+                    for sub_key, sub_dict in self.data['section_data'].items():
                         if isinstance(sub_dict, dict) and key in sub_dict:
-                            self.data['world_data'][sub_key][key] = value
+                            self.data['section_data'][sub_key][key] = value
                             break
             
-            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated character data dict
+            self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
         
         # Called by button to create a new section. Just shows our text field to enter the section name
         async def add_section_clicked(e: ft.Event=None):
@@ -152,13 +108,13 @@ class World(Widget):
                 return  
             
             # If section name already exists, show that as error
-            if section_name in self.data['world_data']:
+            if section_name in self.data['section_data']:
                 self.page.show_dialog(shad.Toast("Section name already exists.", variant=shad.ToastVariant.DESTRUCTIVE))
                 return  
             
             # Otherwise we passed checks, add it to data
-            self.data['world_data'][section_name] = {}
-            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated character data dict 
+            self.data['section_data'][section_name] = {}
+            self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict 
 
             new_section_button.visible = True
             new_section_button.update()
@@ -166,7 +122,7 @@ class World(Widget):
             # Add new container for the section info
             data_column.controls.pop()
             data_column.controls.pop()
-            data_column.controls.extend(create_section_ctrl(section_name, self.data['world_data'][section_name]))
+            data_column.controls.extend(create_section_ctrl(section_name, self.data['section_data'][section_name]))
             data_column.controls.append(new_section_button)
             data_column.controls.append(new_section_tf)
             
@@ -179,8 +135,8 @@ class World(Widget):
             ''' Deletes an entire section from the character data dict '''
             nonlocal data_column
             section_name = e.control.data
-            del self.data['world_data'][section_name]
-            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated character data dict
+            del self.data['section_data'][section_name]
+            self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
 
             # Grab the data_column's column control to remove the label and section container from the UI and update
             for ctrl in reversed(data_column.controls): # Work backwards so we don't skip any controls when removing
@@ -196,15 +152,15 @@ class World(Widget):
             field_name = return_safe_name(e.control.value)
             
             # Add the field to data if it doesn't exist
-            if field_name and field_name not in self.data['world_data'][section]:
-                empty_section = self.data['world_data'].get(section, {}) == {}  # Check if this is the first field being added
-                self.data['world_data'][section][field_name] = ""
+            if field_name and field_name not in self.data['section_data'][section]:
+                empty_section = self.data['section_data'].get(section, {}) == {}  # Check if this is the first field being added
+                self.data['section_data'][section][field_name] = ""
             else:
                 self.page.show_dialog(shad.Toast("Field name already exists or is blank.", variant=shad.ToastVariant.DESTRUCTIVE))
                 return
             
             # Save and reload
-            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated character data dict
+            self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
             
             # Add new field to the UI
             # Find the parent column for this section so we can add field info to it
@@ -232,41 +188,54 @@ class World(Widget):
             ''' Deletes fields from the character data dict or up to one sub dict '''
             section_name, field_name = e.control.data
 
-            del self.data['world_data'][section_name][field_name]
-            self.update_data(**{'world_data': self.data['world_data']})  # Save our updated character data dict
+            del self.data['section_data'][section_name][field_name]
+            self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
 
             # Reference the column that holds this field in case we're the last field being deleted so we can reference it later
-            body: ft.Column = e.control.parent.parent 
+            body: ft.Column = e.control.parent.parent.parent.parent
 
             # Remove the row from the column UI and update
-            body.controls.remove(e.control.parent)  
+            body.controls.remove(e.control.parent.parent.parent)  
             body.parent.update()   
 
             # Check the length of parent, if its empty, add our no fields text and delete section button
-            if len(self.data['world_data'][section_name]) == 0:
+            if len(self.data['section_data'][section_name]) == 0:
                 body.controls.append(
                     ft.Row([ft.Text("Click the button above to add fields to this section", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)])
                 )
                 body.update()
 
         def create_field_ctrl(section_name: str, field_name: str, field_value: str) -> ft.Control:
-            return ft.Row(
-                spacing=0, vertical_alignment=ft.CrossAxisAlignment.START,
-                controls=[
-                    ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,),    # Label
-                    NoLabelTextField(   # Field value tf
-                        field_value, expand=True, cursor_color=ft.Colors.PRIMARY,
-                        on_blur=lambda e, fn=field_name: update_world_data(**{fn: e.control.value}), 
-                    ),
-                    ft.Container(   # Delete button
-                        ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR),
-                        on_click=delete_field, 
-                        data=(section_name, field_name), ink=True, shape=ft.BoxShape.CIRCLE,
-                        tooltip=f"Delete Field: {field_name}", 
-                    )
-                ]
+            def show_delete_button(e=None):
+                delete_button.opacity = 1
+                delete_button.update()
+            def hide_delete_button(e=None):
+                delete_button.opacity = 0
+                delete_button.update()
+                
+            
+            delete_button = ft.IconButton(
+                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR,
+                opacity=0, on_click=delete_field, animate_opacity=ft.Animation(ft.Duration(milliseconds=200), ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
+                data=(section_name, field_name), tooltip=f"Delete Field: {field_name}", 
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=4), padding=0)
             )
-
+            return ft.GestureDetector(
+                ft.Row(
+                    spacing=0, vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    controls=[
+                        ft.Text(f"{field_name}:", size=14, selectable=True, weight=ft.FontWeight.BOLD,),    # Label
+                        NoLabelTextField(   # Field value tf
+                            field_value, expand=True, multiline=False,
+                            on_blur=lambda e, fn=field_name: update_section_data(**{fn: e.control.value}), 
+                            suffix_icon=delete_button,
+                        ),
+                    ], 
+                ), 
+                on_enter=show_delete_button,
+                on_exit=hide_delete_button,
+                height=24
+            )
         def create_section_ctrl(section_name: str, section_data: dict) -> list[ft.Control]:
 
             def hide_new_field_tf(e=None):
@@ -283,7 +252,7 @@ class World(Widget):
             label_ctrl = ft.Row([
                 ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),   # Title
                 shad.ContextMenu(   # Options button
-                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
+                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True),
                     [
                         shad.MenuItem("New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show_new_field_tf),
                         shad.Separator(ft.Margin.symmetric(vertical=4)),
@@ -309,7 +278,7 @@ class World(Widget):
                     ] if section_data else [
                         ft.Row([ft.Text("Click the button above to add fields to this section", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)])
                     ],
-                    tight=True, spacing=4
+                    tight=True, spacing=0
                 ),
                 data=section_name
             )
@@ -324,7 +293,7 @@ class World(Widget):
             control_list = []   
             
             # Go through our sections inside of our character data
-            for section_name, section_data in self.data.get('world_data', {}).items():
+            for section_name, section_data in self.data.get('section_data', {}).items():
 
                 # Error handling
                 if not isinstance(section_data, dict):
@@ -370,13 +339,52 @@ class World(Widget):
         data_column.controls.append(new_section_button)
         data_column.controls.append(new_section_tf)
 
-        self.content = ft.Stack([
-            data_column,
-            ft.Column([
-                new_section_button,
-                new_section_tf, 
-            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.END, expand=True,)
-        ], alignment=ft.Alignment.TOP_RIGHT, expand=True)
-
         self.content = data_column
-               
+
+        return
+
+
+        def segment_changed(e):
+            tabs.selected_index = e.control.selected_index
+            tabs.update()
+
+        def tab_changed(e):
+            return
+            # Keep the segmented button in sync if the user swipes.
+            if segments is not None:
+                segments.selected_index = e.control.selected_index
+                segments.update()
+        
+        #self.padding = 0
+
+        # TODO: Have 'thumbnail', and additional images for characters
+
+        tabs = ft.Tabs(
+            ft.Column([
+                ft.Row([
+                    ft.CupertinoSlidingSegmentedButton(
+                        [ft.Text("Overview")] + [ft.Text(section_name) for section_name, section_data in self.data.get('section_data', {}).items()],
+                        thumb_color=ft.Colors.SURFACE,
+                        on_change=segment_changed,
+                        #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    ),
+                    shad.Button(
+                        ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
+                        bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER, 
+                        on_click=add_section_clicked, size=shad.ButtonSize.SM, visible=False
+                    ), 
+                    new_section_button,
+                    new_section_tf
+                ]),
+                ft.TabBarView([data_column] + [ft.Text(section_name) for section_name, section_data in self.data.get('section_data', {}).items()], expand=True)
+            ]),
+            length=len(self.data.get('section_data', {})) + 1,
+            on_change=tab_changed,
+            expand=True
+            #[shad.Tab(section_name, section_name, ft.Text(section_name)) for section_name, section_data in self.data.get('section_data', {}).items()]
+        )
+
+        # Possible future tab system
+        self.content = tabs
+
+        
