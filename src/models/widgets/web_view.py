@@ -87,8 +87,6 @@ class WebView(Widget):
             self.data['url'] = url
             wv.url = url
             wv.update()
-            #await wv.reload()
-            print("Loading url: ", url)
 
         back_button = ControlButton(ft.Icons.ARROW_BACK_OUTLINED, ft.Colors.PRIMARY, on_click=go_back)
         forward_button = ControlButton(ft.Icons.ARROW_FORWARD_OUTLINED, ft.Colors.PRIMARY, on_click=go_forward,)
@@ -103,8 +101,9 @@ class WebView(Widget):
         search_bar = ft.TextField(
             value=self.data.get('url') or "https://www.google.com", 
             expand=True,
-            suffix_icon=bookmark_button,
+            suffix_icon=ft.Row([bookmark_button, set_home_button], spacing=0, tight=True),
             on_submit=go_to_url,
+            prefix_icon=home_button,
         )
         
         bookmarks = ft.Row([])
@@ -134,7 +133,7 @@ class WebView(Widget):
             on_web_resource_error=lambda e: print(e.error_code, e.description),
             on_javascript_message=lambda e: print(e.channel_name, e.message_body),
             debugging_enabled=True, allow_webview_permissions=True,
-            ad_block_enabled=False
+            ad_block_enabled=False,
         )
 
         self.content = ft.Column(
