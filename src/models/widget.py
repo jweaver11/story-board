@@ -40,6 +40,7 @@ class Widget(ft.Container):
             data=data, 
             on_size_change=self._set_size, 
             size_change_interval=50,
+            border_radius=6, 
             padding=ft.Padding.all(20) if ft.context.page.platform.is_mobile() else None
         )
         

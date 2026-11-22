@@ -33,7 +33,7 @@ class WebView(Widget):
                 'tag': "web_view",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('web_view', {}).get('color'),
 
-                'url': ''
+                'url': 'https://www.google.com'
             },
         )
 
@@ -53,10 +53,19 @@ class WebView(Widget):
         self.bgcolor = ft.Colors.SURFACE
 
         async def go_back():
-            return
+            if wv.can_go_back():
+                await wv.go_back()
 
         async def go_forward():
-            return
+            if wv.can_go_forward():
+                await wv.go_forward()
+
+        def show_loading(e=None):
+            progress_bar.visible = True
+            progress_bar.update()
+        def hide_loading(e=None):
+            progress_bar.visible = False
+            progress_bar.update()
 
         async def refresh():
             return
@@ -71,19 +80,27 @@ class WebView(Widget):
         def set_control_buttons():
             return
 
-        history = []
-        forward_history = []
+        async def go_to_url(e: ft.Event[ft.TextField]):
+            url = e.control.value
+            self.data['url'] = url
+            wv.url = url
+            wv.update()
+            #await wv.reload()
+            print("Loading url: ", url)
 
         back_button = ControlButton(ft.Icons.ARROW_BACK_OUTLINED, ft.Colors.PRIMARY, on_click=go_back)
         forward_button = ControlButton(ft.Icons.ARROW_FORWARD_OUTLINED, ft.Colors.PRIMARY, on_click=go_forward,)
         refresh_button = ControlButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY, on_click=refresh,)
         bookmark_button = ControlButton(ft.Icons.BOOKMARK_ADD_OUTLINED, ft.Colors.PRIMARY, on_click=bookmark_url, )
 
+        progress_bar = ft.ProgressBar(visible=False)
+
         
         search_bar = ft.TextField(
             value=self.data.get('url') or "https://www.google.com", 
             expand=True,
-            suffix_icon=bookmark_button
+            suffix_icon=bookmark_button,
+            on_submit=go_to_url,
         )
         
         bookmarks = ft.Row([])
@@ -99,10 +116,6 @@ class WebView(Widget):
             
         )
 
-
-        # methods (all async):
-        
-
         wv = FletWebviewAll(
             url=self.data.get('url') or "https://www.google.com",
             expand=True,
@@ -111,8 +124,8 @@ class WebView(Widget):
             ad_block_allowed_domains=["example.com"],   # never block here (subdomains too)
             ad_block_blocked_domains=["adserver.somedomain.com",],    # always block
             on_ad_blocked=lambda e: print("blocked", e.url, e.is_main_frame),
-            on_page_started=lambda e: print("Starting", e.url), # When we start a new url to load
-            on_page_finished=lambda e: print("Finished", e.url),    # When a page finishes loading
+            on_page_started=show_loading,
+            on_page_finished=hide_loading,
             on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
             on_web_resource_error=lambda e: print(e.error_code, e.description),
             on_javascript_message=lambda e: print(e.channel_name, e.message_body),
@@ -123,7 +136,8 @@ class WebView(Widget):
             controls=[
                 control_bar,
                 bookmarks,
-                wv
+                wv,
+                progress_bar
             ],
             
         )
