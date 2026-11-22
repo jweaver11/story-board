@@ -10,8 +10,8 @@ from models.widget import Widget
 from styles.colors import colors
 from styles.highlight_button import HighlightButton
 
-BOARD_BG_COLOR = ft.Colors.SURFACE
-CARD_BG_COLOR = ft.Colors.SURFACE_CONTAINER
+BOARD_BG_COLOR = ft.Colors.SURFACE_CONTAINER_LOW
+CARD_BG_COLOR = ft.Colors.SURFACE_CONTAINER_HIGHEST
 
 
 class Kanban(Widget):
@@ -23,7 +23,7 @@ class Kanban(Widget):
                 'tag': "kanban",
                 'board_data': [
                     {
-                        'column_title': 'Column Title', 
+                        'column_title': '', 
                         'color': 'primary',
                         'cards': [
                             {'value': '', 'strikethrough': False}
@@ -176,8 +176,7 @@ class Kanban(Widget):
 
             def set_board_color(color):
                 board['color'] = color
-                header_control.bgcolor = ft.Colors.with_opacity(0.15, color)
-                header_control.border = ft.Border.all(1, color)
+                header_tf.text_style.color = color
                 save()
                 header_control.update()
 
@@ -203,15 +202,17 @@ class Kanban(Widget):
                 open_on_tap=True,
                 tooltip="Column options",
             )
+
+            header_tf = ft.TextField(
+                value=board.get('column_title', ''), hint_text="Column title", expand=True,
+                dense=True, capitalization=ft.TextCapitalization.WORDS,
+                text_style=ft.TextStyle(weight=ft.FontWeight.W_600, size=16, color=board.get('color', 'primary')),
+                border=textfield_border(8),
+                on_change=save_title, 
+            )
             header_control = ft.Container(
                 ft.Row([
-                    ft.TextField(
-                        value=board.get('column_title', ''), hint_text="Column title", expand=True,
-                        dense=True, capitalization=ft.TextCapitalization.WORDS,
-                        text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=16, color=board.get('color', 'primary')),
-                        border=textfield_border(8),
-                        on_change=save_title, 
-                    ),
+                    header_tf,
                     menu,
                 ], spacing=0),
                 border_radius=8,
@@ -232,7 +233,7 @@ class Kanban(Widget):
             )
 
         def add_board(e):
-            board = {'column_title': 'Column Title', 'cards': [new_card_data()], 'color': 'primary'}
+            board = {'column_title': '', 'cards': [new_card_data()], 'color': 'primary'}
             boards.append(board)
             boards_lv.controls.append(build_board(board))
             save()
@@ -242,6 +243,7 @@ class Kanban(Widget):
             controls=[build_board(board) for board in boards],
             horizontal=True, expand=True, show_default_drag_handles=False,
             on_reorder=lambda e: reorder(e, boards),
+            scroll=ft.ScrollMode.ALWAYS
         )
 
         self.description_tf.bgcolor = ft.Colors.SURFACE
@@ -262,6 +264,6 @@ class Kanban(Widget):
                         bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER, 
                         on_click=add_board, size=shad.ButtonSize.SM
                     )
-                ], expand=True, scroll=ft.ScrollMode.AUTO, spacing=0, vertical_alignment=ft.CrossAxisAlignment.START),
+                ], expand=True, scroll=ft.ScrollMode.ALWAYS, spacing=0, vertical_alignment=ft.CrossAxisAlignment.START),
             ft.Row([self.description_tf]),
         ], expand=True, spacing=0)
