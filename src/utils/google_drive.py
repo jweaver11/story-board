@@ -4,11 +4,16 @@ All functions here are blocking; call them with asyncio.to_thread from the UI.
 '''
 
 import io
+import hashlib
 import json
 import os
 import socket
+import sys
+import tempfile
+import threading
 from datetime import datetime, timezone
 import httplib2
+from cryptography.fernet import Fernet, InvalidToken
 from google.auth.exceptions import RefreshError, TransportError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -16,8 +21,16 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 import shutil
+import keyring.errors
 from constants import APP_DATA_PATH, STORIES_DIRECTORY_PATH
 from models.dataclasses.templates import TEMPLATE_DEFAULTS, get_template
+
+if sys.platform == "win32":
+    from win32ctypes.pywin32.pywintypes import error as NativeStorageError
+elif sys.platform.startswith("linux"):
+    from secretstorage.exceptions import SecretStorageException as NativeStorageError
+else:
+    NativeStorageError = keyring.errors.KeyringError
 
 # drive.file only grants access to files/folders this app created
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -36,14 +49,80 @@ CLIENT_SECRET_PATH = os.path.join(APP_DATA_PATH, CLIENT_SECRET_FILE_NAME)
 EXCLUDED_FILES = {TOKEN_FILE_NAME, CLIENT_SECRET_FILE_NAME}
 
 
-def _load_credentials() -> Credentials | None:
-    ''' Loads saved credentials, refreshing them if expired. Returns None if unavailable/invalid '''
+class SecureStorageError(RuntimeError):
+    ''' Google credentials could not be protected or recovered. '''
+
+
+_key_lock = threading.Lock()
+
+
+def _keyring():
+    # Select only native secure stores, not configurable third-party backends.
+    try:
+        if sys.platform == "win32":
+            from keyring.backends.Windows import WinVaultKeyring
+            _ = WinVaultKeyring.priority
+            return WinVaultKeyring()
+        if sys.platform == "darwin":
+            from keyring.backends.macOS import Keyring
+            _ = Keyring.priority
+            return Keyring()
+        if sys.platform.startswith("linux"):
+            from keyring.backends.SecretService import Keyring
+            _ = Keyring.priority
+            return Keyring()
+    except (ImportError, RuntimeError) as e:
+        raise SecureStorageError("The OS credential store is unavailable. Unlock or configure it and try again.") from e
+    raise SecureStorageError("Secure Google credential storage is not supported on this platform.")
+
+
+def _key_name() -> str:
+    path = os.path.normcase(os.path.abspath(TOKEN_PATH))
+    return hashlib.sha256(os.fsencode(path)).hexdigest()
+
+
+def _encryption_key(create: bool = False) -> bytes:
+    try:
+        with _key_lock:
+            store = _keyring()
+            key = store.get_password("StoryBoard Google Drive", _key_name())
+            if key is None:
+                if not create:
+                    raise SecureStorageError("The Google credential encryption key is missing. Reconnect to Google Drive.")
+                key = Fernet.generate_key().decode("ascii")
+                store.set_password("StoryBoard Google Drive", _key_name(), key)
+        return key.encode("ascii")
+    except (keyring.errors.KeyringError, NativeStorageError, OSError, RuntimeError) as e:
+        if isinstance(e, SecureStorageError):
+            raise
+        raise SecureStorageError("The OS credential store is unavailable. Unlock or configure it and try again.") from e
+
+
+def _read_credentials() -> Credentials | None:
     if not os.path.exists(TOKEN_PATH):
         return None
+    with open(TOKEN_PATH, "rb") as f:
+        data = f.read()
+    legacy = data.lstrip().startswith(b"{")
+    if not legacy:
+        try:
+            data = Fernet(_encryption_key()).decrypt(data)
+        except (InvalidToken, ValueError) as e:
+            raise SecureStorageError("Google credentials cannot be decrypted. Reconnect to Google Drive.") from e
+    creds = Credentials.from_authorized_user_info(json.loads(data), SCOPES)
+    if legacy:
+        _save_credentials(creds, allow_key_creation=True)
+    return creds
+
+
+def _load_credentials() -> Credentials | None:
+    ''' Loads saved credentials, refreshing them if expired. Returns None if unavailable/invalid '''
     try:
-        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+        creds = _read_credentials()
     except ValueError as e:
         print(f"Google credentials invalid: {e}")
+        return None
+    if creds is None:
         return None
     if creds.valid:
         return creds
@@ -54,20 +133,29 @@ def _load_credentials() -> Credentials | None:
     return creds
 
 
-def _save_credentials(creds: Credentials) -> None:
-    os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
-    with open(TOKEN_PATH, "w", encoding="utf-8") as f:
-        f.write(creds.to_json())
+def _save_credentials(creds: Credentials, allow_key_creation: bool = False) -> None:
+    directory = os.path.dirname(TOKEN_PATH)
+    os.makedirs(directory, exist_ok=True)
+    create = allow_key_creation or not os.path.exists(TOKEN_PATH)
+    encrypted = Fernet(_encryption_key(create=create)).encrypt(creds.to_json().encode("utf-8"))
+    fd, temp_path = tempfile.mkstemp(prefix=".google-token-", dir=directory)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(encrypted)
+        os.replace(temp_path, TOKEN_PATH)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 def is_authenticated() -> bool:
     ''' Local check only (works offline): True if saved credentials exist that can be used or refreshed '''
-    if not os.path.exists(TOKEN_PATH):
-        return False
     try:
-        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
+        creds = _read_credentials()
+        if creds is None:
+            return False
         return bool(creds.valid or (creds.refresh_token and creds.client_id and creds.client_secret and creds.token_uri))
-    except (OSError, ValueError) as e:
+    except (OSError, ValueError, SecureStorageError) as e:
         print(f"Could not load Google credentials: {e}")
         return False
 
@@ -171,7 +259,7 @@ def authenticate() -> bool:
         scopes=SCOPES,
         expiry=expiry,
     )
-    _save_credentials(creds)
+    _save_credentials(creds, allow_key_creation=True)
     return True
 
 
@@ -492,6 +580,14 @@ def disconnect() -> None:
     ''' Forgets the saved Google credentials on this device '''
     if os.path.exists(TOKEN_PATH):
         os.remove(TOKEN_PATH)
+    try:
+        store = _keyring()
+        if store.get_password("StoryBoard Google Drive", _key_name()) is not None:
+            store.delete_password("StoryBoard Google Drive", _key_name())
+    except (keyring.errors.KeyringError, NativeStorageError, OSError, RuntimeError) as e:
+        if isinstance(e, SecureStorageError):
+            raise
+        raise SecureStorageError("The OS credential store is unavailable. Unlock or configure it and try again.") from e
 
 
 def describe_error(ex: Exception) -> str:

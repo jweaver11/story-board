@@ -173,6 +173,7 @@ src/assets/google_client_secret.json
 tests/*
 !tests/test_bar_chart.py
 !tests/test_radar_chart.py
+!tests/test_google_drive_credentials.py
 
 # Macos file metadata
 .DS_Store

@@ -1329,7 +1329,11 @@ class Settings(ft.View):
 
         async def _connect_clicked(e=None):
             if app.is_cloud_authenticated:
-                await asyncio.to_thread(google_drive.disconnect)
+                try:
+                    await asyncio.to_thread(google_drive.disconnect)
+                except (OSError, google_drive.SecureStorageError) as ex:
+                    self.page.show_dialog(shad.Toast(google_drive.describe_error(ex)))
+                    return
                 app.is_cloud_authenticated = False
                 self.update_data(**{'sync_with_cloud_on_close': False, 'sync_with_cloud_on_launch': False})
                 await self.save_file()

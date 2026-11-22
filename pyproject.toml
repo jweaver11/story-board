@@ -17,6 +17,8 @@ dependencies = [
   "flet-charts",
   "google-api-python-client",
   "google-auth-oauthlib",
+  "cryptography",
+  "keyring",
   "Pillow",
   "python-docx"
 ]

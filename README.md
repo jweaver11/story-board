@@ -34,6 +34,12 @@ card chips toggle strikethrough or delete cards. Drag a column or card to
 reorder it. Changes are saved with the widget.
 Google Drive sign-in is saved on the device; expired access tokens are refreshed
 automatically when cloud features are used. Reconnect if access is revoked.
+Google credentials are encrypted on disk using a key in the operating system
+credential store (Windows Credential Locker, macOS Keychain, or Linux Secret
+Service). Linux requires an available, unlocked Secret Service keyring. Existing
+plaintext credentials are migrated when first loaded; if the credential store is
+unavailable, migration fails and the original file remains until it can succeed.
+Backups of the old plaintext file should be removed separately.
 
 <p align="center">
   <img src="images/Screenshot%201.png" alt="Screenshot 1 of the StoryBoard app" width="700">

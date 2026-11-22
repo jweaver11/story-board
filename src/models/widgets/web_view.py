@@ -71,6 +71,8 @@ class WebView(Widget):
             return
 
         def bookmark_url():
+            # TODO: Store bookmarks for the app, not per wv
+            # Give landing page in settings.
             return
             if bookmark in bookmarks:
                 return
@@ -92,6 +94,8 @@ class WebView(Widget):
         forward_button = ControlButton(ft.Icons.ARROW_FORWARD_OUTLINED, ft.Colors.PRIMARY, on_click=go_forward,)
         refresh_button = ControlButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY, on_click=refresh,)
         bookmark_button = ControlButton(ft.Icons.BOOKMARK_ADD_OUTLINED, ft.Colors.PRIMARY, on_click=bookmark_url, )
+        home_button = ControlButton(ft.Icons.HOME_OUTLINED, ft.Colors.PRIMARY, on_click=lambda e: go_to_url(ft.Event(control=search_bar, value="https://www.google.com")))
+        set_home_button = ControlButton(ft.Icons.HOME_OUTLINED, ft.Colors.PRIMARY, on_click=lambda e: go_to_url(ft.Event(control=search_bar, value="https://www.google.com")))
 
         progress_bar = ft.ProgressBar(visible=False)
 
@@ -126,9 +130,11 @@ class WebView(Widget):
             on_ad_blocked=lambda e: print("blocked", e.url, e.is_main_frame),
             on_page_started=show_loading,
             on_page_finished=hide_loading,
-            on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
+            #on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
             on_web_resource_error=lambda e: print(e.error_code, e.description),
             on_javascript_message=lambda e: print(e.channel_name, e.message_body),
+            debugging_enabled=True, allow_webview_permissions=True,
+            ad_block_enabled=False
         )
 
         self.content = ft.Column(
