@@ -67,8 +67,8 @@ class WebView(Widget):
             progress_bar.visible = False
             progress_bar.update()
 
-        async def refresh():
-            return
+        async def refresh(e=None):
+            await wv.reload()
 
         def bookmark_url():
             # TODO: Store bookmarks for the app, not per wv
@@ -86,7 +86,10 @@ class WebView(Widget):
             url = e.control.value
             self.data['url'] = url
             wv.url = url
+            
             wv.update()
+            await wv.open_devtools()
+            print("Loading url: ", url)
 
         back_button = ControlButton(ft.Icons.ARROW_BACK_OUTLINED, ft.Colors.PRIMARY, on_click=go_back)
         forward_button = ControlButton(ft.Icons.ARROW_FORWARD_OUTLINED, ft.Colors.PRIMARY, on_click=go_forward,)
@@ -129,11 +132,11 @@ class WebView(Widget):
             on_ad_blocked=lambda e: print("blocked", e.url, e.is_main_frame),
             on_page_started=show_loading,
             on_page_finished=hide_loading,
-            #on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
+            on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
             on_web_resource_error=lambda e: print(e.error_code, e.description),
             on_javascript_message=lambda e: print(e.channel_name, e.message_body),
             debugging_enabled=True, allow_webview_permissions=True,
-            ad_block_enabled=False,
+            ad_block_enabled=False, javascript_mode=True
         )
 
         self.content = ft.Column(
@@ -146,4 +149,6 @@ class WebView(Widget):
             ],
             
         )
+
+        
 

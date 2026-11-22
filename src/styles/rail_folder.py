@@ -137,7 +137,8 @@ class RailFolder(ft.GestureDetector):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.WEB_OUTLINED, ft.Colors.PRIMARY, size=20), content="Web View", 
                 data="web_view", on_click=self.new_item_clicked, close_on_click=True,
-                tooltip="Embed external web content within your story"
+                tooltip="Embed external web content within your story",
+                visible=False
             ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             ft.Row(
