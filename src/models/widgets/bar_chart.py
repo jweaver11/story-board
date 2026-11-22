@@ -87,23 +87,22 @@ class BarChart(Widget):
 
         # Update each label in the chart and expansion tile delete button in the sidebar
         def update_group_indices():
-            for group_idx, label in enumerate(self.data.get('chart_data', {}).get('groups', [])):
+            for group_idx, tile in enumerate(sidebar_bar_group_column.controls):
+                chart.groups[group_idx].x = group_idx
                 chart.bottom_axis.labels[group_idx].value = group_idx                   # Value of label on chart 
                 chart.bottom_axis.labels[group_idx].label.data = group_idx              # Data of tf for changing
-                sidebar_bar_group_column.controls[group_idx].trailing.data = group_idx  # Delete button for that group in sidebar
+                tile.data = group_idx
+                tile.trailing.data = group_idx
+                tile.controls[1].controls[1].data = group_idx
 
         # Updates the indices for each rod within each group in the sidebar and chart
         def update_rod_indices():
             for group_idx, exp_tile in enumerate(sidebar_bar_group_column.controls):
-                rod_idx = 0     # Set our rod index to only incriment when we find a rod control and ignore other controls
-                for ctrl in exp_tile.controls:
-                    if isinstance(ctrl, ft.Row) and len(ctrl.controls) > 2:
-                        for item in ctrl.controls[0].items:     # Color picker popup items
-                            item.data = (group_idx, rod_idx, item.data[2])
-                        ctrl.controls[0].content.content.content.color = ctrl.controls[0].content.content.content.color
-                        ctrl.controls[2].data = (group_idx, rod_idx)    # Slider
-                        ctrl.controls[4].data = (group_idx, rod_idx)    # Delete button
-                        rod_idx += 1
+                for rod_idx, ctrl in enumerate(exp_tile.controls[2:]):
+                    for item in ctrl.controls[0].items:
+                        item.data = (group_idx, rod_idx, item.data[2])
+                    ctrl.controls[2].data = (group_idx, rod_idx)
+                    ctrl.controls[4].data = (group_idx, rod_idx)
 
         # Create a new group with default data in data, chart, and sidebar
         async def create_group(e: ft.Event):
@@ -130,8 +129,8 @@ class BarChart(Widget):
             sidebar_bar_group_column.controls.append(create_sidebar_group(len(self.data.get('chart_data', {}).get('groups', [])) - 1, self.data.get('chart_data', {}).get('groups', [])[-1], is_new=True))
             chart.groups.append(create_chart_bar_group(len(self.data.get('chart_data', {}).get('groups', [])) - 1, self.data.get('chart_data', {}).get('groups', [])[-1]))
             chart.bottom_axis.labels.append(create_bar_group_label(len(self.data.get('chart_data', {}).get('groups', [])) - 1, self.data.get('chart_data', {}).get('groups', [])[-1].get('name', f"Group {len(self.data.get('chart_data', {}).get('groups', []))}")))
-            self.update()
             update_indices()      # Update indices 
+            self.update()
             
         # Deletes a group from data, chart, and sidebar
         async def delete_group(e: ft.Event):
@@ -144,8 +143,8 @@ class BarChart(Widget):
             chart.groups.pop(idx)
             chart.bottom_axis.labels.pop(idx)   # Remove the corresponding bottom axis label from the chart
             sidebar_bar_group_column.controls.pop(idx)
-            self.update()
             update_indices()   # Update indices after deleting a group
+            self.update()
 
         # Creates a rod for a specific group in the data, chart, and sidebar
         async def create_rod(e: ft.Event):
@@ -181,8 +180,8 @@ class BarChart(Widget):
             )
             # Add it to the sidebar as well
             sidebar_bar_group_column.controls[group_idx].controls.append(create_sidebar_rod(group_idx, new_rod_idx, rod_data))
-            self.update()
             update_indices()
+            self.update()
 
         # Updates the value of our rod on the chart in real-time as the slider is moved, without adjusting data
         async def update_rod_value(e: ft.Event):
@@ -210,8 +209,8 @@ class BarChart(Widget):
             self.update_data(**{'chart_data': self.data.get('chart_data', {})})
             chart.groups[group_idx].rods.pop(rod_idx)
             sidebar_bar_group_column.controls[group_idx].controls.pop(rod_idx+2)
-            self.update()
             update_indices()
+            self.update()
 
         # Changes color of a rod in data, chart, and sidebar
         async def change_rod_color(e: ft.Event[ft.Control]):
@@ -224,9 +223,9 @@ class BarChart(Widget):
 
             # Update charts rod color and sidebar
             chart.groups[group_idx].rods[rod_idx].color = new_color
-            e.control.parent.icon_color = new_color
-            e.control.parent.parent.controls[2].active_color = new_color
-            e.control.parent.content.content.content.color = new_color
+            rod_row = sidebar_bar_group_column.controls[group_idx].controls[rod_idx + 2]
+            rod_row.controls[2].active_color = new_color
+            rod_row.controls[0].content.content.content.color = new_color
             self.update()
 
         # Creates the rod controls for the sidebar inside a group expansion tile
@@ -276,6 +275,11 @@ class BarChart(Widget):
             expanded=group_data.get('expanded', False)
             rods=[rod for rod in group_data.get('rods', [])]
 
+            def set_expanded(e: ft.Event):
+                group = self.data['chart_data']['groups'][e.control.data]
+                group['expanded'] = e.control.expanded
+                self.update_data(chart_data=self.data['chart_data'])
+
             # Build expansion_tile functionality
             return ft.ExpansionTile(
                 ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),   # Group title
@@ -287,7 +291,7 @@ class BarChart(Widget):
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH, collapsed_bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
                 data=group_idx, shape=ft.RoundedRectangleBorder(radius=4), collapsed_shape=ft.RoundedRectangleBorder(radius=4),
                 expanded=expanded,
-                on_change=lambda e: self.update_data(**{'chart_data': {'groups': {group_idx: {'expanded': e.control.expanded}}}}),
+                on_change=set_expanded,
                 controls=[
                     ft.Divider(2, 2),   
                     ft.Row([
@@ -311,20 +315,29 @@ class BarChart(Widget):
 
         # Sets the maximum value for the Y-axis of the chart
         async def set_max_y_value(e: ft.Event):
-            
-            # Handle empty values
-            if e.control.value == "" or e.control.value is None:
+            value = e.control.value or ""
+            highest_rod = max(
+                (rod.get('to_y', 0) for group in self.data['chart_data']['groups']
+                 for rod in group.get('rods', [])),
+                default=0,
+            )
+            new_value = int(value) if len(value) <= 16 and value.isascii() and value.isdecimal() else 0
+            if new_value <= 0 or new_value < highest_rod or new_value > 2**53 - 1:
                 e.control.value = str(chart.max_y)
+                e.control.error_text = "Enter a positive value up to 9007199254740991, at least as large as every rod."
                 e.control.update()
                 return
-            
-            # Update data
-            new_value = int(e.control.value)
+
+            e.control.error_text = None
             self.update_data(**{'chart_data': {'max_y': new_value}})
 
-            # Update chart
             chart.max_y = new_value
-            chart.update()
+            for tile in sidebar_bar_group_column.controls:
+                for row in tile.controls[2:]:
+                    row.controls[2].max = new_value
+                    row.controls[2].divisions = new_value
+                    row.controls[3].value = str(new_value)
+            self.update()
 
         # Sets whether to show labels on the chart axes
         async def set_show_labels(e: ft.Event):
@@ -424,7 +437,7 @@ class BarChart(Widget):
         def create_chart_bar_group(idx: int, group_data: dict) -> fch.BarChartGroup:
             return fch.BarChartGroup(
                 idx,        # Needs for alignment
-                spacing=self.data.get('chart_data', {}).get('rod_spacing', 4), 
+                spacing=self.data.get('chart_data', {}).get('rod_spacing', 10),
                 group_vertically=self.data.get('chart_data', {}).get('stack_rods', False),
                 rods=[
                     fch.BarChartRod(
@@ -462,7 +475,7 @@ class BarChart(Widget):
                 show_labels=self.data.get('chart_data', {}).get('show_labels', False),
                 labels=[create_bar_group_label(idx, group.get('name', f"Group {idx + 1}")) for idx, group in enumerate(self.data.get('chart_data', {}).get('groups', []))]
             ),
-            top_axis=fch.ChartAxis(ft.Text(""), labels=fch.ChartAxisLabel(0, " ")), # Invisible label for behavior purposes
+            top_axis=fch.ChartAxis(ft.Text(""), labels=[fch.ChartAxisLabel(0, " ")]), # Invisible label for behavior purposes
             horizontal_grid_lines=fch.ChartGridLines() if self.data.get('chart_data', {}).get('show_horizontal_grid_lines', False) else None,
             vertical_grid_lines=fch.ChartGridLines() if self.data.get('chart_data', {}).get('show_vertical_grid_lines', False) else None,
 
@@ -532,7 +545,7 @@ class BarChart(Widget):
                     ft.Row([
                         ft.Text("\t\tRod Spacing", theme_style=ft.TextThemeStyle.LABEL_LARGE),
                         ft.Slider(
-                            value=self.data.get('chart_data', {}).get('rod_spacing', 30), min=0, max=20, 
+                            value=self.data.get('chart_data', {}).get('rod_spacing', 10), min=0, max=20,
                             label="{value}", expand=True, on_change=set_rod_spacing_value, on_change_end=set_rod_spacing_data
                         ),
                     ], spacing=0),
@@ -564,13 +577,15 @@ class BarChart(Widget):
         ])
 
         # Set up our main conent
-        self.content = ft.Stack([
-            ft.Row([
+        self.content = ft.Row(
+            spacing=0, expand=True, 
+            alignment=ft.MainAxisAlignment.END, 
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
                 ft.Container(chart, expand=3, padding=ft.Padding.only(bottom=20, left=20)),
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar
-            ], spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            
-        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+            ], 
+        )
+        
         
