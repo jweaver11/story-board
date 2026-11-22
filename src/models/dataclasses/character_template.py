@@ -4,9 +4,6 @@ Default data dict for character data templates
  
 def default_character_template_data() -> dict:
     return {
-
-        #'About': "",
-
         'Basic Info': {
             'Nickname': "",    
             'Role': "",        # Importance of character in the story. Main, Side, Background, None

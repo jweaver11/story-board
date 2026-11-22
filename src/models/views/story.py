@@ -164,11 +164,17 @@ class Story(ft.View):
             case "default":
                 content_directory = self.data.get('content_directory_path', '')
                 folders = (
-                    (None, "Book 1"),
+                    (None, "Plot"),
                     (None, "Items"), 
                     (None, "Maps"),
                     (None, "Research"),
                     (None, "Characters"),
+                    (None, "Scenes"),
+                    (None, "Worlds"),
+                    (os.path.join(content_directory, "Plot"), "Book 1"),
+                    (os.path.join(content_directory, "Plot", "Book 1"), "Chapter 1"),
+                    (os.path.join(content_directory, "Plot", "Book 1"), "Chapter 2"),
+                    (os.path.join(content_directory, "Plot", "Book 1"), "Chapter 3"),
                     (os.path.join(content_directory, "Characters"), "Main"),
                     (os.path.join(content_directory, "Characters"), "Supporting"),
                     (os.path.join(content_directory, "Characters"), "Background"),
@@ -1053,4 +1059,6 @@ class Story(ft.View):
                 ], spacing=0, expand=True)
             ),
         ]
+
+        self.page.update()
     
