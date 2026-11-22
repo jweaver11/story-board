@@ -388,13 +388,12 @@ class ConnectionMap(Widget):
                     case "map": return ft.Icons.MAP_OUTLINED
                     case "world": return ft.Icons.PUBLIC_OUTLINED
                     case "item": return ft.Icons.STAR_OUTLINE_ROUNDED
-                    case "chart": 
-                        if self.ref_widget.data.get('chart_type') == 'bar':
-                            return ft.Icons.INSERT_CHART_OUTLINED 
-                        else:
-                            return ft.CupertinoIcons.COMPASS
+                    case "bar_chart": return ft.Icons.INSERT_CHART_OUTLINED 
+                    case "radar_chart": return ft.CupertinoIcons.COMPASS
                     case "comic_preview": return ft.Icons.SLIDESHOW_OUTLINED
                     case "plot_chart": return ft.Icons.ACCOUNT_TREE_OUTLINED
+                    case "kanban": return ft.Icons.VIEW_KANBAN_OUTLINED
+                    case "web_view": return ft.Icons.WEB_OUTLINED
                     case _: return ft.Icons.ERROR_OUTLINE
 
             # Builds the title of the widget node that allows for renaming and dragging
@@ -895,7 +894,6 @@ class ConnectionMap(Widget):
                 self.iv,
                 self.get_menu_options(),
                 expand=True,
-                open_on_tap=True
             ),
             ft.Row(
                 [self.toggle_sidebar_visibility_button, self.sidebar], 

@@ -462,6 +462,7 @@ class RailFolder(ft.GestureDetector):
             if await self.story.move_folder(folder.full_path, new_folder_path):
                 self.story.tree_view_rail.reload_rail()
         except (OSError, ValueError) as ex:
+            return
             self.page.show_dialog(shad.Toast(f"Error moving folder: {ex}", variant=shad.ToastVariant.DESTRUCTIVE))
 
     async def toggle_notes(self, e=None):

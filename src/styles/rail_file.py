@@ -40,6 +40,7 @@ class RailFile(ft.GestureDetector):
             case "radar_chart": self.icon = ft.CupertinoIcons.COMPASS
             case "plot_chart": self.icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "kanban": self.icon = ft.Icons.VIEW_KANBAN_OUTLINED
+            case "web_view": self.icon = ft.Icons.WEB_OUTLINED
             case _: self.icon = ft.Icons.ERROR_OUTLINE
 
         # Set our text style

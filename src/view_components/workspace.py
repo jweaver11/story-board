@@ -132,6 +132,7 @@ class Workspace(ft.Container):
             case "comic_preview": icon = ft.Icons.SLIDESHOW_OUTLINED
             case "plot_chart": icon = ft.Icons.ACCOUNT_TREE_OUTLINED
             case "kanban": icon = ft.Icons.VIEW_KANBAN_OUTLINED
+            case "web_view": icon = ft.Icons.WEB_OUTLINED
             case _: icon = ft.Icons.ERROR_OUTLINE
 
         # Set the icon contrl

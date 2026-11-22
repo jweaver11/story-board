@@ -657,7 +657,6 @@ class PlotChart(Widget):
                 get_new_node_menu_options(),
                 open_on_long_press=True,
                 expand=True,
-                open_on_tap=True
             ),
             ft.TransparentPointer(self.iv),
             ft.Row(

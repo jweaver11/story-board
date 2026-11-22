@@ -246,7 +246,7 @@ class Manuscript(Widget):
         self.quill_editor = FletQuillEditor(    # Editor
             controller_id=self.data.get('id', None),
             text_data=self.data.get('manuscript_data', [{"insert": "Hello World!\n"}]),   # Pass in data
-            placeholder_text=f"Start {self.data.get('title', 'your manuscript')} here...",
+            placeholder_text=f"Start your {str(self.data.get('title', 'your manuscript')).lower()} here...",
             expand=True, min_height=MANUSCRIPT_HEIGHT
         )
 

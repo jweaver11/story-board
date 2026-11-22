@@ -1,0 +1,130 @@
+''' Class for the WebView, allowing user to connect to external web content '''
+
+import flet as ft
+from models.views.story import Story
+from models.widget import Widget
+from styles.menu_option_style import MenuOptionStyle
+from models.app import app
+from styles.text_fields import TextField
+import asyncio
+from models.dataclasses.item_template import default_item_template_data
+import flet_webview as fwv
+from flet_webview_all import FletWebviewAll
+
+
+class WebView(Widget):
+
+    # Constructor
+    def __init__(self, title: str, directory_path: str, story: Story, data: dict={}, is_new: bool = False):
+
+        # Initialize from our parent class 'Widget'. 
+        super().__init__(
+            title = title,                      
+            directory_path = directory_path,    
+            story = story,                     
+            data = data,
+            is_new = is_new
+        )
+
+         # If we're new, give default values for our data 
+        if self.is_new == True:
+            self.data.update({
+                # Widget data
+                'tag': "web_view",             # Tag to identify what type of object this is
+                'color': app.settings.data.get('widget_defaults', {}).get('web_view', {}).get('color'),
+
+                'url': ''
+            },
+        )
+
+    def build(self):
+
+        @ft.control
+        class ControlButton(ft.IconButton):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.style = ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=6),
+                )
+                
+
+        super().build()
+        self.padding = 10
+        self.bgcolor = ft.Colors.SURFACE
+
+        async def go_back():
+            return
+
+        async def go_forward():
+            return
+
+        async def refresh():
+            return
+
+        def bookmark_url():
+            return
+            if bookmark in bookmarks:
+                return
+            self.page.show_dialog()
+
+        # Set the states of the control buttons after an action
+        def set_control_buttons():
+            return
+
+        history = []
+        forward_history = []
+
+        back_button = ControlButton(ft.Icons.ARROW_BACK_OUTLINED, ft.Colors.PRIMARY, on_click=go_back)
+        forward_button = ControlButton(ft.Icons.ARROW_FORWARD_OUTLINED, ft.Colors.PRIMARY, on_click=go_forward,)
+        refresh_button = ControlButton(ft.Icons.REFRESH_OUTLINED, ft.Colors.PRIMARY, on_click=refresh,)
+        bookmark_button = ControlButton(ft.Icons.BOOKMARK_ADD_OUTLINED, ft.Colors.PRIMARY, on_click=bookmark_url, )
+
+        
+        search_bar = ft.TextField(
+            value=self.data.get('url') or "https://www.google.com", 
+            expand=True,
+            suffix_icon=bookmark_button
+        )
+        
+        bookmarks = ft.Row([])
+
+        control_bar = ft.Row(
+            spacing=0,
+            controls=[
+                back_button,
+                forward_button,
+                refresh_button,
+                search_bar
+            ],
+            
+        )
+
+
+        # methods (all async):
+        
+
+        wv = FletWebviewAll(
+            url=self.data.get('url') or "https://www.google.com",
+            expand=True,
+            javascript_channels=["FletBridge"],
+            on_permission_request=lambda e: print(e),
+            ad_block_allowed_domains=["example.com"],   # never block here (subdomains too)
+            ad_block_blocked_domains=["adserver.somedomain.com",],    # always block
+            on_ad_blocked=lambda e: print("blocked", e.url, e.is_main_frame),
+            on_page_started=lambda e: print("Starting", e.url), # When we start a new url to load
+            on_page_finished=lambda e: print("Finished", e.url),    # When a page finishes loading
+            on_progress=lambda e: print(f"{e.progress}%"),  # Any updates as its loading (usually 1)
+            on_web_resource_error=lambda e: print(e.error_code, e.description),
+            on_javascript_message=lambda e: print(e.channel_name, e.message_body),
+        )
+
+        self.content = ft.Column(
+            expand=True, spacing=0,
+            controls=[
+                control_bar,
+                bookmarks,
+                wv
+            ],
+            
+        )
+

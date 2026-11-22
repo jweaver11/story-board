@@ -147,7 +147,7 @@ class Item(Widget):
         # Column to hold our fields textfields
         fields_column = ft.Column(
             expand=True, horizontal_alignment=ft.CrossAxisAlignment.START, margin=ft.Margin.only(top=10),
-            controls=build_fields_ctrls(), scroll="auto", alignment=ft.MainAxisAlignment.START,
+            controls=build_fields_ctrls(), scroll=ft.ScrollMode.HIDDEN, alignment=ft.MainAxisAlignment.START,
         )
         
         #self.description_tf.label = ""
@@ -162,13 +162,3 @@ class Item(Widget):
         ], expand=True, spacing=0)
 
         self.content = body
-        return
-
-        self.content = ft.Stack([
-            body,
-            
-            ft.Column([
-                new_field_tf,
-                add_field_button, 
-            ], alignment=ft.MainAxisAlignment.END, horizontal_alignment=ft.CrossAxisAlignment.START, expand=True,)
-        ], alignment=ft.Alignment.TOP_LEFT, expand=True)

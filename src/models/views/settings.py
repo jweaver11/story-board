@@ -144,6 +144,12 @@ class Settings(ft.View):
                         'color': "primary",
                         'view_mode': "curved",   # If the connection map is in straight, zigzag, or curved view
                         'export_file_type': ".json"   # Default export file type for plotlines
+                    },
+                    'web_view': {
+                        'color': "primary",
+                    },
+                    'kanban': {
+                        'color': "primary",
                     }
                 },
 

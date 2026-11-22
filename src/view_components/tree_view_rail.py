@@ -261,6 +261,11 @@ class ActiveRail(ft.Container):
                 data="connection_map", on_click=self.new_item_clicked, close_on_click=True,
                 tooltip="Visualize the connections between the characters in your story"
             ),  
+            shad.MenuItem(
+                leading=ft.Icon(ft.Icons.WEB_OUTLINED, ft.Colors.PRIMARY, size=20), content="Web View", 
+                data="web_view", on_click=self.new_item_clicked, close_on_click=True,
+                tooltip="Embed external web content within your story"
+            ),
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             ft.Row(
                 [
