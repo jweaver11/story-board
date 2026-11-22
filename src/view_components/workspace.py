@@ -29,7 +29,9 @@ class Workspace(ft.Container):
 
         # Set our container properties for the workspace
         super().__init__(
-            expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGH,
+            expand=True, 
+            #bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
+            gradient=dark_gradient,
             #border_radius=ft.BorderRadius.only(top_left=8, bottom_left=8),
             #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             border_radius=6,
@@ -321,6 +323,7 @@ class Workspace(ft.Container):
             enable_feedback=False, 
             on_click=self.save_widget,
             label_padding=ft.Padding.only(left=6), #padding=ft.Padding.all(20)
+            #divider_color=ft.Colors.TRANSPARENT
         )
 
         # Build our tab view that holds each widget

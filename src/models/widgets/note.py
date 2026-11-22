@@ -47,8 +47,7 @@ class Note(Widget):
 
         super().build()
 
-        if self.page.platform.is_mobile() != True:
-            self.padding = ft.Padding.all(10)
+        self.padding = ft.Padding.all(10)
         
         # Adds our new card to data and our column
         async def handle_create_card(e=None):
@@ -212,7 +211,7 @@ class Note(Widget):
             ]
 
         # Gives us a new textfield for each note card
-        def new_card(idx: int, data: dict={}) -> TextField:
+        def new_card(idx: int, data: dict={}) -> ft.Card:
             label = data.get('label', '')
             value = data.get('value', '')
             color = data.get('color', 'onsurface')
@@ -231,20 +230,20 @@ class Note(Widget):
 
             # Top textfield for the label
             label_tf = ft.TextField(
-                value=label,
+                value=label, expand=True,
                 dense=True, multiline=True, width=pixel_size,
                 border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT)),
                 capitalization=ft.TextCapitalization.SENTENCES,
                 text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
-                suffix_icon=HighlightButton(
-                    content=shad.ContextMenu(
-                        ft.Icon(ft.Icons.MORE_VERT, ft.Colors.ON_SURFACE_VARIANT),
-                        get_card_options(idx),
-                        open_on_tap=True
-                    ),
-                    is_round=True,
-                ),
                 on_blur=save_card_label
+            )
+            options_btn = shad.ContextMenu(
+                HighlightButton(
+                    ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.ON_SURFACE_VARIANT),
+                    use_padding=True
+                ),
+                get_card_options(idx),
+                open_on_tap=True
             )
 
             # Bottom textfield for the body of the card
@@ -254,24 +253,25 @@ class Note(Widget):
                 text_style=ft.TextStyle(size=14, decoration=ft.TextDecoration.LINE_THROUGH if strikethrough else ft.TextDecoration.NONE, decoration_thickness=2),
                 multiline=True,
                 capitalization=ft.TextCapitalization.SENTENCES,
-                value=value, expand=True, on_blur=save_card_value,
+                value=value, expand=True, on_blur=save_card_value, 
             )  
             
             
             card = ft.Card(
                 ft.Container(
                     ft.Column([
-                        label_tf,
+                        ft.Row([label_tf, options_btn], spacing=0),
                         ft.Divider(ft.Colors.with_opacity(0.5, ft.Colors.OUTLINE), 2, leading_indent=10, trailing_indent=10),
                         body_tf
                     ], spacing=0, expand=True),
                     bgcolor=ft.Colors.with_opacity(0.05, color),
+                    #border=ft.Border.all(1, ft.Colors.with_opacity(0.2, color)),
                     border_radius=4,
                     data=idx
                 ),
                 bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                 height=pixel_size * 0.75, width=pixel_size,
-                shape=ft.RoundedRectangleBorder(radius=4),
+                shape=ft.RoundedRectangleBorder(radius=8),
                 data=idx
             )
             return card

@@ -255,7 +255,9 @@ class Manuscript(Widget):
             ft.KeyboardListener(self.quill_editor, on_key_down=mark_dirty, expand=True),
             expand=True,
             #margin=ft.Margin.symmetric(horizontal=MANUSCRIPT_HORIZONTAL_MARGIN, vertical=MANUSCRIPT_VERTICAL_MARGIN),
-            border_radius=6, bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, padding=MANUSCRIPT_PADDING
+            border_radius=4, 
+            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST, 
+            padding=MANUSCRIPT_PADDING
         )
         
 

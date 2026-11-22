@@ -15,6 +15,7 @@ Also useful for D&D Campaign tracking.
 - Plot Chart with node system for alternate plot visualization
 - Comic Preview to see your illustrations stitched together as a finished product
 - Character Relationship Map for visualizing how characters are connected to other characters in your story
+- Kanban boards with editable columns and cards
 - Character (and template) creation
 - World (and template) creation
 - Radar and bar charts for power scaling and changes in physical growth throughout a story's progression
@@ -27,6 +28,10 @@ Older settings retain their saved templates; the active legacy template (or
 Default when none is active) becomes the editable template.
 Pushing or pulling settings through Google Drive also syncs all three editable
 templates. Pulling settings replaces the local templates.
+In a Kanban widget, add columns with **Add Column**; each starts with one card.
+Use each column's menu to add cards, set its color, or delete it. Edit column titles and card values directly;
+card chips toggle strikethrough or delete cards. Drag a column or card to
+reorder it. Changes are saved with the widget.
 Google Drive sign-in is saved on the device; expired access tokens are refreshed
 automatically when cloud features are used. Reconnect if access is revoked.
 

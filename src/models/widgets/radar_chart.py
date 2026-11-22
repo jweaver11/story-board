@@ -156,6 +156,8 @@ class RadarChart(Widget):
             ],
             expand=3,
             #on_event=lambda e: print(e),
+            #radar_border_side=ft.BorderSide(1, ft.Colors.OUTLINE),
+            #border=ft.Border.all(1, ft.Colors.OUTLINE),
             titles=[fch.RadarChartTitle(title, None if should_rotate_nodes else 360) for title in self.data.get('chart_data', {}).get('nodes', [])],
             center_min_value=True,
             tick_count=self.data.get('chart_data', {}).get('tick_count', 2),

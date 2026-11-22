@@ -27,7 +27,7 @@ class Widget(ft.Container):
     
     # Constructor. All widgets require a title,  page reference, directory path, and story reference
     def __init__(
-        self, 
+        self,  
         title: str,             # Title of our widget
         directory_path: str,    # Path to our directory that will contain our json file
         story: Story,           # Reference to our story object that owns this widget
@@ -682,6 +682,7 @@ class Widget(ft.Container):
             on_click=self.show_sidebar if not self.data.get('show_sidebar', True) else self.hide_sidebar,
             ink=True, border_radius=4, bgcolor=ft.Colors.SURFACE,
             shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE),
+            #border=ft.Border.only(left=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             padding=ft.Padding.symmetric(horizontal=0, vertical=0),
             height=40
         )
@@ -692,6 +693,7 @@ class Widget(ft.Container):
             padding=ft.Padding.all(10),
             shadow=ft.BoxShadow(0, 1, ft.Colors.SURFACE), 
             bgcolor=ft.Colors.SURFACE,
+            border_radius=ft.BorderRadius.only(top_right=6, bottom_right=6),
             width=0, # Start collapsed, and when built we will get bigger if showing
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             content=ft.Column([     # Holds our header seperated by the body

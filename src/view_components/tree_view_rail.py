@@ -42,6 +42,9 @@ class ActiveRail(ft.Container):
             border_radius=6,
             margin=ft.Margin.only(left=6, bottom=6),
         )
+
+    def is_isolated(self):
+        return True
         
     # Reload our rail on startup
     def build(self):
