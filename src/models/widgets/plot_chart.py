@@ -343,8 +343,8 @@ class PlotChart(Widget):
                             ft.Icons.KEYBOARD_ARROW_LEFT_OUTLINED if side == "right" else ft.Icons.KEYBOARD_ARROW_RIGHT_OUTLINED, 
                             ft.Colors.PRIMARY, size=CONNECTOR_WIDTH - 2,
                         ), 
-                        height=CONNECTOR_HEIGHT, width=CONNECTOR_WIDTH, border=ft.Border.all(1, color=ft.Colors.OUTLINE),
-                        border_radius=40, bgcolor=ft.Colors.GREY_700,
+                        height=CONNECTOR_HEIGHT, width=CONNECTOR_WIDTH, #border=ft.Border.all(1, color=ft.Colors.OUTLINE),
+                        border_radius=40, bgcolor=ft.Colors.GREY_800,
                     ), 
                     mouse_cursor=ft.MouseCursor.PRECISE,
                     data=self.data.get('id'),                        
@@ -656,7 +656,8 @@ class PlotChart(Widget):
                 ft.Container(width=FIXED_STACK_WIDTH, height=FIXED_STACK_HEIGHT),
                 get_new_node_menu_options(),
                 open_on_long_press=True,
-                expand=True
+                expand=True,
+                open_on_tap=True
             ),
             ft.TransparentPointer(self.iv),
             ft.Row(
