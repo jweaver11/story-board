@@ -11,6 +11,9 @@ from models.isolated_controls.expansion_tile import IsolatedExpansionTile
 import asyncio
 import flet_shadcn_ui as shad
 from styles.text_fields import TextField
+from styles.highlight_button import HighlightButton
+from styles.tooltip import Tooltip
+
 
 
 # Expansion tile for all sub directories (folders) in a directory
@@ -482,8 +485,8 @@ class RailFolder(ft.GestureDetector):
                 full_path=self.full_path,
                 key='notes', value=self.notes
             )
-            self.notes_tooltip.message = self.notes
-            self.notes_tooltip.update()
+            self.expansion_tile.title.tooltip = Tooltip(message=self.notes)
+            self.expansion_tile.title.update()
 
         self.new_item_tf = ft.TextField(     
             hint_text="", data="",                 # Hint text and data tag for logic                      
@@ -542,27 +545,23 @@ class RailFolder(ft.GestureDetector):
                 )
             ]
 
-        self.notes_tooltip = shad.Tooltip(  # Tooltip when hovering over title of expansion tile
-            message=self.notes, wait_duration=ft.Duration(milliseconds=750),
-            content=shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
-                ft.GestureDetector( # Catch primary clicks to open expansion tile since cm blocks them
-                    ft.Row(
-                        [
-                            ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),  # icon
-                            ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                            self.notes_popover, # Shows the popover for the textarea for the notes
-                        ], 
-                        expand=True, spacing=6,
-                    ),
-                    on_tap_down=open_expansion_tile,
-                ),
-                items=self.menu_items(),
-            ),
-        )
-
         # The expansiontile that will hold everything
         self.expansion_tile = IsolatedExpansionTile(
-            title=self.notes_tooltip,
+            title=ft.Row(
+                [
+                    ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),  # icon
+                    ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    self.notes_popover, # Shows the popover for the textarea for the notes
+                    shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
+                        HighlightButton(ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.ON_SURFACE_VARIANT)),
+                        items=self.menu_items(),
+                        open_on_tap=True,
+                    ),
+                    
+                ], 
+                expand=True, spacing=6, 
+                tooltip=Tooltip(message=self.notes)
+            ),
             dense=True, min_tile_height=0,
             collapsed_shape=ft.RoundedRectangleBorder(radius=4),
             visual_density=ft.VisualDensity.COMPACT,
@@ -577,7 +576,7 @@ class RailFolder(ft.GestureDetector):
             animation_style=ft.AnimationStyle(
                 ft.Duration(milliseconds=100), ft.Duration(milliseconds=100), 
                 ft.AnimationCurve.DECELERATE, ft.AnimationCurve.DECELERATE
-            )
+            ),
         )    
 
         # Wrap in all in a drag target so we can drag to move widgets into different folders

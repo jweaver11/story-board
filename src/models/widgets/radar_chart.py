@@ -27,7 +27,7 @@ class RadarChart(Widget):
         title: str, 
         directory_path: str, 
         story: Story, 
-        data: dict = {}, 
+        data: dict | None = None,
         is_new: bool = False,
     ):
 
@@ -36,7 +36,7 @@ class RadarChart(Widget):
             title = title,                      
             directory_path = directory_path,    
             story = story,                     
-            data = data,
+            data = data if data is not None else {},
             is_new = is_new
         )
         
@@ -91,15 +91,23 @@ class RadarChart(Widget):
         # Updates the indices of the datasets and nodes in the sidebar after any changes
         def update_data_set_indices():
             for idx, control in enumerate(sidebar_dataset_column.controls):
-                control.trailing.data = idx
-                control.leading.data = idx
-            for idx, control in enumerate(dataset_keys.controls):
                 control.data = idx
+                control.trailing.data = idx
+                for item in control.leading.items:
+                    item.data = (idx, item.data[1])
+                for entry_idx, row in enumerate(control.controls):
+                    row.controls[1].data = (idx, entry_idx)
+            for idx, control in enumerate(dataset_keys.controls):
+                control.content.controls[1].data = idx
 
         # Updates indices of the nodes in the sidebar after one is deleted
         def update_node_indices():
             for idx, control in enumerate(sidebar_nodes_column.controls):
+                control.content.data = idx
                 control.content.suffix.data = idx
+            for dataset_idx, control in enumerate(sidebar_dataset_column.controls):
+                for entry_idx, row in enumerate(control.controls):
+                    row.controls[1].data = (dataset_idx, entry_idx)
         
         # Updates the entry value on the chart for each drag
         async def update_entry(e: ft.Event):
@@ -129,6 +137,24 @@ class RadarChart(Widget):
 
             sidebar_dataset_column.controls[data_set_idx].title.value = new_title
             sidebar_dataset_column.controls[data_set_idx].update()
+
+        def create_data_set_entry_control(data_set_idx: int, entry_idx: int, entry: int) -> ft.Row:
+            min_value = self.data.get('chart_data', {}).get('min_value', 0)
+            max_value = self.data.get('chart_data', {}).get('max_value', 20)
+            return ft.Row([
+                ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
+                ft.Slider(
+                    value=entry,
+                    min=min_value,
+                    max=max_value,
+                    label="{value}",
+                    on_change=update_entry, on_change_end=update_entry_data,
+                    data=(data_set_idx, entry_idx),
+                    expand=True,
+                    divisions=max_value - min_value if max_value > min_value else None,
+                ),
+                ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE)
+            ], spacing=0)
 
         # Creates a dataset control for the radar chart
         def create_data_set_chart_control(data_set_idx: int, data_set_data: dict) -> fch.RadarDataSet:
@@ -190,7 +216,7 @@ class RadarChart(Widget):
                         data_set_data.get('title', "Data Set"), dense=True, data=data_set_idx,
                         border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
                         text_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
-                        on_change=update_dataset_title, content_padding=4,
+                        on_change=update_dataset_title, content_padding=4, capitalization=ft.TextCapitalization.SENTENCES,
                         width=140, bgcolor=ft.Colors.TRANSPARENT, multiline=True
                     ),
                 ], tight=True, spacing=6),
@@ -292,11 +318,9 @@ class RadarChart(Widget):
         def create_data_set_sidebar_control(data_set_idx: int, data_set_data: dict, is_new: bool=False) -> ft.ExpansionTile:
 
             def update_expanded(e: ft.Event):
-                self.data['chart_data']['data_sets'][idx]['expanded'] = e.data
+                self.data['chart_data']['data_sets'][e.control.data]['expanded'] = e.data
                 self.update_data(**{'chart_data': self.data.get('chart_data', {})})
 
-            min_value = self.data.get('chart_data', {}).get('min_value', 0)
-            max_value = self.data.get('chart_data', {}).get('max_value', 20)
             title = data_set_data.get('title', f"Data Set {data_set_idx}")
             color = data_set_data.get('color', "primary")
             entries = data_set_data.get('entries', [])
@@ -308,7 +332,7 @@ class RadarChart(Widget):
                 [
                     shad.MenuItem(
                         content=ft.Icon(ft.Icons.CIRCLE, color=color, size=20),
-                        on_click=update_dataset_color, close_on_click=True, data=color,
+                        on_click=update_dataset_color, close_on_click=True, data=(idx, color),
                         expand=True
                     ) for color in colors
                 ],
@@ -319,7 +343,7 @@ class RadarChart(Widget):
                 title=ft.Text(title, weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
                 trailing=ft.IconButton(
                     ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 
-                    mouse_cursor=ft.MouseCursor.CLICK, data=color,
+                    mouse_cursor=ft.MouseCursor.CLICK, data=data_set_idx,
                     on_click=delete_data_set
                 ),
                 dense=True, tile_padding=ft.Padding.only(left=10, right=10), controls_padding=ft.Padding.only(right=20, left=20),
@@ -328,20 +352,8 @@ class RadarChart(Widget):
                 expanded=expanded,
                 on_change=update_expanded,
                 controls=[
-                    ft.Row([
-                        ft.Text(str(min_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE),
-                        ft.Slider(
-                            value=entry, 
-                            min=min_value,
-                            max=max_value, 
-                            label="{value}", 
-                            on_change=update_entry, on_change_end=update_entry_data,
-                            data=(idx, i),
-                            expand=True,
-                            divisions=max_value - min_value if max_value > min_value else None,
-                        ),
-                        ft.Text(str(max_value), weight=ft.FontWeight.BOLD, theme_style=ft.TextThemeStyle.LABEL_LARGE)
-                    ], spacing=0) for i, entry in enumerate(entries)
+                    create_data_set_entry_control(data_set_idx, i, entry)
+                    for i, entry in enumerate(entries)
                 ],
                 data=idx
             )
@@ -362,13 +374,12 @@ class RadarChart(Widget):
 
         # Change data_sets color on the chart
         async def update_dataset_color(e: ft.Event[ft.Control]):
-            data_set_idx = e.control.parent.parent.data
-            new_color = e.control.data
+            data_set_idx, new_color = e.control.data
             self.data['chart_data']['data_sets'][data_set_idx]['color'] = new_color
             self.update_data(**{'chart_data': self.data.get('chart_data', {})})
 
             # Update sidebar icon color for this dataset
-            sidebar_dataset_column.controls[data_set_idx].leading.icon_color = new_color
+            sidebar_dataset_column.controls[data_set_idx].leading.content.content.content.color = new_color
             # Update key color for this dataset
             container = dataset_keys.controls[data_set_idx].content.controls[0]
             container.border = ft.Border.all(2, new_color)
@@ -377,7 +388,6 @@ class RadarChart(Widget):
             # Update the chart's dataset color to reflect the change
             chart.data_sets[data_set_idx + 1].fill_color = ft.Colors.with_opacity(0.2, new_color)  # Skip first invisible dataset
             chart.data_sets[data_set_idx + 1].border_color = new_color
-            e.control.parent.content.content.content.color = new_color
 
             self.update()
 
@@ -398,6 +408,14 @@ class RadarChart(Widget):
             # Update our data to support this new node
             self.update_data(**{'chart_data': self.data.get('chart_data', {})})
             sidebar_nodes_column.controls.append(create_sidebar_node(len(self.data['chart_data']['nodes']) - 1, node_title))
+            for data_set_idx, ds in enumerate(self.data['chart_data']['data_sets']):
+                sidebar_dataset_column.controls[data_set_idx].controls.append(
+                    create_data_set_entry_control(
+                        data_set_idx,
+                        len(ds['entries']) - 1,
+                        ds['entries'][-1],
+                    )
+                )
 
             # Add the new entries to the charts
             for ds in chart.data_sets:
@@ -406,6 +424,7 @@ class RadarChart(Widget):
             # Add new title to the chart and update
             should_rotate_nodes = self.data.get('chart_data', {}).get('rotate_node_titles', False)
             chart.titles.append(fch.RadarChartTitle(node_title, angle=None if should_rotate_nodes else 360))
+            update_indices()
             self.update()
             
         # Creates the node control in the sidebar
@@ -439,27 +458,33 @@ class RadarChart(Widget):
         # Update the minimum and maximum values for the radar chart and ensure all dataset entries conform to the new scale
         async def update_min_max_value(e: ft.Event):
             # Grab our new value and either min or max depending on which control triggered the event
-            new_value = int(e.control.value)
             key = e.control.data
-            # Return early if no changes
-            if key == "min_value" and new_value == self.data['chart_data'].get('min_value', 0):
+            current_value = self.data['chart_data'].get(key, 0 if key == "min_value" else 20)
+            raw_value = str(e.control.value or "")
+            new_value = int(raw_value) if raw_value.isascii() and raw_value.isdecimal() and len(raw_value) <= 16 else None
+            if new_value is None or new_value > 2**53 - 1:
+                e.control.value = str(current_value)
+                e.control.error_text = "Enter a whole number up to 9007199254740991"
+                e.control.update()
                 return
-            if key == "max_value" and new_value == self.data['chart_data'].get('max_value', 20):
+
+            # Return early if no changes
+            if new_value == current_value:
+                e.control.error_text = None
                 return
             
             # Validate that the new min or max value is within acceptable bounds relative to the other value
             if key == "min_value" and new_value >= self.data['chart_data'].get('max_value', 20):
-                e.control.error = "Min value must be less than max value"
-                e.control.value = str(self.data['chart_data'].get('min_value', 0))
-                await e.control.focus()
+                e.control.error_text = "Min value must be less than max value"
+                e.control.value = str(current_value)
                 e.control.update()
                 return
             if key == "max_value" and new_value <= self.data['chart_data'].get('min_value', 0):
-                e.control.error = "Max value must be greater than min value"
-                e.control.value = str(self.data['chart_data'].get('max_value', 20))
-                await e.control.focus()
+                e.control.error_text = "Max value must be greater than min value"
+                e.control.value = str(current_value)
                 e.control.update()
                 return
+            e.control.error_text = None
             
             # Otherwide, update our data for either min or max
             self.update_data(**{'chart_data': {key: new_value}})
@@ -485,6 +510,7 @@ class RadarChart(Widget):
                     slider = c.controls[1]
                     slider.min = new_min
                     slider.max = new_max
+                    slider.divisions = new_max - new_min if new_max > new_min else None
                     if slider.value < new_min:
                         slider.value = new_min
                     if slider.value > new_max:
@@ -623,15 +649,16 @@ class RadarChart(Widget):
 
 
         # Set up our main conent
-        self.content = ft.Stack([
-            
-            ft.Row([
+        self.content = ft.Row(
+            spacing=0, expand=True, 
+            alignment=ft.MainAxisAlignment.END, 
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
                 ft.Column([
                     dataset_keys,
                     chart,
                 ], expand=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 self.toggle_sidebar_visibility_button, 
                 self.sidebar,
-            ], spacing=0, expand=True, alignment=ft.MainAxisAlignment.END, 
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER),
-        ], expand=True, alignment=ft.Alignment.CENTER_RIGHT)
+            ]
+        )
