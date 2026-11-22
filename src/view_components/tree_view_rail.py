@@ -15,7 +15,7 @@ from utils.new_canvas import new_canvas_alert_dlg
 from styles.snack_bar import SnackBar
 import os
 import flet_shadcn_ui as shad
-
+import asyncio
 
 # Class is created in main on program startup
 class ActiveRail(ft.Container):
@@ -33,67 +33,50 @@ class ActiveRail(ft.Container):
             animate_size=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             animate=ft.Animation(500, ft.AnimationCurve.FAST_LINEAR_TO_SLOW_EASE_IN),
             bgcolor=ft.Colors.SURFACE,
-            #bgcolor=ft.Colors.SURFACE_CONTAINER_LOW,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
             visible=not ft.context.page.platform.is_mobile(),
-            #border_radius=ft.BorderRadius.only(top_right=8, bottom_right=8),
-            #border=ft.Border.only(right=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), top=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
             border_radius=6,
             margin=ft.Margin.only(left=6, bottom=6),
         )
 
+        self.new_item_tf: ft.TextField  # TextField for adding new items
+        self.highlight_container: ft.Container  # Container used to highlight the rail during drag-and-drop operations
+        self.directory_view: IsolatedListView   # List that holds our directory controls
+
     def is_isolated(self):
         return True
         
-    # Reload our rail on startup
-    def build(self):
-        self.reload_rail(update=False)
-        
     # Called when a new workspace is selected
     def reload_rail(self, update: bool=True):
-        ''' Reloads the active rail based on the selected workspace in workspaces_rail '''
+        ''' Clears the directory view to reload its controls to maintain persistance for scroll positions '''
 
-        self.content = ContentRail(self.story)
+        self.directory_view.controls.clear()
+
+        self.directory_view.controls.append(self.new_item_tf)
+        self.directory_view.controls.extend(
+            load_directory_controls(
+                story=self.story,
+                directory=self.story.data.get('content_directory_path'),
+                in_base_directory=True,
+            )
+        )
+
+        # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
+        self.directory_view.controls.append(
+            ft.Container(
+                #shad.ContextMenu(
+                    #ft.Container(expand=True, height=1000), # Force CM to work until bottom of page
+                    #expand=True,
+                    #items=self.new_item_options()
+                #)
+                expand=True, min_height=600     # Min height for scroll padding
+            )
+        )
+
         if update:
             self.update()
-        return
-
-
-
-
-
-# Class is created in main on program startup
-@ft.control
-class ContentRail(ft.Column):
-
-    # Constructor
-    def __init__(self, story: Story):
         
-        # Initialize the parent Rail class first
-        super().__init__(spacing=0)
-        
-        self.story = story
-
-        # Textfield for creating new folders and widgets
-        self.new_item_tf = ft.TextField(     
-            hint_text="", data="",                 # Hint text and data tag for logic                      
-            autofocus=True, dense=True,                 
-            capitalization=ft.TextCapitalization.SENTENCES,     # Capitalize sentences for names
-            visible=False,                                      # Hidden by default
-            text_style=ft.TextStyle(
-                size=14,
-                color=ft.Colors.ON_SURFACE,
-                weight=ft.FontWeight.BOLD,
-            ),                         # Text style for consistency
-            on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
-            on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
-            suffix_icon=ft.IconButton(
-                ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
-                on_click=self.submit_item,
-                mouse_cursor="click",
-            ),
-        )
         
     
     # Called when a widget is dragged and dropped into this directory
@@ -156,7 +139,12 @@ class ContentRail(ft.Column):
 
         # Open the textfield early since we have to wait for async close menu
         self.new_item_tf.update()
+        await self.directory_view.scroll_to(offset=0, duration=200)
+        self.directory_view.update()
+        await asyncio.sleep(0.1)
+
         await self.new_item_tf.focus()
+        
         
 
     # Called when clicking off the textfield and after submission
@@ -193,23 +181,7 @@ class ContentRail(ft.Column):
 
         # Close the menu (if ones is open), which will update the page as well
         self.page.show_dialog(new_canvas_alert_dlg(self.page, self.story))
-
-    # Called every time the mouse moves over our rail
-    async def _set_menu_coords(self, e: ft.PointerEvent):
-        ''' Stores our mouse positioning so we know where to open menus '''
-        self.story.mouse_x = e.global_position.x 
-        self.story.mouse_y = e.global_position.y
         
-
-    def highlight_rail(self, _=None):
-        ''' Changes our rails background to a transparent color on hover '''
-        self.highlight_container.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT)
-        self.highlight_container.update()
-
-    def stop_highlight_rail(self, _=None):  
-        ''' Changes our rails background back to normal when not hovering '''
-        self.highlight_container.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
-        self.highlight_container.update()
 
 
     async def change_sort_method(self, e: ft.Event[ft.MenuItemButton]):
@@ -355,18 +327,31 @@ class ContentRail(ft.Column):
                 on_click=self.change_sort_method, close_on_click=True, data="creation_date_reversed",
             ),
         ]
-    
-    # Reload the rail whenever we need
-    def build(self) -> ft.Control:
-        ''' Reloads the content rail '''
+     
 
-        def highlight(e: ft.Event[ft.GestureDetector]):
+    def highlight_rail(self, _=None):
+        ''' Changes our rails background to a transparent color on hover '''
+        self.highlight_container.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT)
+        self.highlight_container.update()
+
+    def stop_highlight_rail(self, _=None):  
+        ''' Changes our rails background back to normal when not hovering '''
+        self.highlight_container.bgcolor = ft.Colors.with_opacity(0.0, ft.Colors.ON_SURFACE)
+        self.highlight_container.update()
+      
+   
+
+    # Reload our rail on startup
+    def build(self):
+        
+        def highlight_header_button(e: ft.Event[ft.GestureDetector]):
             e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
             e.control.update()
 
-        def unhighlight(e: ft.Event[ft.GestureDetector]):
+        def unhighlight_header_button(e: ft.Event[ft.GestureDetector]):
             e.control.content.bgcolor = None
             e.control.update()
+
 
         header = ft.Row(
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -375,7 +360,7 @@ class ContentRail(ft.Column):
                 shad.ContextMenu(
                     ft.GestureDetector(
                         ft.Container(ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), border_radius=6, padding=6),
-                        on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
+                        on_enter=highlight_header_button, on_exit=unhighlight_header_button, mouse_cursor=ft.MouseCursor.CLICK
                     ),
                     open_on_tap=True,
                     items=self.new_item_options(),
@@ -383,61 +368,65 @@ class ContentRail(ft.Column):
                 shad.ContextMenu(
                     ft.GestureDetector(
                         ft.Container(ft.Icon(ft.Icons.SORT_OUTLINED, ft.Colors.PRIMARY), border_radius=6, padding=6),
-                        on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
+                        on_enter=highlight_header_button, on_exit=unhighlight_header_button, mouse_cursor=ft.MouseCursor.CLICK
                     ),
                     open_on_tap=True,
                     items=self.sort_options(),
                 ),
             ]
         )
-                 
 
-        # Build the content of our rail
-        content = IsolatedListView(
+
+        # Textfield for creating new folders and widgets
+        self.new_item_tf = ft.TextField(     
+            hint_text="", data="",                 # Hint text and data tag for logic                      
+            autofocus=True, dense=True,                 
+            capitalization=ft.TextCapitalization.SENTENCES,     # Capitalize sentences for names
+            visible=False,                                      # Hidden by default
+            text_style=ft.TextStyle(
+                size=14,
+                color=ft.Colors.ON_SURFACE,
+                weight=ft.FontWeight.BOLD,
+            ),                         # Text style for consistency
+            on_blur=self.on_new_item_blur,                      # Called when clicking off the textfield and after submitting
+            on_submit=self.submit_item,                         # Called when enter is pressed and textfield is focused
+            suffix_icon=ft.IconButton(
+                ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
+                on_click=self.submit_item,
+                mouse_cursor="click",
+            ),
+            margin=ft.Margin.only(left=10, right=10, top=6),
+        )
+
+        self.directory_view = IsolatedListView(
             scroll=ft.ScrollMode.HIDDEN,
             spacing=0, 
             expand=True,
+            controls=[] # We'll load them when we're done building
+        )
+
+        # Container for highlighting the rail when we would accept a dragged widget 
+        self.highlight_container = ft.Container(
+            border_radius=6, expand=True,
+            content=ft.DragTarget(      # Accept the dragged widgets
+                group="widgets", on_will_accept=self.highlight_rail, on_leave=self.stop_highlight_rail,
+                content=self.directory_view,     # Our content is the content we built above
+                on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path')),
+                expand=True
+            ),
+        )
+
+        # Set our content
+        self.content = ft.Column(
+            expand=True, spacing=0,
             controls=[
-                ft.Container(self.new_item_tf, margin=ft.Margin.only(left=10, right=10, top=6))
+                header, 
+                ft.Divider(thickness=2, leading_indent=8),
+                self.highlight_container,
             ],
         )
         
-        # Load our content directory data into the rail
-        content.controls.extend(
-            load_directory_controls(
-                story=self.story,
-                directory=self.story.data.get('content_directory_path'),
-                in_base_directory=True,
-            )
-        )
-
         
-        # Add container to the bottom to make sure the drag target and gesture detector fill the rest of the space
-        content.controls.append(
-            ft.Container(
-                #shad.ContextMenu(
-                    #ft.Container(expand=True, height=1000), # Force CM to work until bottom of page
-                    #expand=True,
-                    #items=self.new_item_options()
-                #)
-                expand=True, min_height=600     # Min height for scroll padding
-            )
-        )
-
-
-        # Wrap the gd in a drag target so we can move characters here
-        dt = ft.DragTarget(
-            group="widgets", on_will_accept=self.highlight_rail, on_leave=self.stop_highlight_rail,
-            content=content,     # Our content is the content we built above
-            on_accept=lambda e: self.move_widget_file(e, self.story.data.get('content_directory_path')),
-            expand=True
-        )
-
-        self.highlight_container = ft.Container(dt, border_radius=6, expand=True)
-   
-        self.controls = [
-            header,
-            ft.Divider(thickness=2, leading_indent=8),
-            self.highlight_container,
-        ]
-        
+    # Loads our directory conntrols when we mount the page
+    def did_mount(self):
+        self.reload_rail()
