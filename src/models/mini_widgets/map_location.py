@@ -40,7 +40,7 @@ class MapLocation(MiniWidget):
                 'tag': "location",            # Tag to identify what type of object this is
 
                 'icon': "location_pin",                 # Which icon to use for this location
-                'image_base64': "",                     # If we have a custom image for this location. Shown in sidebar and when hovering over the location on the map
+                'thumbnail': "",                     # If we have a custom image for this location. Shown in sidebar and when hovering over the location on the map
 
                 'label_color': "#FFFFFF",                # Color of the label text on the map, default white
                 'icon_size': "Small",                       # Size of our icon on the map. small=30, medium=65, large=100  
@@ -118,10 +118,10 @@ class MapLocation(MiniWidget):
     async def show_image_preview(self):
         ''' Waits 2 seconds; if stop_highlight hasn't cancelled this task, prints a statement '''
         await asyncio.sleep(1)
-        if self.data.get('image_base64', ""):
+        if self.data.get('thumbnail', ""):
             self.image_preview.left = self.left
             self.image_preview.top = self.top
-            self.image_preview.src = self.data.get('image_base64', "")
+            self.image_preview.src = self.data.get('thumbnail', "")
             self.widget.location_stack.controls.append(self.image_preview)
             self.widget.location_stack.update()
 
@@ -318,11 +318,11 @@ class MapLocation(MiniWidget):
                     with open(file_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         # Save to our data
-                        self.update_data(**{'image_base64': f"{encoded_string}"})
+                        self.update_data(**{'thumbnail': f"{encoded_string}"})
 
                     # Update the image in our widget
                     self.set_image_preview_button.content.content.content = ft.Image(
-                        src=self.data.get('image_base64', ""),
+                        src=self.data.get('thumbnail', ""),
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
@@ -357,10 +357,10 @@ class MapLocation(MiniWidget):
                     self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                     return
 
-                self.update_data(**{'image_base64': snapshot_str})
+                self.update_data(**{'thumbnail': snapshot_str})
                 
                 self.set_image_preview_button.content.content.content = ft.Image(
-                    src=self.data.get('image_base64', ""),
+                    src=self.data.get('thumbnail', ""),
                     width=150,
                     height=150,
                     fit=ft.BoxFit.FILL,
@@ -392,7 +392,7 @@ class MapLocation(MiniWidget):
 
         # Resets our image to nothing and our button to the placeholder
         async def clear_image(e: ft.Event):
-            self.update_data(**{'image_base64': ""})
+            self.update_data(**{'thumbnail': ""})
             self.set_image_preview_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150)
             self.set_image_preview_button.update()
 
@@ -433,11 +433,11 @@ class MapLocation(MiniWidget):
             ft.GestureDetector(
                 ft.Container(
                     ft.Image(
-                        src=self.data.get('image_base64', ""),
+                        src=self.data.get('thumbnail', ""),
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
-                    ) if self.data.get('image_base64', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
+                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
                 ), 
                 on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK, drag_interval=20
@@ -538,7 +538,7 @@ class MapLocation(MiniWidget):
 
 
         self.image_preview = ft.Image(
-            self.data.get('image_base64', ""),
+            self.data.get('thumbnail', ""),
             height=150, width=150,
             left=self.left, top=self.top,
             offset=ft.Offset(1, -0.5)

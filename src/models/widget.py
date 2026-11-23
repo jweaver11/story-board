@@ -58,7 +58,7 @@ class Widget(ft.Container):
                 #'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
-                'image_base64': str(),                 # Base64 string of the image for this widget, if it has one
+                'thumbnail': str(),                 # Base64 string of the image for this widget, if it has one
                 'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
                 'notes': list(),                # Several widgets have notes{'label': str(), 'value': str()}
                 'description': str(),
@@ -289,11 +289,11 @@ class Widget(ft.Container):
                     with open(file_path, "rb") as image_file:
                         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                         # Save to our data
-                        self.update_data(**{'image_base64': f"{encoded_string}"})
+                        self.update_data(**{'thumbnail': f"{encoded_string}"})
 
                     # Update the image in our widget
                     self.select_image_button.content.content.content = ft.Image(
-                        src=self.data.get('image_base64', ""),
+                        src=self.data.get('thumbnail', ""),
                         gapless_playback=True,
                         width=150,
                         height=150,
@@ -329,10 +329,10 @@ class Widget(ft.Container):
                     self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                     return
 
-                self.update_data(**{'image_base64': snapshot_str})
+                self.update_data(**{'thumbnail': snapshot_str})
                 
                 self.select_image_button.content.content.content = ft.Image(
-                    src=self.data.get('image_base64', ""),
+                    src=self.data.get('thumbnail', ""),
                     gapless_playback=True,
                     width=150,
                     height=150,
@@ -365,7 +365,7 @@ class Widget(ft.Container):
 
         # Resets our image to nothing and our button to the placeholder
         async def clear_image(e: ft.Event):
-            self.update_data(**{'image_base64': ""})
+            self.update_data(**{'thumbnail': ""})
             self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150)
             self.select_image_button.update()
 
@@ -734,12 +734,12 @@ class Widget(ft.Container):
             ft.GestureDetector(
                 ft.Container(
                     ft.Image(
-                        src=self.data.get('image_base64', ""),
+                        src=self.data.get('thumbnail', ""),
                         gapless_playback=True,
                         width=150,
                         height=150,
                         fit=ft.BoxFit.FILL,
-                    ) if self.data.get('image_base64', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
+                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
                 ), 
                 on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK

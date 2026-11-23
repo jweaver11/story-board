@@ -96,7 +96,7 @@ class Template(Widget):
 
         # Called when pressing enter on the new section text field or when it loses focus
         async def create_new_section(e: ft.Event=None):
-            nonlocal new_section_tf, data_column
+            nonlocal new_section_tf, section_column
             
 
             # Grab our section name
@@ -120,34 +120,34 @@ class Template(Widget):
             new_section_button.update()
             
             # Add new container for the section info
-            data_column.controls.pop()
-            data_column.controls.pop()
-            data_column.controls.extend(create_section_ctrl(section_name, self.data['section_data'][section_name]))
-            data_column.controls.append(new_section_button)
-            data_column.controls.append(new_section_tf)
+            section_column.controls.pop()
+            section_column.controls.pop()
+            section_column.controls.extend(create_section_ctrl(section_name, self.data['section_data'][section_name]))
+            section_column.controls.append(new_section_button)
+            section_column.controls.append(new_section_tf)
             
-            data_column.update()
+            section_column.update()
             await asyncio.sleep(0.02)
-            await data_column.scroll_to(offset=-1, duration=200)  # Scroll to bottom
+            await section_column.scroll_to(offset=-1, duration=200)  # Scroll to bottom
             
         # Deletes an entire section from our data dict
         async def delete_section(e: ft.Event):
             ''' Deletes an entire section from the character data dict '''
-            nonlocal data_column
+            nonlocal section_column
             section_name = e.control.data
             del self.data['section_data'][section_name]
             self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
 
-            # Grab the data_column's column control to remove the label and section container from the UI and update
-            for ctrl in reversed(data_column.controls): # Work backwards so we don't skip any controls when removing
+            # Grab the section_column's column control to remove the label and section container from the UI and update
+            for ctrl in reversed(section_column.controls): # Work backwards so we don't skip any controls when removing
                 if ctrl.data == section_name:
-                    data_column.controls.remove(ctrl)
-            data_column.update()   
+                    section_column.controls.remove(ctrl)
+            section_column.update()   
 
         # Creates the new field
         async def create_new_field(e: ft.Event[ft.TextField]): #show in edit view 
             '''Called when user confirms the field name'''
-            nonlocal data_column
+            nonlocal section_column
             section = e.control.data
             field_name = return_safe_name(e.control.value)
             
@@ -165,7 +165,7 @@ class Template(Widget):
             # Add new field to the UI
             # Find the parent column for this section so we can add field info to it
             parent_column = None  
-            for ctrl in data_column.controls:
+            for ctrl in section_column.controls:
                 if isinstance(ctrl, ft.Container) and ctrl.data == section:
                     parent_column = ctrl.content
             if not parent_column:
@@ -252,7 +252,7 @@ class Template(Widget):
             label_ctrl = ft.Row([
                 ft.Text(f"\t\t{section_name}", style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=18)),   # Title
                 shad.ContextMenu(   # Options button
-                    HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True),
+                    HighlightButton(ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.PRIMARY), use_padding=True),
                     [
                         shad.MenuItem("New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show_new_field_tf),
                         shad.Separator(ft.Margin.symmetric(vertical=4)),
@@ -318,7 +318,7 @@ class Template(Widget):
 
 
         # Body that holds the rest of our widget
-        data_column = ft.Column(
+        section_column = ft.Column(
             controls=[header],
             scroll="auto", expand=True, spacing=0
         )
@@ -335,14 +335,14 @@ class Template(Widget):
         )
 
         # Load in our character data controls after the header
-        data_column.controls.extend(load_data_ctrls())
-        data_column.controls.append(new_section_button)
-        data_column.controls.append(new_section_tf)
+        section_column.controls.extend(load_data_ctrls())
+        section_column.controls.append(new_section_button)
+        section_column.controls.append(new_section_tf)
 
-        self.content = data_column
+        self.content = section_column
 
         
-        return
+        #return
 
         def segment_changed(e):
             tabs.selected_index = e.control.selected_index
@@ -376,7 +376,7 @@ class Template(Widget):
                     new_section_button,
                     new_section_tf
                 ]),
-                ft.TabBarView([data_column] + [ft.Text(section_name) for section_name, section_data in self.data.get('section_data', {}).items()], expand=True)
+                ft.TabBarView([section_column] + [ft.Text(section_name) for section_name, section_data in self.data.get('section_data', {}).items()], expand=True)
             ]),
             length=len(self.data.get('section_data', {})) + 1,
             on_change=tab_changed,

@@ -31,8 +31,6 @@ class Item(Widget):
                 'tag': "item",             # Tag to identify what type of object this is
                 'color': app.settings.data.get('widget_defaults', {}).get('item', {}).get('color'),
 
-                'image_base64': str(), 
-
                 # Item data - list of fields with title and string
                 'item_data': app.settings.data.get('item_template', default_item_template_data())
             },

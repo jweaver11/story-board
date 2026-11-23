@@ -196,7 +196,7 @@ class ConnectionMap(Widget):
                             with open(file_path, "rb") as image_file:
                                 encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                                 # Save to our data
-                                self.ref_widget.update_data(**{'image_base64': f"{encoded_string}"})
+                                self.ref_widget.update_data(**{'thumbnail': f"{encoded_string}"})
                                 close_popovers()
         
                         except Exception:
@@ -227,7 +227,7 @@ class ConnectionMap(Widget):
                             #self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
                             return
         
-                        self.ref_widget.update_data(**{'image_base64': snapshot_str})
+                        self.ref_widget.update_data(**{'thumbnail': snapshot_str})
                         
                         self.page.pop_dialog()
 
@@ -256,7 +256,7 @@ class ConnectionMap(Widget):
         
                 # Resets our image to nothing and our button to the placeholder
                 async def clear_image(e: ft.Event):
-                    self.ref_widget.update_data(**{'image_base64': ""})
+                    self.ref_widget.update_data(**{'thumbnail': ""})
                     close_popovers()
         
                 # Build the options
@@ -433,7 +433,7 @@ class ConnectionMap(Widget):
                     ft.Column([ 
                         build_title(),  
                         ft.Divider(ft.Colors.SURFACE_CONTAINER_LOW, 2, 6, trailing_indent=6),
-                        ft.Container(ft.Image(self.ref_widget.data.get('image_base64'), 100, 100, expand=True), expand=True, width=100, height=100) if self.ref_widget.data.get('image_base64') else ft.Icon(get_icon(), self.ref_widget.data.get('color'), size=100),
+                        ft.Container(ft.Image(self.ref_widget.data.get('thumbnail'), 100, 100, expand=True), expand=True, width=100, height=100) if self.ref_widget.data.get('thumbnail') else ft.Icon(get_icon(), self.ref_widget.data.get('color'), size=100),
                                         
                     ], expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0, ),
                     border_radius=8,

@@ -8,7 +8,7 @@ from models.app import app
 from styles.text_fields import TextField
 import asyncio
 from models.dataclasses.item_template import default_item_template_data
-import flet_webview as fwv
+#import flet_webview as fwv
 from flet_webview_all import FletWebviewAll
 
 
@@ -36,7 +36,7 @@ class WebView(Widget):
                 'url': 'https://www.google.com'
             },
         )
-
+'''
     def build(self):
 
         @ft.control
@@ -121,7 +121,7 @@ class WebView(Widget):
             ],
             
         )
-
+        
         wv = FletWebviewAll(
             url=self.data.get('url') or "https://www.google.com",
             expand=True,
@@ -151,4 +151,4 @@ class WebView(Widget):
         )
 
         
-
+'''
