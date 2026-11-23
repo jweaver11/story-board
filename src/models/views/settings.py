@@ -69,7 +69,7 @@ class Settings(ft.View):
                     'tree_view_rail_width': 250,  
                     'default_folder_color': "primary",    # Categories thrown in here
                     'show_canvas_rail': True,   # If the canvas rail is hidden or not
-                    'rail_sort_method': "default",   # Method to sort items in the rail. Defaul lets OS decide, alphabetically, color, creation date
+                    'rail_sort_method': "alphabetical",   # Method to sort items in the rail. Defaul lets OS decide, alphabetically, color, creation date
                 },
 
                 # Default settings for the newly created widgets. All have a color, but can have additional settings specific to each widget type.

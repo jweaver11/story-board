@@ -425,7 +425,6 @@ class Story(ft.View):
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
-        from models.widgets.item import Item
         from models.widgets.bar_chart import BarChart
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
@@ -530,7 +529,7 @@ class Story(ft.View):
                                     data=widget_data,
                                 )
                             case "item":
-                                widget = Item(
+                                widget = Template(
                                     title=widget_data.get('title', 'Untitled Manuscript'),
                                     directory_path=dir_path,
                                     story=self,
@@ -725,7 +724,6 @@ class Story(ft.View):
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
-        from models.widgets.item import Item
         from models.widgets.bar_chart import BarChart
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
@@ -763,7 +761,8 @@ class Story(ft.View):
             case "canvas_board":
                 widget = CanvasBoard(title, directory_path, self, data, True)   
             case "item":
-                widget = Item(title, directory_path, self, data, True)  
+                data['tag'] = 'item'
+                widget = Template(title, directory_path, self, data, True)
             case "radar_chart":
                 widget = RadarChart(title, directory_path, self, data, True)
             case "bar_chart":
@@ -807,7 +806,6 @@ class Story(ft.View):
         from models.widgets.plotline import Plotline
         from models.widgets.map import Map
         from models.widgets.connection_map import ConnectionMap
-        from models.widgets.item import Item
         from models.widgets.bar_chart import BarChart
         from models.widgets.radar_chart import RadarChart
         from models.widgets.comic_preview import ComicPreview
@@ -900,7 +898,7 @@ class Story(ft.View):
                 )
 
             case "item":
-                new_widget = Item(
+                new_widget = Template(
                     widget.data.get('title', 'Untitled Manuscript'),
                     directory_path=widget.data.get('directory_path', self.data['content_directory_path']),
                     story=self,

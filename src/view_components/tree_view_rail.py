@@ -303,9 +303,9 @@ class ActiveRail(ft.Container):
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.SORT_OUTLINED, ft.Colors.PRIMARY, size=20), content="Default", 
                 on_click=self.change_sort_method, close_on_click=True, data="default", 
-                tooltip="Let your Operating System decide the order.", 
+                tooltip="Let your Operating System decide the order.", visible=False
             ),  
-            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+            shad.Separator(margin=ft.Margin.symmetric(vertical=4), visible=False),
             shad.MenuItem(
                 leading=ft.Icon(ft.Icons.SORT_BY_ALPHA_OUTLINED, ft.Colors.PRIMARY, size=20), content="Alphabetical", 
                 on_click=self.change_sort_method, close_on_click=True, data="alphabetical", 
