@@ -295,8 +295,8 @@ class Widget(ft.Container):
                     self.select_image_button.content.content.content = ft.Image(
                         src=self.data.get('thumbnail', ""),
                         gapless_playback=True,
-                        width=150,
-                        height=150,
+                        width=250,
+                        height=250,
                         fit=ft.BoxFit.FILL,
                     )
                     self.select_image_button.update()
@@ -334,8 +334,8 @@ class Widget(ft.Container):
                 self.select_image_button.content.content.content = ft.Image(
                     src=self.data.get('thumbnail', ""),
                     gapless_playback=True,
-                    width=150,
-                    height=150,
+                    width=250,
+                    height=250,
                     fit=ft.BoxFit.FILL,
                 )
                 self.select_image_button.update()
@@ -366,7 +366,7 @@ class Widget(ft.Container):
         # Resets our image to nothing and our button to the placeholder
         async def clear_image(e: ft.Event):
             self.update_data(**{'thumbnail': ""})
-            self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150)
+            self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=250)
             self.select_image_button.update()
 
         # Build the options
@@ -736,10 +736,10 @@ class Widget(ft.Container):
                     ft.Image(
                         src=self.data.get('thumbnail', ""),
                         gapless_playback=True,
-                        width=150,
-                        height=150,
+                        width=250,
+                        height=250,
                         fit=ft.BoxFit.FILL,
-                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=150), 
+                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=250), 
                     clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
                 ), 
                 on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK

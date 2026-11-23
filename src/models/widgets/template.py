@@ -40,6 +40,8 @@ class Template(Widget):
                 'tag': data.get('tag', "character"),    # Grabs either character or world
                 'color': app.settings.data.get('widget_defaults', {}).get('character', {}).get('color'),
 
+                'additional_images': [],    # List of up to 4 additional images other than the thumbnail
+
                 'section_data': app.settings.data.get(f'{data.get("tag", "character")}_template', default_character_template_data()),
 
             })         
@@ -96,7 +98,7 @@ class Template(Widget):
 
         # Called when pressing enter on the new section text field or when it loses focus
         async def create_new_section(e: ft.Event=None):
-            nonlocal new_section_tf, section_column
+            nonlocal new_section_tf, overview_column
             
 
             # Grab our section name
@@ -120,34 +122,34 @@ class Template(Widget):
             new_section_button.update()
             
             # Add new container for the section info
-            section_column.controls.pop()
-            section_column.controls.pop()
-            section_column.controls.extend(create_section_ctrl(section_name, self.data['section_data'][section_name]))
-            section_column.controls.append(new_section_button)
-            section_column.controls.append(new_section_tf)
+            overview_column.controls.pop()
+            overview_column.controls.pop()
+            overview_column.controls.extend(create_section_ctrl(section_name, self.data['section_data'][section_name]))
+            overview_column.controls.append(new_section_button)
+            overview_column.controls.append(new_section_tf)
             
-            section_column.update()
+            overview_column.update()
             await asyncio.sleep(0.02)
-            await section_column.scroll_to(offset=-1, duration=200)  # Scroll to bottom
+            await overview_column.scroll_to(offset=-1, duration=200)  # Scroll to bottom
             
         # Deletes an entire section from our data dict
         async def delete_section(e: ft.Event):
             ''' Deletes an entire section from the character data dict '''
-            nonlocal section_column
+            nonlocal overview_column
             section_name = e.control.data
             del self.data['section_data'][section_name]
             self.update_data(**{'section_data': self.data['section_data']})  # Save our updated character data dict
 
-            # Grab the section_column's column control to remove the label and section container from the UI and update
-            for ctrl in reversed(section_column.controls): # Work backwards so we don't skip any controls when removing
+            # Grab the overview_column's column control to remove the label and section container from the UI and update
+            for ctrl in reversed(overview_column.controls): # Work backwards so we don't skip any controls when removing
                 if ctrl.data == section_name:
-                    section_column.controls.remove(ctrl)
-            section_column.update()   
+                    overview_column.controls.remove(ctrl)
+            overview_column.update()   
 
         # Creates the new field
         async def create_new_field(e: ft.Event[ft.TextField]): #show in edit view 
             '''Called when user confirms the field name'''
-            nonlocal section_column
+            nonlocal overview_column
             section = e.control.data
             field_name = return_safe_name(e.control.value)
             
@@ -165,7 +167,7 @@ class Template(Widget):
             # Add new field to the UI
             # Find the parent column for this section so we can add field info to it
             parent_column = None  
-            for ctrl in section_column.controls:
+            for ctrl in overview_column.controls:
                 if isinstance(ctrl, ft.Container) and ctrl.data == section:
                     parent_column = ctrl.content
             if not parent_column:
@@ -236,7 +238,7 @@ class Template(Widget):
                 on_exit=hide_delete_button,
                 height=24
             )
-        def create_section_ctrl(section_name: str, section_data: dict) -> list[ft.Control]:
+        def create_section_ctrl(section_name: str, section_data: dict) -> ft.Column:
 
             def hide_new_field_tf(e=None):
                 new_field.visible = False
@@ -283,66 +285,11 @@ class Template(Widget):
                 data=section_name
             )
 
-            return [label_ctrl, data_ctrl]
+            return ft.Column([label_ctrl, data_ctrl], tight=True)
 
-
-        def load_data_ctrls() -> list[ft.Control]:
-            ''' Loads data from a dict into a given container '''
-
-            # Our list of controls that will be added to the body column
-            control_list = []   
-            
-            # Go through our sections inside of our character data
-            for section_name, section_data in self.data.get('section_data', {}).items():
-
-                # Error handling
-                if not isinstance(section_data, dict):
-                    continue       
-
-                control_list.extend(create_section_ctrl(section_name, section_data))         
-
-                # Container to hold the text control of our section info
-                
-
-            return control_list
-
-
-        # Adjust our description text field to match the theme outside of a sidebar
-        self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
-        
-        # Header that holds our image, edit mode button
-        header = ft.Row([
-            self.select_image_button,
-            self.description_tf
-        ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
-
-
-        # Body that holds the rest of our widget
-        section_column = ft.Column(
-            controls=[header],
-            scroll="auto", expand=True, spacing=0
-        )
-        new_section_button = ft.Button(
-            "Add Section", bgcolor=ft.Colors.SURFACE,
-            on_click=add_section_clicked, margin=ft.Margin.only(left=10),
-            style=ft.ButtonStyle(mouse_cursor=ft.MouseCursor.CLICK, shape=ft.RoundedRectangleBorder(radius=4), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
-        )
-
-        new_section_tf = ft.TextField(
-            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
-            margin=ft.Margin.only(left=10),
-        )
-
-        # Load in our character data controls after the header
-        section_column.controls.extend(load_data_ctrls())
-        section_column.controls.append(new_section_button)
-        section_column.controls.append(new_section_tf)
-
-        self.content = section_column
-
-        
-        #return
+        def create_additional_image_ctrl() -> shad.ContextMenu:
+            # Width/height = 125
+            return
 
         def segment_changed(e):
             tabs.selected_index = e.control.selected_index
@@ -354,6 +301,37 @@ class Template(Widget):
             if segments is not None:
                 segments.selected_index = e.control.selected_index
                 segments.update()
+
+
+        # Adjust our description text field to match the theme outside of a sidebar
+        self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
+
+        
+        # Header that holds our image
+        image_galery = ft.Row([
+            self.select_image_button,
+        ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=20)
+
+
+        # Body that holds the rest of our widget
+        overview_column = ft.Column(
+            controls=[
+                image_galery,
+                self.description_tf,
+            ] + [
+                create_section_ctrl(section_name, section_data) for section_name, section_data in self.data.get('section_data', {}).items()
+            ],
+            scroll=ft.ScrollMode.AUTO, expand=True, spacing=0
+        ) 
+
+        new_section_tf = ft.TextField(
+            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
+            on_submit=create_new_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
+            margin=ft.Margin.only(left=10),
+        )
+        
+
+        
         
         #self.padding = 0
 
@@ -368,15 +346,20 @@ class Template(Widget):
                         on_change=segment_changed,
                         #bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                     ),
-                    shad.Button(
+                    new_section_button := shad.Button(
                         ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY), 
                         bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER, 
-                        on_click=add_section_clicked, size=shad.ButtonSize.SM, visible=False
+                        on_click=add_section_clicked, size=shad.ButtonSize.SM, #visible=False
                     ), 
-                    new_section_button,
+                    #new_section_button,
                     new_section_tf
                 ]),
-                ft.TabBarView([section_column] + [ft.Text(section_name) for section_name, section_data in self.data.get('section_data', {}).items()], expand=True)
+                ft.TabBarView(
+                    expand=True,
+                    controls=[overview_column] + [
+                        create_section_ctrl(section_name, section_data) for section_name, section_data in self.data.get('section_data', {}).items()
+                    ]
+                )
             ]),
             length=len(self.data.get('section_data', {})) + 1,
             on_change=tab_changed,
