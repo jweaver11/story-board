@@ -15,6 +15,7 @@ from models.widget import Widget
 from utils.safe_string_checker import return_safe_name
 from styles.tooltip import Tooltip
 import asyncio
+from styles.highlight_button import HighlightButton
 
 
 IMAGES_SPACING = 20
@@ -51,26 +52,22 @@ class Template(Widget):
     def update_section_data(self, section_name, field_name, value):
         self.data['section_data'][section_name][field_name] = value
         self.update_data(section_data=self.data['section_data'])
-        return
-        for control in field_controls.get((section_name, field_name), []):
-            if control is not None and control.value != value:
-                control.value = value
-                control.update()
 
     
 
     def build(self):
         super().build()
 
+        # Show the tf to the right of the tabs to name a new section and hide the button
         async def show_new_section_tf(e=None):
             new_section_tf.visible = True
             new_section_button.visible = False
             new_section_button.update()
             new_section_tf.update()
             await new_section_tf.focus()
-            await asyncio.sleep(0.02)   # Small delay between updates so our scroll to works correctly
             await tab_header.scroll_to(offset=-1, duration=ft.Duration(milliseconds=200))
 
+        # Hide the tf for naming a new section and show the new section button again
         async def hide_new_section_tf(e=None):
             new_section_tf.visible = False
             new_section_tf.value = ""
@@ -78,6 +75,14 @@ class Template(Widget):
             new_section_tf.update()
             new_section_button.visible = True
             new_section_button.update()
+
+        # Deletes a field from a section
+        def delete_field(section_name, field_name):
+            del self.data['section_data'][section_name][field_name]
+            self.update_data(section_data=self.data['section_data'])
+            refresh_sections()
+
+        
 
         async def create_section(e=None):
             section_name = return_safe_name(new_section_tf.value)
@@ -99,46 +104,104 @@ class Template(Widget):
             tab_buttons.update()
             tabs.update()
 
-        async def create_new_field(e):
-            section_name = e.control.data
-            field_name = return_safe_name(e.control.value)
-            if not field_name or field_name in self.data['section_data'][section_name]:
-                self.page.show_dialog(shad.Toast("Field name already exists or is blank.", variant=shad.ToastVariant.DESTRUCTIVE))
-                return
-            self.data['section_data'][section_name][field_name] = ""
-            self.update_data(section_data=self.data['section_data'])
-            refresh_sections()
+        
 
-        def delete_field(section_name, field_name):
-            del self.data['section_data'][section_name][field_name]
-            self.update_data(section_data=self.data['section_data'])
-            refresh_sections()
+        # Builds our section ctrl for sections not in the overview tab
+        def build_section_ctrl(section_name, section_data) -> ft.Column:
+        
+            # Creates a new field within this section when the user submits the text field.
+            def create_field(e=None):
+                # Get name and add to data
+                field_name = return_safe_name(new_field_tf.value) or ""
+                if not field_name:  # Handle empty
+                    return
+                for ctrl in section_row.controls:    # Check if a control with the same field name already exists so we don't get bad sync
+                    if ctrl.data == field_name:
+                        return
+                # Delete the placeholder if its there
+                if section_row.controls and section_row.controls[0].data is None:
+                    section_row.controls.pop(0)
+                # Update the data and add the control to the end of the row
+                self.update_section_data(section_name, field_name, None)
+                section_row.controls.append(build_field_ctrl(section_name, field_name, None))
+                section_row.update()
 
-        def create_field_ctrl(section_name, field_name, field_value):
-            value_control = FieldTextField(
+            # Hides the new field text field and shows the new field button
+            def hide_new_field_tf(e=None):
+                new_field_tf.visible = False
+                new_field_tf.value = ""
+                new_field_button.visible = True
+                new_field_button.update()
+                new_field_tf.update()
+
+            # Shows the new field text field for creating a new field within this section and hides the button
+            async def show_new_field_tf(e=None):
+                new_field_tf.visible = True
+                new_field_button.visible = False
+                new_field_button.update()
+                new_field_tf.update()
+                await new_field_tf.focus()
+
+            # Button for creating a new field within this section
+            new_field_button = ft.TextButton(
+                "New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
+                style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
+                on_click=show_new_field_tf,
+            )
+
+            # Text field for entering the name of the new field
+            new_field_tf = ft.TextField(
+                label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES,
+                visible=False, on_submit=create_field, on_blur=hide_new_field_tf,
+                dense=True, bgcolor=ft.Colors.SURFACE, data=section_name,
+            )
+
+            section_row = ft.Row(
+                [
+                    build_field_ctrl(section_name, field_name, field_value)
+                    for field_name, field_value in section_data.items()
+                ] if section_data else [
+                    ft.Text("Click New Field to add fields to this section", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)
+                ],
+                wrap=True, spacing=20, run_spacing=20, expand=True,
+                vertical_alignment=ft.CrossAxisAlignment.START,
+            )
+
+            return ft.Column([
+                section_row,
+                new_field_button,
+                new_field_tf,
+            ], expand=True, scroll=ft.ScrollMode.HIDDEN, spacing=20)
+
+        def field_items(section_name: str, field_name: str) -> list[ft.Control]:
+                
+            return [shad.MenuItem("Delete", ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, 20), on_click=lambda: delete_field(section_name, field_name))]
+
+        # Builds a normal field control for a section view not inside the overview tab
+        def build_field_ctrl(section_name, field_name, field_value):
+            ctrl = FieldTextField(
                 value=field_value,
                 on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
+                data=field_name
             )
-            field_controls.setdefault((section_name, field_name), []).append(value_control)
 
-            return ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Text(field_name, weight=ft.FontWeight.W_500, expand=True),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
-                            tooltip=f"Delete Field: {field_name}",
-                            on_click=lambda e: delete_field(section_name, field_name),
+            return ft.Column([
+                ft.Row([
+                    ft.Text(field_name, size=18, weight=ft.FontWeight.BOLD),
+                    shad.ContextMenu(
+                        HighlightButton(
+                            ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.OUTLINE), 
+                            use_padding=True,
                         ),
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    value_control,
-                ], spacing=4, tight=True),
-                padding=12, #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-                border_radius=8, #bgcolor=ft.Colors.SURFACE, 
-                width=400, max_width=400,
-            )
+                        field_items(section_name, field_name),
+                        open_on_tap=True
+                    ),                    
+                ], tight=True),
+                ctrl
+            ], spacing=4, data=field_name)
 
-        def create_overview_field_ctrl(section_name, field_name, field_value):
+        # Builds our field ctrl for the overview tab
+        def build_overview_field_ctrl(section_name, field_name, field_value):
             def show_delete_button(e=None):
                 delete_button.visible = True
                 delete_button.update()
@@ -156,15 +219,14 @@ class Template(Widget):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), padding=2), visible=False
             )
             
-            value_control = FieldTextField(
+            value_control = OverviewFieldTextField(
                 field_value, expand=True,
                 on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
                 #suffix_icon=delete_button,
             )
-            field_controls.setdefault((section_name, field_name), []).append(value_control)
             return ft.GestureDetector(
                 ft.Row([
-                    ft.Text(f"{field_name}", size=14, selectable=True, weight=ft.FontWeight.BOLD),
+                    ft.Text(f"{field_name}", size=14, selectable=True, weight=ft.FontWeight.W_500),
                     value_control,
                     delete_button,
                 ], spacing=4, vertical_alignment=ft.CrossAxisAlignment.CENTER),
@@ -172,85 +234,8 @@ class Template(Widget):
                 data=field_name
             )
 
-        def create_section_ctrl(section_name, section_data):
-            def hide_new_field_tf(e=None):
-                new_field.visible = False
-                new_field.value = ""
-                new_field.update()
+        
 
-            async def show_new_field_tf(e=None):
-                new_field.visible = True
-                new_field.update()
-                await new_field.focus()
-
-            new_field = ft.TextField(
-                label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES,
-                visible=False, on_submit=create_new_field, on_blur=hide_new_field_tf,
-                dense=True, bgcolor=ft.Colors.SURFACE, data=section_name,
-            )
-            return ft.Column([
-                ft.Row(
-                    [
-                        create_field_ctrl(section_name, field_name, field_value)
-                        for field_name, field_value in section_data.items()
-                    ] if section_data else [
-                        ft.Text("Click New Field to add fields to this section", italic=True, color=ft.Colors.ON_SURFACE_VARIANT)
-                    ],
-                    wrap=True, spacing=12, run_spacing=12,
-                    vertical_alignment=ft.CrossAxisAlignment.START,
-                ),
-                ft.Row([
-                    shad.Button(
-                        "New Field", leading=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
-                        bgcolor=ft.Colors.SURFACE, hover_bgcolor=ft.Colors.SURFACE_CONTAINER,
-                        size=shad.ButtonSize.SM, color=ft.Colors.ON_SURFACE, hover_color=ft.Colors.ON_SURFACE,
-                        on_click=show_new_field_tf,
-                    ),
-                    new_field,
-                ]),
-            ], scroll=ft.ScrollMode.AUTO, expand=True, spacing=12)
-
-        async def upload_image(index):
-            files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
-            if not files:
-                return
-            try:
-                with open(files[0].path, "rb") as image_file:
-                    image = base64.b64encode(image_file.read()).decode('utf-8')
-            except (OSError, TypeError) as error:
-                self.page.show_dialog(shad.Toast(f"Could not load image: {error}", variant=shad.ToastVariant.DESTRUCTIVE))
-                return
-            images = list(self.data.get('images', []))
-            if index < len(images):
-                images[index] = image
-            elif len(images) < 4:
-                images.append(image)
-            self.update_data(images=images)
-            #refresh_images()
-
-        def remove_image(index):
-            images = list(self.data.get('images', []))
-            del images[index]
-            self.update_data(images=images)
-            #refresh_images()
-
-        def create_image_ctrl(index, image=None):
-            async def upload_image(e):
-                await upload_image(index)
-
-            items = [
-                shad.MenuItem(
-                    "Replace Image" if image else "Upload Image",
-                    ft.Icon(ft.Icons.UPLOAD_FILE_OUTLINED, ft.Colors.PRIMARY, 20),
-                    on_click=upload_image,
-                ),
-            ]
-            if image:
-                items.append(shad.MenuItem(
-                    "Remove Image", ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 20),
-                    on_click=lambda e: remove_image(index),
-                ))
-            return 
 
         # Highlight our thumbnail upon entering it
         def highlight_thumbnail(e: ft.Event[ft.GestureDetector]):
@@ -291,16 +276,11 @@ class Template(Widget):
                     if ctrl.data == field_name:
                         return
                 self.update_section_data(section_name, field_name, None)
-                section_column.controls.append(create_overview_field_ctrl(section_name, field_name, None))
+                section_column.controls.append(build_overview_field_ctrl(section_name, field_name, None))
                 section_column.update()
-
-            def delete_field():
-                return
                 
-
             # Button for adding a new field within this section.
             new_field_button = ft.IconButton(
-                #"New Field", 
                 ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 22,
                 height=32, width=40, 
                 style=ft.ButtonStyle(
@@ -312,13 +292,14 @@ class Template(Widget):
 
             # Text field for adding a new field within this section.
             new_field_tf = ft.TextField(
-                autofocus=True, label="Field Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
+                autofocus=True, label="Field Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
                 on_submit=create_field, 
                 on_blur=hide_new_field_tf, 
                 dense=True, bgcolor=ft.Colors.SURFACE,
                 margin=ft.Margin.only(left=10), content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
             )
 
+            # The column to hold those section controls so we can reference it
             section_column = ft.Column([
                 ft.Divider(),
                 ft.Row([
@@ -327,7 +308,7 @@ class Template(Widget):
                     new_field_tf,
                 ]),
                 *[
-                    create_overview_field_ctrl(section_name, field_name, field_value)
+                    build_overview_field_ctrl(section_name, field_name, field_value)
                     for field_name, field_value in section_data.items()
                 ],
             ], spacing=8, tight=True)
@@ -337,22 +318,21 @@ class Template(Widget):
         # Builds out the tab bar and views for each section. Called after adding a new section or deleting one
         def refresh_sections(update: bool=True):
 
-            sections = self.data.get('section_data', {})    # Easier referenc
+            sections = self.data.get('section_data', {})    # Easier reference
             
             # Rebuild our tab controls. Overview + each section
             tab_buttons.controls = [ft.Text("Overview")] + [
                 build_tab_ctrl(index + 1, section_name) for index, section_name in enumerate(self.data.get('section_data', []))
             ]
 
-            # Rebuild the overview content for each section.
             overview_sections.controls = [
                 build_overview_section_ctrl(section_name, section_data)
-                for section_name, section_data in sections.items()
+                for section_name, section_data in self.data.get('section_data', {}).items()
             ]
 
             # Rebuild the views for overview + each section
             tab_views.controls = [overview_view] + [
-                create_section_ctrl(section_name, section_data) for section_name, section_data in sections.items()
+                build_section_ctrl(section_name, section_data) for section_name, section_data in sections.items()
             ]
 
             # Set the length correctly, and clamp if we were just deleted
@@ -364,11 +344,6 @@ class Template(Widget):
             # Update if not on build
             if update:
                 self.update()
-        
-
-        # Handle changes from swiping gestures on mobile
-        def tab_changed(e=None):
-            return
 
         # Change the tab manually
         def change_tab(e: ft.Event[ft.Control]):
@@ -400,8 +375,7 @@ class Template(Widget):
                 # Rebuild our tabs and views after deletion
                 refresh_sections()
                 
-
-            # First one can't be deleted, since the tabs need 2 or more tabs
+            # First one can't be deleted, since the tabs need 2 or more tabs (overview + section 1)
             if index == 1:   
                 return ft.Text(section_name, data=index)
 
@@ -433,12 +407,9 @@ class Template(Widget):
                     file_path = files[0].path
                     try:
                         import base64
-    
                         with open(file_path, "rb") as image_file:
                             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
                             self.data['images'][index] = f"{encoded_string}"
-                            # Save to our data
-    
                             self.update_data(**{'images': self.data['images']})
                             refresh_images()
     
@@ -487,12 +458,11 @@ class Template(Widget):
                 )
                 self.page.show_dialog(dlg)
     
-            # Resets our image to nothing and our button to the placeholder
+            # Resets our image in data and refreshes the images
             async def clear_image(e: ft.Event):
                 self.data.get('images', [])[index] = ""
                 self.update_data(**{'images': self.data.get('images', [])})
                 refresh_images()
-                
     
             # Build the options
             return [
@@ -559,8 +529,6 @@ class Template(Widget):
                 thumbnail.update()
                 image_gallery.update()
 
-        field_controls = {}
-        tab_buttons = []
 
         # Give us some padding
         self.padding = 16
@@ -591,7 +559,6 @@ class Template(Widget):
         overview_view = ft.Column([
             ft.Row(
                 spacing=IMAGES_SPACING * 2,
-                #vertical_alignment=ft.CrossAxisAlignment.START,
                 controls=[
                     thumbnail,      # Holds the first image, which is displayed larger than the rest
                     image_gallery,
@@ -615,7 +582,7 @@ class Template(Widget):
 
         # Textfield for adding new sections
         new_section_tf = ft.TextField(
-            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
+            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
             on_submit=create_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
             margin=ft.Margin.only(left=10), content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
         )
@@ -641,7 +608,7 @@ class Template(Widget):
             controls=[
                 overview_view
             ] + [
-                ft.Text(section_name, data=index + 1) for index, section_name in enumerate(self.data.get('section_data', []))
+                #ft.Text(section_name) for index, section_name in enumerate(self.data.get('section_data', []))
             ]
         )
 
@@ -649,7 +616,6 @@ class Template(Widget):
         tabs = ft.Tabs(
             length=len(self.data.get('section_data', [])) + 1, 
             selected_index=self.data.get('selected_index', 0), 
-            on_change=tab_changed, 
             expand=True,
             content=ft.Column(
                 expand=True,
@@ -667,9 +633,9 @@ class Template(Widget):
         refresh_sections(update=False)  # Build the sections content
 
 
-
+# Styling for fields under the overview tab
 @ft.control
-class FieldTextField(ft.TextField):
+class OverviewFieldTextField(ft.TextField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -684,3 +650,17 @@ class FieldTextField(ft.TextField):
         self.capitalization = ft.TextCapitalization.SENTENCES
         self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE_CONTAINER_HIGHEST)
 
+# Styling for fields not under the overview tab
+@ft.control
+class FieldTextField(ft.TextField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.border = {
+            #ft.ControlState.FOCUSED: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
+            ft.ControlState.DEFAULT: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=8)
+        }
+        self.text_style = ft.TextStyle(size=18)
+        self.multiline = kwargs.get('multiline', True)
+        self.capitalization = ft.TextCapitalization.SENTENCES
+        self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE)

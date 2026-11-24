@@ -209,7 +209,7 @@ class RailFolder(ft.GestureDetector):
 
             # Rename the folder
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.color, size=20), 
+                leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.color, size=20), 
                 content=f"Rename {self.title}", 
                 on_click=self.rename_clicked,
             ),

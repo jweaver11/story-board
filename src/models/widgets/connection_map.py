@@ -358,7 +358,7 @@ class ConnectionMap(Widget):
                 shad.MenuItem(
                     on_click=self.rename_tf.focus,
                     content="Rename", 
-                    leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, size=20),
                 ),
                 shad.MenuItem(
                     on_click=lambda: sever_connections(self.ref_widget.data.get('id')),

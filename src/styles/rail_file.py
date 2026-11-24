@@ -131,7 +131,7 @@ class RailFile(ft.GestureDetector):
             ), 
             shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
             shad.MenuItem(
-                leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
+                leading=ft.Icon(ft.Icons.EDIT_OUTLINED, self.widget.data.get('color', 'primary'), size=20), 
                 content=f"Rename {self.widget.data.get('title')}", 
                 on_click=handle_rename, 
             ),   

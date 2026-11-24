@@ -224,7 +224,7 @@ class Plotline(Widget):
                     shad.MenuItem(
                         on_click=handle_rename,
                         content=f"Rename {self.data.get('title')}", 
-                        leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20),
+                        leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, size=20),
                         data=self.data.get('id', ''),
                     ),
                     shad.Separator(margin=ft.Margin.symmetric(vertical=4)),

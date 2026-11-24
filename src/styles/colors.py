@@ -39,7 +39,7 @@ dark_gradient = ft.LinearGradient(
     begin=ft.Alignment.TOP_CENTER,
     end=ft.Alignment.BOTTOM_CENTER,
     tile_mode=ft.GradientTileMode.DECAL,
-    stops=[0.33, 0.5, 1.0],
+    stops=[0.25, 0.5, 0.75],
     colors=[
         
         ft.Colors.SURFACE_CONTAINER_HIGH,

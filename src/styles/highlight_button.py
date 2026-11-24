@@ -13,7 +13,7 @@ class HighlightButton(ft.GestureDetector):
                 content=content, 
                 border_radius=6, 
                 shape=ft.BoxShape.CIRCLE if is_round else ft.BoxShape.RECTANGLE, 
-                padding=padding
+                padding=padding,
             ), 
             on_tap=on_tap, 
             on_enter=self.highlight,

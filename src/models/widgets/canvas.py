@@ -1381,7 +1381,7 @@ class Canvas(Widget):
                     HighlightButton(ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY), is_round=True, use_padding=True),
                     [
                         shad.MenuItem(
-                            "Rename", leading=ft.Icon(ft.Icons.DRIVE_FILE_RENAME_OUTLINE_OUTLINED, ft.Colors.PRIMARY, size=20), 
+                            "Rename", leading=ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, size=20), 
                             on_click=rename_layer_clicked, 
                         ),
                         shad.MenuItem(
