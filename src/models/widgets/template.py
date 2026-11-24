@@ -146,8 +146,10 @@ class Template(Widget):
             new_field_button = ft.TextButton(
                 "New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
                 style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
-                on_click=show_new_field_tf,
+                on_click=show_new_field_tf, 
             )
+
+            
 
             # Text field for entering the name of the new field
             new_field_tf = ft.TextField(
@@ -167,38 +169,54 @@ class Template(Widget):
                 vertical_alignment=ft.CrossAxisAlignment.START,
             )
 
-            return ft.Column([
-                section_row,
-                new_field_button,
-                new_field_tf,
-            ], expand=True, scroll=ft.ScrollMode.HIDDEN, spacing=20)
-
-        def field_items(section_name: str, field_name: str) -> list[ft.Control]:
-                
-            return [shad.MenuItem("Delete", ft.Icon(ft.Icons.DELETE_OUTLINED, ft.Colors.ERROR, 20), on_click=lambda: delete_field(section_name, field_name))]
+            return ft.Column([section_row, new_field_button, new_field_tf], expand=True, scroll=ft.ScrollMode.HIDDEN, spacing=20) 
 
         # Builds a normal field control for a section view not inside the overview tab
         def build_field_ctrl(section_name, field_name, field_value):
-            ctrl = FieldTextField(
-                value=field_value,
-                on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
-                data=field_name
+
+            def show_delete_field(e=None):
+                delete_button.visible = True
+                delete_button.update()
+
+            def hide_delete_field(e=None):
+                delete_button.visible = False
+                delete_button.update()
+
+            # Delete button for removing the field
+            delete_button = ft.IconButton(
+                ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 18,
+                bgcolor=ft.Colors.SURFACE, height=26, width=30,
+                on_click=lambda: delete_field(section_name, field_name),
+                tooltip=Tooltip("Delete Field"), visible=False,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding.symmetric(vertical=4, horizontal=6), mouse_cursor=ft.MouseCursor.CLICK), 
             )
 
-            return ft.Column([
-                ft.Row([
-                    ft.Text(field_name, size=18, weight=ft.FontWeight.BOLD),
-                    shad.ContextMenu(
-                        HighlightButton(
-                            ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.OUTLINE), 
-                            use_padding=True,
+            # Textfield for the field value
+            field_value_ctrl = FieldTextField(
+                value=field_value,
+                on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
+                data=field_name,
+            )
+
+            # Gesture detector to show/hide delete button on hover
+            return ft.GestureDetector(
+                on_enter=show_delete_field, 
+                on_exit=hide_delete_field,
+                data=field_name,
+                content=ft.Column(
+                    spacing=4,
+                    controls=[
+                        ft.Row(
+                            tight=True,
+                            controls=[
+                                ft.Text(field_name, size=18, weight=ft.FontWeight.BOLD),
+                                delete_button,                   
+                            ]
                         ),
-                        field_items(section_name, field_name),
-                        open_on_tap=True
-                    ),                    
-                ], tight=True),
-                ctrl
-            ], spacing=4, data=field_name)
+                        field_value_ctrl
+                    ], 
+                ),
+            )
 
         # Builds our field ctrl for the overview tab
         def build_overview_field_ctrl(section_name, field_name, field_value):
@@ -656,11 +674,9 @@ class FieldTextField(ft.TextField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.border = {
-            #ft.ControlState.FOCUSED: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4),
-            ft.ControlState.DEFAULT: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=8)
-        }
+        self.border = {ft.ControlState.DEFAULT: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=8)}
         self.text_style = ft.TextStyle(size=18)
         self.multiline = kwargs.get('multiline', True)
         self.capitalization = ft.TextCapitalization.SENTENCES
         self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE)
+        self.width = 475
