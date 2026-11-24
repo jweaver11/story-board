@@ -17,11 +17,10 @@ from styles.tooltip import Tooltip
 import asyncio
 
 
-ADDITIONAL_IMAGES_SPACING = 20
-ADDITIONAL_IMAGES_SIZE = 125
-
-THUMBNAIL_SIZE = 250
-THUMBNAIL_ICON_SIZE = 100
+IMAGES_SPACING = 20
+IMAGES_SIZE = 250
+IMAGES_ICON_SIZE = 150
+MAX_IMAGES = 5
 
 
 class Template(Widget):
@@ -41,14 +40,12 @@ class Template(Widget):
                 'tag': tag,
                 'color': app.settings.data.get('widget_defaults', {}).get(tag, {}).get('color'),
 
-                'thumbnail': str(),                 # Base64 string of the image for this widget, if it has one
-                'additional_images': [],            # Supporting images (up to 4)
+                'images': ["", "", "", "", ""],     # Images of this template (up to 5)
                 'selected_index': 0,                # Index of the currently selected tab in the template widget
 
                 'section_data': section_data,       # Data of our template broken into sections
             })
 
-        self.thumbnail: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
 
 
     def update_section_data(self, section_name, field_name, value):
@@ -60,126 +57,7 @@ class Template(Widget):
                 control.value = value
                 control.update()
 
-    # Options when setting the image of a widget. Either upload, set a canvas, or clear image
-    def set_thumbnail_options(self) -> list[ft.Control]:
-
-        # Called when clicking our upload image button 
-        async def upload_image(e: ft.Event):
-
-            files = await ft.FilePicker().pick_files(
-                allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"],
-                dialog_title="Select images (up to 5)"
-            )
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        # Save to our data
-                        self.update_data(**{'thumbnail': f"{encoded_string}"})
-
-                    # Update the image in our widget
-                    self.thumbnail.content.content.content = ft.Image(
-                        src=self.data.get('thumbnail', ""),
-                        gapless_playback=True,
-                        width=THUMBNAIL_SIZE,
-                        height=THUMBNAIL_SIZE,
-                        fit=ft.BoxFit.CONTAIN,
-                    )
-                    self.thumbnail.update()
-
-                except Exception:
-                    pass
-
-        # Sets a canvas as our image
-        async def set_canvas_as_image(e=None):
-
-            # Set the canvas id when selecting a canvas from the radio group
-            def select_canvas(e: ft.Event[ft.RadioGroup]):
-                nonlocal canvas_id
-                canvas_id = e.data
-                
-            # Sets the canvas image from the returned canvas snapshot
-            def set_canvas_image(e=None):
-                if canvas_id is None:
-                    self.page.pop_dialog()
-                    return
-                widget = self.story.get_widget_by_id(canvas_id)
-                if widget is None:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(shad.Toast("Canvas not found. Please try again."))
-                    return
-
-                snapshot_str = widget.get_snapshot_string(quality="low")
-                if not snapshot_str:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(shad.Toast("Empty Canvas cannot be made as the image"))
-                    return
-
-                self.update_data(**{'thumbnail': snapshot_str})
-                
-                self.thumbnail.content.content.content = ft.Image(
-                    src=self.data.get('thumbnail', ""),
-                    gapless_playback=True,
-                    width=THUMBNAIL_SIZE,
-                    height=THUMBNAIL_SIZE,
-                    fit=ft.BoxFit.CONTAIN,
-                )
-                self.thumbnail.update()
-                
-                self.page.pop_dialog()
-
-            canvas_id: str = None
-
-            dlg = shad.Dialog(
-                title="Set a Canvas as Image",
-                content=shad.RadioGroup(
-                    [
-                        shad.Radio(
-                            label=widget.data.get('title', 'Untitled'),
-                            value=id, 
-                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
-                    ],
-                        
-                    on_change=select_canvas
-                ),
-                actions=[
-                    shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                    shad.Button("Select", on_click=set_canvas_image, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                ]
-            )
-            self.page.show_dialog(dlg)
-
-        # Resets our image to nothing and our button to the placeholder
-        async def clear_image(e: ft.Event):
-            self.update_data(**{'thumbnail': ""})
-            self.thumbnail.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=THUMBNAIL_ICON_SIZE)
-            self.thumbnail.update()
-
-        # Build the options
-        return [
-            
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Set Canvas",
-                on_click=set_canvas_as_image,
-                visible=False
-            ),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Upload Image",
-                on_click=upload_image,
-            ),
-            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.ERROR, size=20),
-                content="Clear Image",
-                on_click=clear_image,
-            )
-        ]
+    
 
     def build(self):
         super().build()
@@ -214,10 +92,10 @@ class Template(Widget):
             self.update_data(section_data=self.data['section_data'])
             await hide_new_section_tf()
             refresh_sections()
+            
             # Set new section as our active one
             tab_buttons.selected_index = len(tab_buttons.controls) - 1
             tabs.selected_index = tab_buttons.selected_index
-            #await asyncio.sleep(0.2)   # Small delay to ensure UI updates correctly
             tab_buttons.update()
             tabs.update()
 
@@ -332,7 +210,7 @@ class Template(Widget):
                 ]),
             ], scroll=ft.ScrollMode.AUTO, expand=True, spacing=12)
 
-        async def upload_additional_image(index):
+        async def upload_image(index):
             files = await ft.FilePicker().pick_files(allowed_extensions=["jpg", "jpeg", "png", "webp"])
             if not files:
                 return
@@ -342,23 +220,23 @@ class Template(Widget):
             except (OSError, TypeError) as error:
                 self.page.show_dialog(shad.Toast(f"Could not load image: {error}", variant=shad.ToastVariant.DESTRUCTIVE))
                 return
-            images = list(self.data.get('additional_images', []))
+            images = list(self.data.get('images', []))
             if index < len(images):
                 images[index] = image
             elif len(images) < 4:
                 images.append(image)
-            self.update_data(additional_images=images)
+            self.update_data(images=images)
             #refresh_images()
 
-        def remove_additional_image(index):
-            images = list(self.data.get('additional_images', []))
+        def remove_image(index):
+            images = list(self.data.get('images', []))
             del images[index]
-            self.update_data(additional_images=images)
+            self.update_data(images=images)
             #refresh_images()
 
-        def create_additional_image_ctrl(index, image=None):
+        def create_image_ctrl(index, image=None):
             async def upload_image(e):
-                await upload_additional_image(index)
+                await upload_image(index)
 
             items = [
                 shad.MenuItem(
@@ -370,18 +248,18 @@ class Template(Widget):
             if image:
                 items.append(shad.MenuItem(
                     "Remove Image", ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 20),
-                    on_click=lambda e: remove_additional_image(index),
+                    on_click=lambda e: remove_image(index),
                 ))
             return 
 
         # Highlight our thumbnail upon entering it
         def highlight_thumbnail(e: ft.Event[ft.GestureDetector]):
-            e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
+            e.control.content.bgcolor = ft.Colors.SURFACE_CONTAINER_LOW
             e.control.update()
 
         # Unhighlight our thumbnail upon leaving it
         def unhighlight_thumbnail(e: ft.Event[ft.GestureDetector]):
-            e.control.content.bgcolor = None
+            e.control.content.bgcolor = ft.Colors.SURFACE
             e.control.update()
 
         # Build us a column for each section within the overview view
@@ -458,8 +336,6 @@ class Template(Widget):
 
         # Builds out the tab bar and views for each section. Called after adding a new section or deleting one
         def refresh_sections(update: bool=True):
-
-            
 
             sections = self.data.get('section_data', {})    # Easier referenc
             
@@ -541,13 +417,153 @@ class Template(Widget):
                         on_click=delete_section
                     )
                 ],
-                
             )
 
-        
+        # Options when setting the image of a widget. Either upload, set a canvas, or clear image
+        def set_image_options(index: int) -> list[ft.Control]:
+    
+            # Called when clicking our upload image button 
+            async def upload_image(e: ft.Event):
+                # Grab a file and upload it
+                files = await ft.FilePicker().pick_files(
+                    allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"],
+                    dialog_title="Select image"
+                )
+                if files:
+                    file_path = files[0].path
+                    try:
+                        import base64
+    
+                        with open(file_path, "rb") as image_file:
+                            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                            self.data['images'][index] = f"{encoded_string}"
+                            # Save to our data
+    
+                            self.update_data(**{'images': self.data['images']})
+                            refresh_images()
+    
+                    except Exception:
+                        pass
+    
+            # Sets a canvas as our image
+            async def set_canvas_as_image(e=None):
+                # Set the canvas id when selecting a canvas from the radio group
+                def select_canvas(e: ft.Event[ft.RadioGroup]):
+                    nonlocal canvas_id
+                    canvas_id = e.data
+                # Sets the canvas image from the returned canvas snapshot
+                def set_canvas_image(e=None):
+                    if canvas_id is None:
+                        self.page.pop_dialog()
+                        return
+                    widget = self.story.get_widget_by_id(canvas_id)
+                    if widget is None:
+                        self.page.pop_dialog()
+                        self.page.show_dialog(shad.Toast("Canvas not found. Please try again."))
+                        return
+                    snapshot_str = widget.get_snapshot_string(quality="low")
+                    if not snapshot_str:
+                        self.page.pop_dialog()
+                        self.page.show_dialog(shad.Toast("Empty Canvas cannot be made as the image"))
+                        return
+                    #self.update_data(**{'thumbnail': snapshot_str})
+                    refresh_images()
+                canvas_id: str = None
+                dlg = shad.Dialog(
+                    title="Set a Canvas as Image",
+                    content=shad.RadioGroup(
+                        [
+                            shad.Radio(
+                                label=widget.data.get('title', 'Untitled'),
+                                value=id, 
+                            ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
+                        ],   
+                        on_change=select_canvas
+                    ),
+                    actions=[
+                        shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                        shad.Button("Select", on_click=set_canvas_image, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                    ]
+                )
+                self.page.show_dialog(dlg)
+    
+            # Resets our image to nothing and our button to the placeholder
+            async def clear_image(e: ft.Event):
+                self.data.get('images', [])[index] = ""
+                self.update_data(**{'images': self.data.get('images', [])})
+                refresh_images()
+                
+    
+            # Build the options
+            return [
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    content="Set Canvas",
+                    on_click=set_canvas_as_image,
+                    visible=False
+                ),
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
+                    content="Upload Image",
+                    on_click=upload_image,
+                ),
+                shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
+                shad.MenuItem(
+                    leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.ERROR, size=20),
+                    content="Clear Image",
+                    on_click=clear_image,
+                )
+            ]
 
+        # Returns a control for an image in the gallery
+        def build_image_ctrl(idx: int, src: str):
+            ''' Returns a standardized control to set or clear an image, with the first one being the thumbnail image '''
 
-        self.padding = 10   # Give us some padding
+            return shad.ContextMenu(
+                ft.GestureDetector(
+                    ft.Container(
+                        ft.Image(
+                            src=src,
+                            gapless_playback=True,
+                            width=IMAGES_SIZE + IMAGES_SPACING if idx == 0 else IMAGES_SIZE / 2,
+                            height=IMAGES_SIZE + IMAGES_SPACING if idx == 0 else IMAGES_SIZE / 2,
+                            fit=ft.BoxFit.CONTAIN,
+                        ) if src else ft.Icon(
+                            ft.Icons.IMAGE_OUTLINED, 
+                            ft.Colors.PRIMARY, 
+                            size=IMAGES_ICON_SIZE if idx == 0 else IMAGES_ICON_SIZE / 2
+                        ), 
+                        clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=8,
+                        width=IMAGES_SIZE + IMAGES_SPACING if idx == 0 else IMAGES_SIZE / 2,
+                        height=IMAGES_SIZE + IMAGES_SPACING if idx == 0 else IMAGES_SIZE / 2,
+                        bgcolor=ft.Colors.SURFACE
+                    ), 
+                    on_enter=highlight_thumbnail, on_exit=unhighlight_thumbnail, 
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    
+                ), 
+                set_image_options(idx),
+                open_on_tap=True,
+                tooltip="Upload an Image for this widget",
+            )
+
+        # Refresh the image gallery with the current images in the widget's data
+        def refresh_images(update=True):
+            image_gallery.controls.clear()
+            for idx, image in enumerate(self.data.get('images', [])):
+                if idx == 0:
+                    thumbnail.content = build_image_ctrl(idx, image)
+                else:
+                    image_gallery.controls.append(build_image_ctrl(idx, image))
+            if update:
+                thumbnail.update()
+                image_gallery.update()
+
+        field_controls = {}
+        tab_buttons = []
+
+        # Give us some padding
+        self.padding = 16
         
         # Re-style our description tf since it wont be in a sidebar
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
@@ -555,70 +571,40 @@ class Template(Widget):
         self.description_tf.label = None
         self.description_tf.margin = None
 
-        # Create our thumbnail context menu with highlight/unhighlight behavior
-        self.thumbnail = shad.ContextMenu(
-            ft.GestureDetector(
-                ft.Container(
-                    ft.Image(
-                        src=self.data.get('thumbnail', ""),
-                        gapless_playback=True,
-                        width=THUMBNAIL_SIZE,
-                        height=THUMBNAIL_SIZE,
-                        fit=ft.BoxFit.CONTAIN,
-                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=THUMBNAIL_ICON_SIZE), 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=8,
-                    max_width=THUMBNAIL_SIZE,
-                    max_height=THUMBNAIL_SIZE,
-                ), 
-                on_enter=highlight_thumbnail, on_exit=unhighlight_thumbnail, 
-                mouse_cursor=ft.MouseCursor.CLICK
-            ), 
-            self.set_thumbnail_options(),
-            open_on_tap=True,
-            tooltip="Upload an Image for this widget",
-        )
+        thumbnail = ft.Container()  # Just a container to hold the one larger image
 
-        ft.IconButton(
-            ft.Icons.ADD_PHOTO_ALTERNATE_OUTLINED, ft.Colors.PRIMARY,
-            bgcolor=ft.Colors.SURFACE, #hover_bgcolor=ft.Colors.SURFACE_CONTAINER,
-            #on_click=upload_image,
-        )
-
+        # The row that holds our images at the top of the overview tab
         image_gallery = ft.Row(
-            spacing=ADDITIONAL_IMAGES_SPACING, 
-            run_spacing=ADDITIONAL_IMAGES_SPACING,  
+            spacing=IMAGES_SPACING, 
+            run_spacing=IMAGES_SPACING,  
             min_width=0, min_height=0, 
-            max_width=(ADDITIONAL_IMAGES_SIZE * 2) + ADDITIONAL_IMAGES_SPACING,
-            max_height=(ADDITIONAL_IMAGES_SIZE * 2) + ADDITIONAL_IMAGES_SPACING,
-            tight=True, wrap=True,
+            max_width=IMAGES_SIZE + IMAGES_SPACING,
+            max_height=IMAGES_SIZE + IMAGES_SPACING,
+            wrap=True,
+            controls=[]
         )
-        images = self.data.get('additional_images', [])
-        image_gallery.controls = [
-            create_additional_image_ctrl(index, image)
-            for index, image in enumerate(images[:4])
-        ]
-        if len(images) < 4:
-            image_gallery.controls.append(create_additional_image_ctrl(len(images)))
 
-        field_controls = {}
-        tab_buttons = []
-
-
+        # Column that holds our sections controls within the overview tab
         overview_sections = ft.Column(spacing=20, tight=True)
 
+        # The 'view' (column) of our Overview tab, which contains our images, description, and modified sections of each section
         overview_view = ft.Column([
-            #ft.Row([self.thumbnail, image_gallery], spacing=ADDITIONAL_IMAGES_SPACING, run_spacing=ADDITIONAL_IMAGES_SPACING),
-            ft.Text("Description", size=18, weight=ft.FontWeight.BOLD),
-            self.description_tf,
+            ft.Row(
+                spacing=IMAGES_SPACING * 2,
+                #vertical_alignment=ft.CrossAxisAlignment.START,
+                controls=[
+                    thumbnail,      # Holds the first image, which is displayed larger than the rest
+                    image_gallery,
+                    ft.Column([
+                        ft.Text("Description", size=18, weight=ft.FontWeight.BOLD),
+                        self.description_tf,
+                    ], expand=True)
+                ]
+            ),
             overview_sections,
         ], scroll=ft.ScrollMode.HIDDEN, expand=True)
 
-        new_section_tf = ft.TextField(
-            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
-            on_submit=create_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
-            margin=ft.Margin.only(left=10), content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
-        )
-
+        # Button to add new sections
         new_section_button = ft.IconButton(
             ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 22, #size=20,
             bgcolor=ft.Colors.SURFACE,
@@ -627,12 +613,19 @@ class Template(Widget):
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK, padding=ft.Padding.symmetric(vertical=5, horizontal=9))
         )
 
+        # Textfield for adding new sections
+        new_section_tf = ft.TextField(
+            autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.WORDS, visible=False,
+            on_submit=create_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
+            margin=ft.Margin.only(left=10), content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
+        )
+
         # Our buttons that are our 'tabs' controls at the top of the template
         tab_buttons = ft.CupertinoSlidingSegmentedButton(
             thumb_color=ft.Colors.SURFACE,
             selected_index=self.data.get('selected_index', 0),
             on_change=change_tab,
-            controls=[build_tab_ctrl(index, section_name) for index, section_name in enumerate(self.data.get('section_data', []))],            
+            controls=[ft.Text(section_name) for index, section_name in enumerate(self.data.get('section_data', []))],            
         )
 
         # Simple header to hold our tab buttons + a button and textfield to add new sections
@@ -648,11 +641,11 @@ class Template(Widget):
             controls=[
                 overview_view
             ] + [
-                #build_tab_ctrl(index + 1, section_name) for index, section_name in enumerate(self.data.get('section_data', []))
                 ft.Text(section_name, data=index + 1) for index, section_name in enumerate(self.data.get('section_data', []))
             ]
         )
 
+        # The tabs control to manage our tab buttons and views
         tabs = ft.Tabs(
             length=len(self.data.get('section_data', [])) + 1, 
             selected_index=self.data.get('selected_index', 0), 
@@ -660,6 +653,7 @@ class Template(Widget):
             expand=True,
             content=ft.Column(
                 expand=True,
+                spacing=20,
                 controls=[
                     tab_header, 
                     tab_views
@@ -669,7 +663,8 @@ class Template(Widget):
 
         self.content = tabs
 
-        refresh_sections(update=False)  # Rebuild the content if a new section added/deleted
+        refresh_images(update=False)
+        refresh_sections(update=False)  # Build the sections content
 
 
 

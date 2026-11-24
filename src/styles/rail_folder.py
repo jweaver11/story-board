@@ -564,7 +564,6 @@ class RailFolder(ft.GestureDetector):
                         items=self.menu_items(),
                         open_on_tap=True,
                     ),
-                    
                 ], 
                 expand=True, spacing=6, 
                 tooltip=Tooltip(message=self.notes)
