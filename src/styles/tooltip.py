@@ -13,7 +13,7 @@ class Tooltip(ft.Tooltip):
             decoration=ft.BoxDecoration(
                 border_radius=8, 
                 #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-                shadows=ft.BoxShadow(2, 4, ft.Colors.SURFACE)
+                shadows=ft.BoxShadow(2, 2, ft.Colors.SURFACE)
             ),
             size_constraints=ft.BoxConstraints(max_width=300),
             **kwargs

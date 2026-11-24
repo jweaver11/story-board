@@ -58,7 +58,6 @@ class Widget(ft.Container):
                 #'rail_index': 999,                 # Index of this widget in the rail for sorting (start at end)
                 'visible': True,                  # Whether this widget is visible in the workspace or not
                 'color': "primary",                   # Color of this widget's tab and icon in workspace and on rail
-                'thumbnail': str(),                 # Base64 string of the image for this widget, if it has one
                 'show_sidebar': False,               # Whether to show the sidebar. Widgets that use it set to True in their own data
                 'notes': list(),                # Several widgets have notes{'label': str(), 'value': str()}
                 'description': str(),
@@ -93,7 +92,6 @@ class Widget(ft.Container):
 
         # Other shared controls
         self.description_tf: TextField      # Description of this widget textfield. Mostly used in sidebar, but can be used in body
-        self.select_image_button: ft.GestureDetector    # Button certain widgets use when they have an image to represent them (world, character, item, etc.)
         self.iv: ft.InteractiveViewer = None
 
     # Updates data for this widget and marks it as dirty for the next file save
@@ -273,126 +271,7 @@ class Widget(ft.Container):
         await app.settings.body_container.content.scroll_to(scroll_key=widget_type, duration=1200)
 
 
-    # Options when setting the image of a widget. Either upload, set a canvas, or clear image
-    def set_widget_image_options(self) -> list[ft.Control]:
 
-        # Called when clicking our upload image button 
-        async def upload_image(e: ft.Event):
-
-            files = await ft.FilePicker().pick_files(
-                allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"],
-                dialog_title="Select images (up to 5)"
-            )
-            if files:
-
-                file_path = files[0].path
-                try:
-                    import base64
-
-                    with open(file_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                        # Save to our data
-                        self.update_data(**{'thumbnail': f"{encoded_string}"})
-
-                    # Update the image in our widget
-                    self.select_image_button.content.content.content = ft.Image(
-                        src=self.data.get('thumbnail', ""),
-                        gapless_playback=True,
-                        width=250,
-                        height=250,
-                        fit=ft.BoxFit.CONTAIN,
-                    )
-                    self.select_image_button.update()
-
-                except Exception:
-                    pass
-
-        # Sets a canvas as our image
-        async def set_canvas_as_image(e=None):
-
-            # Set the canvas id when selecting a canvas from the radio group
-            def select_canvas(e: ft.Event[ft.RadioGroup]):
-                nonlocal canvas_id
-                canvas_id = e.data
-                
-            # Sets the canvas image from the returned canvas snapshot
-            def set_canvas_image(e=None):
-                if canvas_id is None:
-                    self.page.pop_dialog()
-                    return
-                widget = self.story.get_widget_by_id(canvas_id)
-                if widget is None:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(SnackBar("Canvas not found. Please try again."))
-                    return
-
-                snapshot_str = widget.get_snapshot_string(quality="low")
-                if not snapshot_str:
-                    self.page.pop_dialog()
-                    self.page.show_dialog(SnackBar("Empty Canvas cannot be made as the image"))
-                    return
-
-                self.update_data(**{'thumbnail': snapshot_str})
-                
-                self.select_image_button.content.content.content = ft.Image(
-                    src=self.data.get('thumbnail', ""),
-                    gapless_playback=True,
-                    width=250,
-                    height=250,
-                    fit=ft.BoxFit.CONTAIN,
-                )
-                self.select_image_button.update()
-                
-                self.page.pop_dialog()
-
-            canvas_id: str = None
-
-            dlg = shad.Dialog(
-                title="Set a Canvas as Image",
-                content=shad.RadioGroup(
-                    [
-                        shad.Radio(
-                            label=widget.data.get('title', 'Untitled'),
-                            value=id, 
-                        ) for id, widget in self.story.widgets.items() if widget.data.get('tag', '') == "canvas"
-                    ],
-                        
-                    on_change=select_canvas
-                ),
-                actions=[
-                    shad.Button("Cancel", on_click=lambda: self.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                    shad.Button("Select", on_click=set_canvas_image, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
-                ]
-            )
-            self.page.show_dialog(dlg)
-
-        # Resets our image to nothing and our button to the placeholder
-        async def clear_image(e: ft.Event):
-            self.update_data(**{'thumbnail': ""})
-            self.select_image_button.content.content.content = ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=250)
-            self.select_image_button.update()
-
-        # Build the options
-        return [
-            
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.BRUSH_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Set Canvas",
-                on_click=set_canvas_as_image,
-                visible=False
-            ),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.IMAGE_SEARCH_OUTLINED, ft.Colors.PRIMARY, size=20),
-                content="Upload Image",
-                on_click=upload_image,
-            ),
-            shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
-            shad.MenuItem(
-                leading=ft.Icon(ft.Icons.HIDE_IMAGE_OUTLINED, ft.Colors.ERROR, size=20),
-                content="Clear Image",
-                on_click=clear_image,
-            )
-        ]
         
 
     
@@ -725,32 +604,9 @@ class Widget(ft.Container):
         )   
         self.build_sidebar()
 
-        def highlight(e):
-            e.control.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-            e.control.update()
+        
 
-        def unhighlight(e):
-            e.control.content.bgcolor = None
-            e.control.update()
-
-        self.select_image_button = shad.ContextMenu(
-            ft.GestureDetector(
-                ft.Container(
-                    ft.Image(
-                        src=self.data.get('thumbnail', ""),
-                        gapless_playback=True,
-                        width=250,
-                        height=250,
-                        fit=ft.BoxFit.CONTAIN,
-                    ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=250), 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=8
-                ), 
-                on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
-            ), 
-            self.set_widget_image_options(),
-            open_on_tap=True,
-            tooltip="Upload an Image for this widget",
-        )
+        
 
 
 
