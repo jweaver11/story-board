@@ -602,7 +602,7 @@ class Template(Widget):
         new_section_tf = ft.TextField(
             autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
             on_submit=create_section, on_blur=hide_new_section_tf, dense=True, bgcolor=ft.Colors.SURFACE,
-            margin=ft.Margin.only(left=10), content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
+            content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
         )
 
         # Our buttons that are our 'tabs' controls at the top of the template

@@ -2,17 +2,26 @@
 def default_item_template_data() -> dict:
     return {
         'Basic': {
+            'Name': "",
             'Type': "",
             'Rarity': "",
-            'Effects': "",
-            'Material': "",
-            'Size': "",
-            'Weight': "",
-            'Lore': "",
             'Cost': "",
             'Locations': "",
             'Count': "",
-            'Notes': ""
-
-        }
+        },
+        'Physical Description': {
+            'Size': "",
+            'Weight': "",
+            'Material': ""
+        },
+        'Effects': {
+            'Offense': "",
+            'Defense': "",
+            'Utility': "",
+            'Passive': "",
+            'Conditions': "",
+            'Duration': "",
+            'Cooldown': "",
+        },
+        'Notes': {}
     }

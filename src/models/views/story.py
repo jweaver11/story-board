@@ -171,6 +171,7 @@ class Story(ft.View):
                     (None, "Characters"),
                     (None, "Scenes"),
                     (None, "Worlds"),
+                    (None, "Planning"),
                     (os.path.join(content_directory, "Plot"), "Book 1"),
                     (os.path.join(content_directory, "Plot", "Book 1"), "Chapter 1"),
                     (os.path.join(content_directory, "Plot", "Book 1"), "Chapter 2"),

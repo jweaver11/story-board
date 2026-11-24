@@ -11,31 +11,24 @@ def default_world_template_data() -> dict:
             'History': "",
             'Myths': "",
             'Legends': "",
+            'Origin': ""
         },
         'Magic & Technology': {
             'Magic': "",
             'Technology': "",
             'Other': "",
         },
-        'Social Systems': {
-
+        
+        'Cosmography': {
+            'Climate': "",
+            'Astronomy': "",
+            'Geography': "",
+            'Topography': "",
+            'Nature': ""
         },
-        'Geography': {
-            'Flora': "",
-            'Fauna': ""
-        },
-        'Astronomy': {
-
-        },
-        'Climate': {
-            
-        },
-        'Governments': {
-
-        },
-        'Species': {
-
-        },
+        'Species': {},
+        'States': {},
+        
         'Cultures': {
             'Societies': "",
             'Languages': "",
