@@ -279,7 +279,10 @@ class Widget(ft.Container):
         # Called when clicking our upload image button 
         async def upload_image(e: ft.Event):
 
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            files = await ft.FilePicker().pick_files(
+                allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"],
+                dialog_title="Select images (up to 5)"
+            )
             if files:
 
                 file_path = files[0].path
@@ -297,7 +300,7 @@ class Widget(ft.Container):
                         gapless_playback=True,
                         width=250,
                         height=250,
-                        fit=ft.BoxFit.FILL,
+                        fit=ft.BoxFit.CONTAIN,
                     )
                     self.select_image_button.update()
 
@@ -336,7 +339,7 @@ class Widget(ft.Container):
                     gapless_playback=True,
                     width=250,
                     height=250,
-                    fit=ft.BoxFit.FILL,
+                    fit=ft.BoxFit.CONTAIN,
                 )
                 self.select_image_button.update()
                 
@@ -738,9 +741,9 @@ class Widget(ft.Container):
                         gapless_playback=True,
                         width=250,
                         height=250,
-                        fit=ft.BoxFit.FILL,
+                        fit=ft.BoxFit.CONTAIN,
                     ) if self.data.get('thumbnail', '') else ft.Icon(ft.Icons.IMAGE_OUTLINED, ft.Colors.PRIMARY, size=250), 
-                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=4
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS, border_radius=8
                 ), 
                 on_enter=highlight, on_exit=unhighlight, mouse_cursor=ft.MouseCursor.CLICK
             ), 
