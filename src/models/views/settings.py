@@ -22,7 +22,8 @@ from styles.highlight_button import HighlightButton
 from styles.card import Card
 from utils.safe_string_checker import return_safe_name
 import math
-from copy import deepcopy
+from styles.text_fields import SectionFieldTextField
+from styles.colors import dark_gradient
  
 class Settings(ft.View):
 
@@ -932,9 +933,7 @@ class Settings(ft.View):
         return content
 
     def _load_template_settings(self):
-        types = ("character", "world", "item")
-        editor = ft.Column(expand=True, margin=ft.Margin.only(bottom=10, left=10, right=10))
-        section_idx = 0
+        
 
         # Refreshes our editor after changes are made so the UI reflects the latest template settings.
         def refresh(update: bool=True):
@@ -972,8 +971,7 @@ class Settings(ft.View):
 
             # Set the section tab button controls
             section_tab_buttons.controls = [build_tab_ctrl(index, section_name) for index, section_name in enumerate(template.keys())]
-            sections_view.controls = [ft.Text(section_name) for section_name in template.keys()]
-            #sections_view.controls = [build_section_ctrl(section_name, section_data) for section_name, section_data in template.items()]
+            sections_view.controls = [build_section_ctrl(section_name, section_data) for section_name, section_data in template.items()]
 
             section_tabs.length = len(template)
             if section_idx >= len(template):
@@ -988,18 +986,13 @@ class Settings(ft.View):
             
                     
 
-            # Set the editor controls
-            editor.controls = [
-                header,
-                ft.Divider(),
-                section_tabs,
-            ]
+            
 
             if update:
                 editor.update()
 
-            # TODO: Rename, reorder, delete sections
-            # Reorder, delete fields
+            # TODO: 
+            # Reorder, give default values, delete fields
 
         # Show the tf to the right of the tabs to name a new section and hide the button
         async def show_new_section_tf(e=None):
@@ -1052,10 +1045,110 @@ class Settings(ft.View):
             section_idx = len(template.keys())
             refresh()
 
-        
+        def build_field_ctrl(section_name: str, field_name: str, field_value: str):
+
+            def save_default_value(e: ft.Event[ft.TextField]):
+                template[section_name][field_name] = e.control.value
+                self.data[f"{widget_type}_template"] = template
+                
+
+            def delete_field(e=None):
+                if field_name not in template[section_name]:
+                    return
+                del template[section_name][field_name]
+                self.data[f"{widget_type}_template"] = template
+                refresh()
+
+            delete_button = ft.IconButton(
+                ft.Icons.DELETE_OUTLINED,
+                ft.Colors.ERROR,
+                on_click=delete_field
+            )
+
+            return ft.Row([
+                SectionFieldTextField(
+                    label=field_name,
+                    value=field_value,
+                    on_blur=save_default_value,
+                    data=field_name,
+                    expand=True,
+                    multiline=False,
+                    hint_text="Set default value here...",
+                    prefix_icon=delete_button
+                )
+            ], margin=ft.Margin.symmetric(vertical=3), height=50)
+
+        # Builds the UI for a single section, including its fields and layout
+        def build_section_ctrl(section_name: str, section_data: dict) -> ft.ReorderableListView:
+
+            # TODO: Persistance with all functions
+
+            # Handles reordering of fields within this section
+            def reorder_fields(e: ft.OnReorderEvent):
+                nonlocal section_data
+                section_data_items = list(section_data.items())
+                section_data_items.insert(e.new_index, section_data_items.pop(e.old_index))
+                section_data = dict(section_data_items)
+                self.data[f"{widget_type}_template"][section_name] = section_data
+
+                # Update - no rebuild necessary, just move the controls
+                e.control.controls.insert(e.new_index, e.control.controls.pop(e.old_index))
+                e.control.update()
+
+            # Creates a new field within this section
+            def create_field(e=None):
+                field_name = return_safe_name(new_field_tf.value) or ""
+                if not field_name:
+                    return
+                if field_name in section_data:
+                    return
+                section_data[field_name] = None
+                self.data[f"{widget_type}_template"][section_name] = section_data
+                refresh()
+
+            # Hides the new field text field and shows the new field button
+            def hide_new_field_tf(e=None):
+                new_field_tf.visible = False
+                new_field_tf.value = ""
+                new_field_button.visible = True
+                new_field_button.update()
+                new_field_tf.update()
+
+            # Shows the new field text field for creating a new field within this section and hides the button
+            async def show_new_field_tf(e=None):
+                new_field_tf.visible = True
+                new_field_button.visible = False
+                new_field_button.update()
+                new_field_tf.update()
+                await new_field_tf.focus()
+
+            # Button for creating a new field within this section
+            new_field_button = ft.TextButton(
+                "New Field", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY),
+                style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
+                on_click=show_new_field_tf, 
+            )
+
+            # Text field for entering the name of the new field
+            new_field_tf = ft.TextField(
+                label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES,
+                visible=False, on_submit=create_field, on_blur=hide_new_field_tf,
+                dense=True, bgcolor=ft.Colors.SURFACE, data=section_name,
+            )
+
+            # Section column containing the fields and the new field controls
+            section_column = ft.ReorderableListView(
+                spacing=20, expand=True, expand_loose=True,
+                footer=ft.Row([new_field_button, new_field_tf], margin=ft.Margin.only(top=10)),
+                on_reorder=reorder_fields,
+                scroll=ft.ScrollMode.ALWAYS,
+                auto_scroll=True,
+                controls=[build_field_ctrl(section_name, field_name, field_value) for field_name, field_value in section_data.items()]
+            )
+            return section_column
 
         # Builds a tab control for the given section index and name
-        def build_tab_ctrl(index: int, section_name: str):
+        def build_tab_ctrl(index: int, section_name: str) -> shad.ContextMenu:
 
             def get_tab_items() -> list[shad.MenuItem]:
                 return [
@@ -1095,19 +1188,14 @@ class Settings(ft.View):
     
                 section_title_tf = shad.Input(
                     value=section_name,
-                    autofocus=True, #capitalization=ft.TextCapitalization.WORDS,
+                    autofocus=True,
                     on_submit=confirm_rename,
                 )
     
                 self.page.show_dialog(
-                    shad.Dialog(
-                                    
-                        # Title of our dialog
+                    shad.Dialog(          
                         title=f"Rename {section_name}", 
-                            
-                        # Main content is text box for user to input story title
                         content=section_title_tf,
-            
                         # Our two action buttons at the bottom of the dialog
                         actions=[
                             shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
@@ -1160,8 +1248,14 @@ class Settings(ft.View):
                 items=get_tab_items()
             )
 
+        types = ("character", "world", "item")
+        
+        section_idx = 0
+
         widget_type = "character"
         template: dict = get_template(self.data, widget_type)
+
+        
 
         # Header at the top of the page
         header = ft.Row(
@@ -1228,6 +1322,18 @@ class Settings(ft.View):
             section_tab_buttons.selected_index = section_idx
             refresh()
 
+        # Set the editor controls
+        editor = ft.Column(
+            expand=True, 
+            margin=ft.Margin.only(left=10, right=10), 
+            #scroll=ft.ScrollMode.ALWAYS,
+            controls=[
+                header,
+                ft.Divider(),
+                section_tabs,
+            ]
+        )
+
         rail = ft.NavigationRail(
             selected_index=0,
             bgcolor=ft.Colors.TRANSPARENT,
@@ -1268,12 +1374,16 @@ class Settings(ft.View):
             ),
             ft.Container(height=10),
             ft.Divider(),
-            ft.Row(
-                controls=[rail, ft.VerticalDivider(), editor],
-                scroll="none", expand=True,
-                vertical_alignment=ft.CrossAxisAlignment.START,
-                margin=ft.Margin.only(right=10)
-            ),
+            ft.Container(
+                expand=True,
+                clip_behavior=ft.ClipBehavior.HARD_EDGE,
+                content=ft.Row(
+                    controls=[rail, ft.VerticalDivider(), editor],
+                    scroll="none", expand=True,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                    margin=ft.Margin.only(right=10)
+                ),
+            )
         ])
 
     
@@ -1708,6 +1818,7 @@ class Settings(ft.View):
         self.body_container = ft.Container(
             expand=True, 
             padding=ft.Padding.all(40),
+            gradient=dark_gradient,
             #content=self._load_appearance_settings()        # Default to appearance settings when settings are first opened
         )
 

@@ -105,3 +105,16 @@ class SmallTextField(TextField):
         self.text_align=ft.TextAlign.CENTER
         self.bgcolor=ft.Colors.TRANSPARENT
         self.border=ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.TRANSPARENT), border_radius=4)
+
+# Styling for fields under templates and settings -> templates not under the overview tab
+@ft.control
+class SectionFieldTextField(ft.TextField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.border = {ft.ControlState.DEFAULT: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=8)}
+        self.text_style = ft.TextStyle(size=18)
+        self.multiline = kwargs.get('multiline', True)
+        self.capitalization = ft.TextCapitalization.SENTENCES
+        self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE)
+        self.width = 475

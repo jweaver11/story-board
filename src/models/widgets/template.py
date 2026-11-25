@@ -17,6 +17,7 @@ from styles.tooltip import Tooltip
 import asyncio
 from styles.highlight_button import HighlightButton
 import math
+from styles.text_fields import SectionFieldTextField
 
 
 IMAGES_SPACING = 20
@@ -150,8 +151,6 @@ class Template(Widget):
                 on_click=show_new_field_tf, 
             )
 
-            
-
             # Text field for entering the name of the new field
             new_field_tf = ft.TextField(
                 label="New Field Name", capitalization=ft.TextCapitalization.SENTENCES,
@@ -173,7 +172,7 @@ class Template(Widget):
             return ft.Column([section_row, new_field_button, new_field_tf], expand=True, scroll=ft.ScrollMode.HIDDEN, spacing=20) 
 
         # Builds a normal field control for a section view not inside the overview tab
-        def build_field_ctrl(section_name, field_name, field_value):
+        def build_field_ctrl(section_name: str, field_name: str, field_value: str) -> ft.GestureDetector:
 
             def show_delete_field(e=None):
                 delete_button.visible = True
@@ -193,7 +192,7 @@ class Template(Widget):
             )
 
             # Textfield for the field value
-            field_value_ctrl = FieldTextField(
+            field_value_ctrl = SectionFieldTextField(
                 value=field_value,
                 on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
                 data=field_name,
@@ -238,7 +237,7 @@ class Template(Widget):
                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), padding=2), visible=False
             )
             
-            value_control = OverviewFieldTextField(
+            value_control = OverviewSectionFieldTextField(
                 field_value, expand=True,
                 on_blur=lambda e: self.update_section_data(section_name, field_name, e.control.value),
                 #suffix_icon=delete_button,
@@ -398,22 +397,16 @@ class Template(Widget):
                             shad.Toast("Section name already exists or is invalid", variant=shad.ToastVariant.DESTRUCTIVE)
                         )
                     
-
                 section_title_tf = shad.Input(
                     value=section_name,
-                    autofocus=True, #capitalization=ft.TextCapitalization.WORDS,
+                    autofocus=True, 
                     on_submit=confirm_rename,
                 )
 
                 self.page.show_dialog(
-                    shad.Dialog(
-                                    
-                        # Title of our dialog
+                    shad.Dialog(      
                         title=f"Rename {section_name}", 
-                            
-                        # Main content is text box for user to input story title
                         content=section_title_tf,
-            
                         # Our two action buttons at the bottom of the dialog
                         actions=[
                             shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
@@ -732,7 +725,7 @@ class Template(Widget):
 
 # Styling for fields under the overview tab
 @ft.control
-class OverviewFieldTextField(ft.TextField):
+class OverviewSectionFieldTextField(ft.TextField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -747,15 +740,3 @@ class OverviewFieldTextField(ft.TextField):
         self.capitalization = ft.TextCapitalization.SENTENCES
         self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE_CONTAINER_HIGHEST)
 
-# Styling for fields not under the overview tab
-@ft.control
-class FieldTextField(ft.TextField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.border = {ft.ControlState.DEFAULT: ft.OutlineInputBorder(side=ft.BorderSide(color=ft.Colors.OUTLINE_VARIANT), border_radius=8)}
-        self.text_style = ft.TextStyle(size=18)
-        self.multiline = kwargs.get('multiline', True)
-        self.capitalization = ft.TextCapitalization.SENTENCES
-        self.bgcolor = kwargs.get('bgcolor', ft.Colors.SURFACE)
-        self.width = 475
