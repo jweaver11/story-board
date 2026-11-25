@@ -10,7 +10,7 @@ import asyncio
 from styles.colors import colors
 import flet_shadcn_ui as shad
 from styles.highlight_button import HighlightButton
-    
+import math
 
 class Note(Widget):
 
@@ -185,13 +185,13 @@ class Note(Widget):
                 ), 
                 shad.Separator(margin=ft.Margin.symmetric(vertical=4)),
                 shad.MenuItem(
-                    leading=ft.Icon(ft.Icons.ARROW_UPWARD_OUTLINED, ft.Colors.PRIMARY),
-                    content="Move Up",
+                    leading=ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20, rotate=math.pi),
+                    content="Move Left",
                     on_click=move_up,
                 ),
                 shad.MenuItem(
-                    leading=ft.Icon(ft.Icons.ARROW_DOWNWARD_OUTLINED, ft.Colors.PRIMARY),
-                    content="Move Down",
+                    leading=ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20),
+                    content="Move Right",
                     on_click=move_down,
                 ),
                 shad.MenuItem(

@@ -1081,8 +1081,6 @@ class Settings(ft.View):
         # Builds the UI for a single section, including its fields and layout
         def build_section_ctrl(section_name: str, section_data: dict) -> ft.ReorderableListView:
 
-            # TODO: Persistance with all functions
-
             # Handles reordering of fields within this section
             def reorder_fields(e: ft.OnReorderEvent):
                 nonlocal section_data
