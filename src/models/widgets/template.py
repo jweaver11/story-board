@@ -383,6 +383,45 @@ class Template(Widget):
         # Builds a tab control for the given section index and name
         def build_tab_ctrl(index: int, section_name: str):
 
+            # Rename the section
+            def rename_section(e=None):
+                def confirm_rename(e=None):
+                    new_section_title = return_safe_name(section_title_tf.value)
+                    if new_section_title and new_section_title != section_name and new_section_title not in self.data.get('section_data', {}):
+                        self.data['section_data'][new_section_title] = self.data['section_data'].pop(section_name)
+                        self.update_data(**{'section_data': self.data['section_data']})
+                        refresh_sections()
+                        ft.context.page.pop_dialog()
+                    else:
+                        ft.context.page.pop_dialog()
+                        ft.context.page.show_dialog(
+                            shad.Toast("Section name already exists or is invalid", variant=shad.ToastVariant.DESTRUCTIVE)
+                        )
+                    
+
+                section_title_tf = shad.Input(
+                    value=section_name,
+                    autofocus=True, #capitalization=ft.TextCapitalization.WORDS,
+                    on_submit=confirm_rename,
+                )
+
+                self.page.show_dialog(
+                    shad.Dialog(
+                                    
+                        # Title of our dialog
+                        title=f"Rename {section_name}", 
+                            
+                        # Main content is text box for user to input story title
+                        content=section_title_tf,
+            
+                        # Our two action buttons at the bottom of the dialog
+                        actions=[
+                            shad.Button("Cancel", on_click=lambda: ft.context.page.pop_dialog(), color=ft.Colors.ERROR, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                            shad.Button("Rename", on_click=confirm_rename, color=ft.Colors.PRIMARY, variant=shad.ButtonVariant.OUTLINE, size=shad.ButtonSize.SM),
+                        ],
+                    )
+                )
+
             # Delete the section from data, tab bar, and tab bar views
             def delete_section(e=None):
 
@@ -429,6 +468,10 @@ class Template(Widget):
                     on_tap=change_tab, data=index  # Hold index so we know which tab was right clicked or changed to
                 ),
                 items=[
+                    shad.MenuItem(
+                        "Rename", ft.Icon(ft.Icons.EDIT_OUTLINED, ft.Colors.PRIMARY, 20),
+                        on_click=rename_section,
+                    ),
                     shad.MenuItem(
                         "Move Left", ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20, rotate=math.pi),
                         on_click=move_section, data=-1, disabled=index <= 1
