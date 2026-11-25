@@ -170,8 +170,7 @@ storage/
 src/assets/google_client_secret.json
 
 # AI related tests
-#tests/
-
+tests/
 
 # Macos file metadata
 .DS_Store
