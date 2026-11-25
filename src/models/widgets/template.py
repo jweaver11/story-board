@@ -583,7 +583,7 @@ class Template(Widget):
 
 
         # Give us some padding
-        self.padding = 16
+        self.padding = ft.Padding.only(left=16, right=16, top=6, bottom=16)
         
         # Re-style our description tf since it wont be in a sidebar
         self.description_tf.bgcolor = ft.Colors.SURFACE_CONTAINER_HIGHEST
@@ -649,10 +649,12 @@ class Template(Widget):
 
         # Simple header to hold our tab buttons + a button and textfield to add new sections
         tab_header = ft.Row([  
-            tab_buttons,
-            new_section_button, 
-            new_section_tf
-        ], scroll=ft.ScrollMode.HIDDEN)
+            ft.Row([
+                tab_buttons,
+                new_section_button, 
+                new_section_tf
+            ], margin=ft.Margin.only(bottom=10, top=10)),   # Padding for scrollbar bottom, and textfield label on top
+        ], scroll=ft.ScrollMode.AUTO)
 
         # Our tab views
         tab_views = ft.TabBarView(
