@@ -24,6 +24,7 @@ from utils.safe_string_checker import return_safe_name
 import math
 from styles.text_fields import SectionFieldTextField
 from styles.colors import dark_gradient
+from styles.tooltip import Tooltip
  
 class Settings(ft.View):
 
@@ -1062,19 +1063,23 @@ class Settings(ft.View):
             delete_button = ft.IconButton(
                 ft.Icons.DELETE_OUTLINED,
                 ft.Colors.ERROR,
-                on_click=delete_field
+                on_click=delete_field,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
+                tooltip=Tooltip("Delete this field")
             )
 
             return SectionFieldTextField(
-                    label=field_name,
-                    value=field_value,
-                    on_blur=save_default_value,
-                    data=field_name,
-                    expand=True,
-                    multiline=False,
-                    hint_text="Set default value here...",
-                    prefix_icon=delete_button
-                )
+                label=field_name,
+                value=field_value,
+                on_blur=save_default_value,
+                data=field_name,
+                expand=True,
+                multiline=False,
+                hint_text="Set default value here...",
+                prefix_icon=delete_button,
+                margin=ft.Margin.symmetric(vertical=3)
+            )
+        
 
         # Builds the UI for a single section, including its fields and layout
         def build_section_ctrl(section_name: str, section_data: dict) -> ft.ReorderableListView:
@@ -1134,7 +1139,7 @@ class Settings(ft.View):
 
             # Section column containing the fields and the new field controls
             section_column = ft.ReorderableListView(
-                spacing=20, expand=True,
+                spacing=100, expand=True,
                 scroll=ft.ScrollMode.HIDDEN,
                 footer=ft.Row([new_field_button, new_field_tf], margin=ft.Margin.only(top=10)),
                 on_reorder=reorder_fields,
