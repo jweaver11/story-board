@@ -110,7 +110,8 @@ class Workspace(ft.Container):
         self.tab_view.controls[-1] = new_widget
         self.tab_view.update()
 
-    
+    def is_isolated(self):
+        return True
 
     # Creates a new tab control for the given widget
     def create_widget_tab_ctrl(self, widget: Widget) -> ft.Tab:

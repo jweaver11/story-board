@@ -1065,8 +1065,7 @@ class Settings(ft.View):
                 on_click=delete_field
             )
 
-            return ft.Row([
-                SectionFieldTextField(
+            return SectionFieldTextField(
                     label=field_name,
                     value=field_value,
                     on_blur=save_default_value,
@@ -1076,7 +1075,6 @@ class Settings(ft.View):
                     hint_text="Set default value here...",
                     prefix_icon=delete_button
                 )
-            ], margin=ft.Margin.symmetric(vertical=3), height=50)
 
         # Builds the UI for a single section, including its fields and layout
         def build_section_ctrl(section_name: str, section_data: dict) -> ft.ReorderableListView:
@@ -1136,11 +1134,10 @@ class Settings(ft.View):
 
             # Section column containing the fields and the new field controls
             section_column = ft.ReorderableListView(
-                spacing=20, expand=True, expand_loose=True,
+                spacing=20, expand=True,
+                scroll=ft.ScrollMode.HIDDEN,
                 footer=ft.Row([new_field_button, new_field_tf], margin=ft.Margin.only(top=10)),
                 on_reorder=reorder_fields,
-                scroll=ft.ScrollMode.ALWAYS,
-                auto_scroll=True,
                 controls=[build_field_ctrl(section_name, field_name, field_value) for field_name, field_value in section_data.items()]
             )
             return section_column
@@ -1306,6 +1303,7 @@ class Settings(ft.View):
         section_tabs = ft.Tabs(
             selected_index=section_idx if section_idx < len(template.keys()) else 0,
             length=len(template.keys()),
+            expand=True,
             content=ft.Column([
                 sections_header,
                 sections_view,
