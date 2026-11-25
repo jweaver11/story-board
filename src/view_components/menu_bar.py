@@ -603,6 +603,8 @@ class MenuBar(ft.Container):
             )
             #popup_animation_style=ft.AnimationStyle.no_animation()
         )
+
+        cloud_loading = ft.ProgressBar(width=24, bar_height=2, visible=False)
         
         set_cloud_button()
 
@@ -629,9 +631,12 @@ class MenuBar(ft.Container):
                         ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
                         tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                     ),
-                    self.cloud_button,
+                    ft.Column([
+                        self.cloud_button,
+                        cloud_loading,
+                    ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                     settings_button,   # Settings button
-                ], tight=True, spacing=0)
+                ], tight=True, spacing=0, )
             ]
         )
 
@@ -647,7 +652,10 @@ class MenuBar(ft.Container):
                     ft.Icons.INFO_OUTLINED, color=ft.Colors.PRIMARY, scale=.5, 
                     tooltip="Storyboard is currently in alpha. Bugs are expected. More features coming soon! \nJoin the Discord (Settings -> Resources) to suggest your features and report bugs"
                 ),
-                self.cloud_button,
+                ft.Column([
+                    self.cloud_button,
+                    cloud_loading,
+                ], spacing=0),
                 settings_button,   # Settings button
             ]
         ) if self.page.platform.is_mobile() else None
