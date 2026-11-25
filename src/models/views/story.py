@@ -41,6 +41,8 @@ class Story(ft.View):
 
         self.data = data                # Sets our data (if any) passed in. New stories just have none
 
+        
+
         # Verifies this object has the required data fields, and creates them if not
         if data is None:
             id = str(uuid.uuid4())
@@ -50,10 +52,8 @@ class Story(ft.View):
                 'id': id,
 
                 # Directory paths and file paths
-                'directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id),
-                'content_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "content"),   # Path to store widget json files
-                'canvas_directory_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, "canvas"),     # Path to store canvas png captures
-                'file_path': os.path.join(constants.STORIES_DIRECTORY_PATH, id, f"{id}.json"),   # Path to story's json file
+                'directory_path': self.get_directory_path(title, id),
+                'content_directory_path': os.path.join(self.get_directory_path(title, id), "content"),   # Path to store widget json files
                 'created_at': time.time(),
 
                 'selected_rail': "content",
@@ -107,6 +107,13 @@ class Story(ft.View):
 
         ft.context.page.run_task(self.create_template_content)
 
+    def get_directory_path(self, title: str='untitled', id: str='noid') -> str:
+        return os.path.join(constants.STORIES_DIRECTORY_PATH, f"{return_safe_name(title)}_story_{id}")
+
+    # Returns our filename for comparison or file saving purposes (title+tag+id)
+    def get_filename(self) -> str:
+        return f"{return_safe_name(self.data.get('title', 'untitled'))}_{self.data.get('tag', 'untagged')}_{self.data.get('id', 'noid')}.json"
+
           
     # Isolates stories from page.update calls. Needed for keeping performance when opening menus
     def is_isolated(self): 
@@ -136,9 +143,11 @@ class Story(ft.View):
 
             # Create the directory if it doesn't exist. Catches errors from users deleting folders
             os.makedirs(self.data.get('directory_path'), exist_ok=True)
+
+            file_path = os.path.join(self.data.get('directory_path'), self.get_filename())
             
             # Save the data to the file (creates file if doesnt exist)
-            with open(self.data.get('file_path'), "w", encoding='utf-8') as f:   
+            with open(file_path, "w", encoding='utf-8') as f:   
                 json.dump(self.data, f, indent=4)
         
         # Handle errors

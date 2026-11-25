@@ -19,6 +19,7 @@ import uuid
 from styles.text_fields import TextField, SidebarTitleTextField
 import time
 import flet_shadcn_ui as shad
+from utils.safe_string_checker import return_safe_name
 
 
 
@@ -112,12 +113,16 @@ class Widget(ft.Container):
         if self.needs_file_write == False:
             self.needs_file_write = True
 
+    # Returns our filename for comparison or file saving purposes (title+tag+id)
+    def get_filename(self) -> str:
+        return f"{return_safe_name(self.data.get('title', 'untitled'))}_{self.data.get('tag', 'untagged')}_{self.data.get('id', 'noid')}.json"
+
     # Writes our current data to the correct json file if we are dirty
     async def save_file(self):
         if self.needs_file_write == True:
             print("Saving widget to file: ", self.data.get('title', 'Untitled'))
 
-            file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
+            file_path = os.path.join(self.data.get('directory_path'), self.get_filename())
 
             try:
                 os.makedirs(self.data.get('directory_path'), exist_ok=True)     # Make sure directory exists still
@@ -138,7 +143,7 @@ class Widget(ft.Container):
         try:
 
             # File path to save our json data to
-            old_file_path = os.path.join(self.data.get('directory_path'), f"{self.data.get('id')}.json")
+            old_file_path = os.path.join(self.data.get('directory_path'), f"{self.get_filename()}")
 
             # Delete the file if it exists
             if os.path.exists(old_file_path):
