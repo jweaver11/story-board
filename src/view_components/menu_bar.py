@@ -608,11 +608,10 @@ class MenuBar(ft.Container):
         
         set_cloud_button()
 
-        settings_button = shad.Button(
-            ft.Icon(ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY),
+        settings_button = ft.IconButton(
+            ft.Icons.SETTINGS_OUTLINED, ft.Colors.PRIMARY,
             on_click=handle_settings_clicked,
-            variant=shad.ButtonVariant.GHOST,
-            size=shad.ButtonSize.SM
+            style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
         )
 
 

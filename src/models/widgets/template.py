@@ -16,6 +16,7 @@ from utils.safe_string_checker import return_safe_name
 from styles.tooltip import Tooltip
 import asyncio
 from styles.highlight_button import HighlightButton
+import math
 
 
 IMAGES_SPACING = 20
@@ -392,9 +393,33 @@ class Template(Widget):
 
                 # Rebuild our tabs and views after deletion
                 refresh_sections()
+
+            # Moves the given section left or right in the tab order
+            async def move_section(e: ft.Event[ft.Control]):
+                old_index = index - 1   # Offset for the overview tab
+                new_index = old_index + e.control.data
+
+                # Clamp new index to valid range - should be impossible but just in case
+                if new_index < 0 or new_index >= tabs.length:
+                    return
+
+                # Update the data
+                section_items = list(self.data.get('section_data', {}).items())
+                
+                section_items[old_index], section_items[new_index] = section_items[new_index], section_items[old_index]
+                
+                new_section_data = dict(section_items)
+                
+                self.data['section_data'] = new_section_data
+                self.update_data(**{'section_data': self.data['section_data'], 'selected_index': new_index + 1})
+                tabs.selected_index = new_index + 1
+                tab_buttons.selected_index = new_index + 1
+
+                # Update U
+                refresh_sections()
                 
             # First one can't be deleted, since the tabs need 2 or more tabs (overview + section 1)
-            if index == 1:   
+            if index == 0:   
                 return ft.Text(section_name, data=index)
 
             # Otherwise build out a context menu tab with delete option
@@ -404,9 +429,18 @@ class Template(Widget):
                     on_tap=change_tab, data=index  # Hold index so we know which tab was right clicked or changed to
                 ),
                 items=[
+                    shad.MenuItem(
+                        "Move Left", ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20, rotate=math.pi),
+                        on_click=move_section, data=-1, disabled=index <= 1
+                    ),
+                    shad.MenuItem(
+                        "Move Right", ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20),
+                        on_click=move_section, data=1, disabled=index >= len(self.data.get('section_data', {}))
+                    ),
+                    shad.Separator(ft.Margin.symmetric(vertical=4)),
                     shad.MenuItem(  # Delete section option
                         "Delete Section", ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 20),
-                        on_click=delete_section
+                        on_click=delete_section, disabled=len(self.data.get('section_data', {})) <= 1
                     )
                 ],
             )

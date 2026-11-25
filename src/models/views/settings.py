@@ -20,6 +20,9 @@ import flet_shadcn_ui as shad
 from flet_color_pickers import ColorPicker
 from styles.highlight_button import HighlightButton
 from styles.card import Card
+from utils.safe_string_checker import return_safe_name
+import math
+from copy import deepcopy
  
 class Settings(ft.View):
 
@@ -223,6 +226,7 @@ class Settings(ft.View):
     # Called for little data changes
     def update_data(self, **kwargs):
         ''' Changes a key/value pair in our data and saves the json file ''' 
+
 
         # Allow updating of nested dicts without overriding the entire dict
         def _merge_data(target: dict, updates: dict):
@@ -929,238 +933,242 @@ class Settings(ft.View):
 
     def _load_template_settings(self):
         types = ("character", "world", "item")
-        editor = ft.Container(expand=True, padding=ft.Padding.all(10))
+        editor = ft.Column(expand=True, margin=10)
+        section_idx = 0
 
-        def refresh():
-            widget_type = types[rail.selected_index]
-            template = get_template(self.data, widget_type)
-            is_item = widget_type == "item"
+        # Refreshes our editor after changes are made so the UI reflects the latest template settings.
+        def refresh(update: bool=True):
 
-            def redraw():
+            # Show the tf to the right of the tabs to name a new section and hide the button
+            async def show_new_section_tf(e=None):
+                new_section_tf.visible = True
+                new_section_button.visible = False
+                new_section_button.update()
+                new_section_tf.update()
+                await new_section_tf.focus()
+                await sections_header.scroll_to(offset=-1, duration=ft.Duration(milliseconds=200))
+    
+            # Hide the tf for naming a new section and show the new section button again
+            async def hide_new_section_tf(e=None):
+                new_section_tf.visible = False
+                new_section_tf.value = ""
+                new_section_tf.error = None
+                new_section_tf.update()
+                new_section_button.visible = True
+                new_section_button.update()
+
+            # Change the tab manually
+            def change_tab(e: ft.Event[ft.Control]):
+                nonlocal section_idx
+    
+                if isinstance(e.control, ft.GestureDetector):   # Handle our manual tab switching via gesture detector
+                    section_idx = e.control.data
+                else:
+                    section_idx = e.control.selected_index    # Use built in tab switching
+                    
+                # Update controls
+                section_tabs.selected_index = section_idx
+                section_tab_buttons.selected_index = section_idx
+                section_tab_buttons.update()
+                section_tabs.update()
+
+            # Reset the template data to default
+            def reset_to_defaults(e):
+                self.update_data(**{f"{widget_type}_template": TEMPLATE_DEFAULTS[widget_type]})
                 refresh()
-                editor.update()
-                #self.page.run_task(editor.content.scroll_to, -1)    # Scroll to bottom to maintain position
 
+            # Create a section in the template
+            async def create_section(e=None):
+                nonlocal section_idx
+                section_name = return_safe_name(new_section_tf.value)
+                if not section_name:
+                    self.page.show_dialog(shad.Toast("Section name cannot be empty.", variant=shad.ToastVariant.DESTRUCTIVE))
+                    return
+                if section_name in template:
+                    self.page.show_dialog(shad.Toast("Section name already exists.", variant=shad.ToastVariant.DESTRUCTIVE))
+                    return
+    
+                template[section_name] = {}
+                self.update_data(**{f"{widget_type}_template": template})
+                section_idx = len(section_tab_buttons.controls)
+                refresh()
 
-            def move(values, old_index, new_index):
-                if isinstance(values, dict):
-                    entries = list(values.items())
-                    entries.insert(new_index, entries.pop(old_index))
-                    values.clear()
-                    values.update(entries)
-                else:
-                    values.insert(new_index, values.pop(old_index))
-                redraw()
+            # Builds a tab control for the given section index and name
+            def build_tab_ctrl(index: int, section_name: str):
 
-            def add_input(label, names, add, extra_menu_items=None, use_button=False):
-                def cancel(e):
-                    field.visible = False
-                    field.value = ""
-                    field.error = None
-                    editor.update()
-
-                def submit(e):
-                    name = (field.value or "").strip()
-                    if not name or name in names():
-                        field.error = "Name already exists or is empty"
-                        field.update()
-                        return
-                    add(name)
-                    redraw()
-
-                field = ft.TextField(
-                    label=f"New {label}", dense=True, #expand=True,
-                    capitalization=ft.TextCapitalization.WORDS, bgcolor=ft.Colors.SURFACE,
-                    on_blur=cancel, on_submit=submit, visible=False, autofocus=True,
-                    suffix_icon=ft.IconButton(
-                        ft.Icons.ADD_OUTLINED, ft.Colors.PRIMARY,
-                        on_click=submit,
-                        mouse_cursor="click",
-                    ),
-                )
-
-                async def show(e):
-                    field.visible = True
-                    editor.update()
-                    await field.focus()
-
-                
-                
-                if use_button:
-                    action_control = ft.Container(
-                        ft.Button(
-                            f"New {label}",
-                            icon_color=ft.Colors.PRIMARY,
-                            on_click=show, bgcolor=ft.Colors.SURFACE,
-                            style=ft.ButtonStyle(mouse_cursor="click", shape=ft.RoundedRectangleBorder(radius=4), text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=20)),
-                        ),
-                        border_radius=4,
-                    )
-                else:
-                    menu_items = [
-                        shad.MenuItem(f"New {label}", ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 20), on_click=show),
-                    ]
-                    if extra_menu_items:
-                        menu_items.extend(extra_menu_items)
-                    action_control = shad.ContextMenu(
-                        HighlightButton(ft.Icon(ft.Icons.MORE_VERT, ft.Colors.PRIMARY), use_padding=True, is_round=True),
-                        menu_items,
-                        open_on_tap=True,
-                    )
-                return ft.Row([action_control, field], tight=True, spacing=0, expand=True)
-
-            def field_list(fields):
-                rows = []
-                names = list(fields) if isinstance(fields, dict) else [field["title"] for field in fields]
-                for index, name in enumerate(names):
-                    def delete(e, name=name, index=index):
-                        if isinstance(fields, dict):
-                            del fields[name]
-                        else:
-                            fields.pop(index)
-                        redraw()
-
-                    rows.append(
-                        ft.ReorderableDragHandle(
-                            ft.Row([
-                                ft.Text(name, expand=True),
-                                
-                                ft.IconButton(
-                                    icon=ft.Icons.DELETE_OUTLINE, icon_color=ft.Colors.ERROR,
-                                    tooltip="Delete field", on_click=delete,
-                                ),
-                                ft.Container(width=48),
-                            ],  spacing=0, margin=ft.Margin.only(left=10),), 
-                            mouse_cursor=ft.MouseCursor.GRAB, expand=True,
-                            key=str(index),
-                        )
-                    )
-
-                if not rows:
-                    return ft.Container(height=0)
-
-                def reorder(e: ft.OnReorderEvent):
-                    if e.old_index is None or e.new_index is None:
-                        raise ValueError("Field reorder event is missing an index")
-                    move(fields, e.old_index, e.new_index)
-
-                return ft.ReorderableListView(
-                    controls=rows, height=48 * len(rows), item_extent=48,
-                    show_default_drag_handles=True, on_reorder=reorder,
-                )
-
-            def field_input(fields, section_menu_items=None, use_button=False):
-                def names():
-                    return fields if isinstance(fields, dict) else [field["title"] for field in fields]
-
-                def add(name):
-                    if isinstance(fields, dict):
-                        fields[name] = ""
-                    else:
-                        fields.append({"title": name, "content": ""})
-
-                return add_input("Field", names, add, section_menu_items, use_button=use_button)
-
-            def reset(e):
-                def confirm(e):
-                    self.data[f"{widget_type}_template"] = TEMPLATE_DEFAULTS[widget_type]()
-                    self.page.pop_dialog()
-                    redraw()
-
-                self.page.show_dialog(ft.AlertDialog(
-                    title=ft.Text(f"Reset {widget_type.capitalize()} Template?"),
-                    content=ft.Text("This replaces the current template with its defaults."),
-                    actions=[
-                        ft.TextButton("Cancel", on_click=lambda e: self.page.pop_dialog()),
-                        ft.TextButton("Reset", on_click=confirm),
-                    ],
-                ))
-
-            controls = [
-                ft.Row([
-                    ft.Text(f"{widget_type.capitalize()} Template",
-                            theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM, expand=True),
-                    ft.TextButton("Reset to Default", on_click=reset),
-                ]),
-                ft.Divider(),
-            ]
-            if is_item:
-                controls.append(ft.Container(
-                    content=field_list(template),
-                    border_radius=ft.BorderRadius.all(4),
-                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                    margin=ft.Margin.all(2),
-                    padding=ft.Padding.all(10),
-                ))
-                controls.append(field_input(template, use_button=True))
-            else:
-                for index, (name, fields) in enumerate(template.items()):
-                    def delete_section(e, name=name):
-                        del template[name]
-                        redraw()
-
-                    section_menu_items = [
+                def get_tab_items() -> list[shad.MenuItem]:
+                    return [
                         shad.MenuItem(
-                            "Move Up",
-                            ft.Icon(ft.Icons.ARROW_UPWARD, ft.Colors.PRIMARY, 20),
-                            on_click=lambda e, index=index: move(template, index, index - 1),
-                            disabled=index == 0,
+                            "Move Left", ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20, rotate=math.pi),
+                            on_click=move_section, data=-1, disabled=index == 0
                         ),
                         shad.MenuItem(
-                            "Move Down",
-                            ft.Icon(ft.Icons.ARROW_DOWNWARD, ft.Colors.PRIMARY, 20),
-                            on_click=lambda e, index=index: move(template, index, index + 1),
-                            disabled=index == len(template) - 1,
+                            "Move Right", ft.Icon(ft.Icons.ARROW_RIGHT_ALT_OUTLINED, ft.Colors.PRIMARY, 20),
+                            on_click=move_section, data=1, disabled=index == len(template.keys()) - 1
                         ),
                         shad.Separator(ft.Margin.symmetric(vertical=4)),
                         shad.MenuItem(
-                            "Delete Section",
-                            ft.Icon(ft.Icons.DELETE_OUTLINE_OUTLINED, ft.Colors.ERROR, 20),
-                            on_click=delete_section,
-                        ),
+                            "Delete Section", ft.Icon(ft.Icons.DELETE_OUTLINE, ft.Colors.ERROR, 20),
+                            on_click=delete_section, disabled=index < 2
+                        )
                     ]
 
-                    controls.append(ft.Container(
-                        border_radius=ft.BorderRadius.all(4),
-                        #border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                        margin=ft.Margin.all(2),
-                        
-                        padding=ft.Padding.all(10),
-                        content=ft.Column([
-                            ft.Row([
-                                ft.Text(name, theme_style=ft.TextThemeStyle.TITLE_MEDIUM,
-                                        weight=ft.FontWeight.BOLD,),
-                                field_input(fields, section_menu_items),
-                                ft.Container(expand=True),
-                            ]),
-                            field_list(fields),
-                        ], tight=True, spacing=0),
-                    ))
-                controls.append(add_input(
-                    "Section", lambda: template,
-                    lambda name: template.update({name: {}}),
-                    use_button=True,
-                ))
+                # Moves the given section left or right in the tab order
+                async def move_section(e: ft.Event[ft.Control]):
+                    nonlocal section_idx, template
+                    old_index = index
+                    new_index = old_index + e.control.data
 
-            editor.content = ft.Column(controls, scroll=ft.ScrollMode.AUTO, expand=True)
+                    # Clamp new index to valid range - should be impossible but just in case
+                    if new_index < 0 or new_index >= len(template.keys()):
+                        return
 
-        def select(e):
+                    # Update the data
+                    template_items = list(template.items())
+                    template_items[old_index], template_items[new_index] = template_items[new_index], template_items[old_index]
+                    
+                    new_template = dict(template_items)
+                    
+                    self.data[f"{widget_type}_template"] = new_template
+                    #self.update_data(**{f"{widget_type}_template": new_template})  # Doesn't work for some reason
+
+                    # Update UI
+                    section_idx = new_index
+                    refresh()
+    
+                # Delete the section from data, tab bar, and tab bar views
+                def delete_section(e=None):
+    
+                    # Delete from data
+                    if section_name in template:
+                        del template[section_name]
+                        self.update_data(**{f"{widget_type}_template": template})
+    
+                    # Rebuild our tabs and views after deletion
+                    refresh()
+    
+                # Otherwise build out a context menu tab with delete option
+                return shad.ContextMenu(    # CM so we can right click on the tab
+                    content=ft.GestureDetector(     # GD to switch tabs since the CM blocks click events :(
+                        ft.Row([ft.Text(section_name)], alignment=ft.MainAxisAlignment.CENTER), # Row forces text to take up the full width of the tab
+                        on_tap=change_tab, data=index  # Hold index so we know which tab was right clicked or changed to
+                    ),
+                    items=get_tab_items()
+                )
+
+                
+                
+
+
+            widget_type = types[rail.selected_index]
+            template: dict = get_template(self.data, widget_type)
+
+            editor.controls.clear()
+
+            # Header at the top of the page
+            header = ft.Row(
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Text(f"Editing {str(widget_type).capitalize()} template", theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM),
+                    ft.TextButton(
+                        "Reset to Defaults", 
+                        on_click=reset_to_defaults,
+                        style=ft.ButtonStyle(bgcolor=ft.Colors.SURFACE, shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK),
+                    )
+                ]
+            )
+
+            # Tab buttons for each section
+            section_tab_buttons = ft.CupertinoSlidingSegmentedButton(
+                thumb_color=ft.Colors.SURFACE,
+                selected_index=section_idx if section_idx < len(template.keys()) else 0,
+                on_change=change_tab,
+                controls=[build_tab_ctrl(index, section_name) for index, section_name in enumerate(template.keys())],            
+            )
+
+            # Button to add new sections
+            new_section_button = ft.IconButton(
+                ft.Icons.ADD_CIRCLE_OUTLINE_OUTLINED, ft.Colors.PRIMARY, 22, #size=20,
+                bgcolor=ft.Colors.SURFACE,
+                height=32, width=40, 
+                on_click=show_new_section_tf,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), mouse_cursor=ft.MouseCursor.CLICK, padding=ft.Padding.symmetric(vertical=5, horizontal=9))
+            )
+    
+            # Textfield for adding new sections
+            new_section_tf = ft.TextField(
+                autofocus=True, label="Section Name", capitalization=ft.TextCapitalization.SENTENCES, visible=False,
+                on_submit=create_section, 
+                on_blur=hide_new_section_tf, 
+                dense=True, bgcolor=ft.Colors.SURFACE,
+                content_padding=ft.Padding.symmetric(vertical=8, horizontal=10)
+            )
+
+            # Header containing tab buttons + add section button and tf
+            sections_header = ft.Row([
+                section_tab_buttons,
+                new_section_button,
+                new_section_tf
+            ], scroll=ft.ScrollMode.HIDDEN)
+
+            # Body containing the content for whatever selected section
+            sections_view = ft.TabBarView([
+                ft.Text(section_name) for section_name in template.keys()
+            ], expand=True)
+
+            # Tabs system
+            section_tabs = ft.Tabs(
+                selected_index=section_idx if section_idx < len(template.keys()) else 0,
+                length=len(template.keys()),
+                content=ft.Column([
+                    sections_header,
+                    sections_view,
+                ], expand=True)
+            )
+
+            # Set the editor controls
+            editor.controls = [
+                header,
+                ft.Divider(),
+                section_tabs,
+            ]
+
+            if update:
+                editor.update()
+
+            # TODO: Rename, reorder, delete sections
+            # Reorder, delete fields
+
+        def handle_section_change(e=None):
+            nonlocal section_idx
+            section_idx = 0
             refresh()
-            editor.update()
 
         rail = ft.NavigationRail(
             selected_index=0,
             bgcolor=ft.Colors.TRANSPARENT,
             label_type=ft.NavigationRailLabelType.ALL,
-            on_change=select,
+            on_change=handle_section_change,
             destinations=[
-                ft.NavigationRailDestination(icon=ft.Icons.PERSON_OUTLINED, label="Character"),
-                ft.NavigationRailDestination(icon=ft.Icons.PUBLIC_OUTLINED, label="World"),
-                ft.NavigationRailDestination(icon=ft.Icons.STAR_OUTLINE_ROUNDED, label="Item"),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.PERSON_OUTLINED, 
+                    selected_icon=ft.Icon(ft.Icons.PERSON, ft.Colors.PRIMARY),
+                    label="Character"
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.PUBLIC_OUTLINED, 
+                    selected_icon=ft.Icon(ft.Icons.PUBLIC, ft.Colors.PRIMARY),
+                    label="World"
+                ),
+                ft.NavigationRailDestination(
+                    icon=ft.Icons.STAR_OUTLINE_ROUNDED, 
+                    selected_icon=ft.Icon(ft.Icons.STAR_ROUNDED, ft.Colors.PRIMARY),
+                    label="Item"
+                ),
             ],
         )
-        refresh()
+        refresh(update=False)
         return ft.Column([
             ft.Row([
                 ft.Text("Templates", theme_style=ft.TextThemeStyle.HEADLINE_LARGE, expand=True),
@@ -1178,9 +1186,10 @@ class Settings(ft.View):
             ft.Container(height=10),
             ft.Divider(),
             ft.Row(
-                [rail, ft.VerticalDivider(), editor, ft.Container(width=10)],
+                controls=[rail, ft.VerticalDivider(), editor],
                 scroll="none", expand=True,
                 vertical_alignment=ft.CrossAxisAlignment.START,
+                margin=ft.Margin.only(right=10)
             ),
         ])
 
