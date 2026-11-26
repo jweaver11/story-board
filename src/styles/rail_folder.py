@@ -13,12 +13,13 @@ import flet_shadcn_ui as shad
 from styles.text_fields import TextField
 from styles.highlight_button import HighlightButton
 from styles.tooltip import Tooltip
-
+from styles.buttons import PopupMenuButton, PopupMenuItem
+from models.isolated_controls.container import IsolatedContainer
 
 
 # Expansion tile for all sub directories (folders) in a directory
 @ft.control
-class RailFolder(ft.GestureDetector):
+class RailFolder(ft.Container):
 
 
     def __init__(
@@ -50,8 +51,9 @@ class RailFolder(ft.GestureDetector):
 
         # Parent constructor
         super().__init__(
-            mouse_cursor=ft.MouseCursor.CLICK,
-            exclude_from_semantics=True, expand=True,
+            #mouse_cursor=ft.MouseCursor.CLICK,
+            #exclude_from_semantics=True, 
+            expand=True,
         )
         
         
@@ -476,6 +478,9 @@ class RailFolder(ft.GestureDetector):
         self.notes_popover.update()
         await self.notes_text.focus()
 
+    def is_isolated(self):
+        return True
+
     # Called when we need to reload this directory tile
     def build(self):
         from utils.load_directory import load_directory_controls
@@ -494,6 +499,14 @@ class RailFolder(ft.GestureDetector):
             )
             self.expansion_tile.title.tooltip = Tooltip(message=self.notes)
             self.expansion_tile.title.update()
+
+        def show_context_menu(e=None):
+            context_menu.opacity = 1
+            context_menu.update() 
+
+        def hide_context_menu(e=None):
+            context_menu.opacity = 0
+            context_menu.update()
 
         self.new_item_tf = ft.TextField(     
             hint_text="", data="",                 # Hint text and data tag for logic                      
@@ -542,21 +555,36 @@ class RailFolder(ft.GestureDetector):
             directory=self.full_path,
         )
 
+        context_menu = shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
+            HighlightButton(ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.ON_SURFACE_VARIANT)),
+            items=self.menu_items(),
+            open_on_tap=True,
+            opacity=0
+        )
+
+        
+
         # The expansiontile that will hold everything
-        self.expansion_tile = IsolatedExpansionTile(
-            title=ft.Row(
-                [
-                    ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),  # icon
-                    ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
-                    self.notes_popover, # Shows the popover for the textarea for the notes
-                    shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
-                        HighlightButton(ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.ON_SURFACE_VARIANT)),
-                        items=self.menu_items(),
-                        open_on_tap=True,
+        self.expansion_tile = ft.ExpansionTile(
+            title=ft.GestureDetector(
+                on_enter=show_context_menu,
+                on_exit=hide_context_menu,
+                content=shad.ContextMenu(
+                    content=ft.Container(
+                        on_click=open_expansion_tile,
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.Icons.FOLDER_OUTLINED, self.color),  # icon
+                                ft.Text(value=self.title, weight=ft.FontWeight.BOLD, text_align="left", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                                self.notes_popover, # Shows the popover for the textarea for the notes
+                                context_menu,
+                            ], 
+                            expand=True, spacing=6, 
+                            tooltip=Tooltip(message=self.notes)
+                        ),
                     ),
-                ], 
-                expand=True, spacing=6, 
-                tooltip=Tooltip(message=self.notes)
+                    items=self.menu_items(),
+                )
             ),
             dense=True, min_tile_height=0,
             collapsed_shape=ft.RoundedRectangleBorder(radius=4),
@@ -564,7 +592,7 @@ class RailFolder(ft.GestureDetector):
             expanded=self.is_expanded,
             tile_padding=ft.Padding(6, 2, 6, 2),
             icon_color=self.color, adaptive=True,
-            controls_padding=ft.Padding(20, 0, 0, 0),       # Keeps all sub children indented slightly
+            controls_padding=ft.Padding(16, 0, 0, 0),       # Keeps all sub children indented slightly
             expanded_cross_axis_alignment=ft.CrossAxisAlignment.START,
             shape=ft.RoundedRectangleBorder(radius=4),
             on_change=self.toggle_expand,
@@ -604,6 +632,9 @@ class RailFolder(ft.GestureDetector):
                 ], expand=True)
             ),
         )
+
+        #self.on_enter = show_context_menu
+        #self.on_exit = hide_context_menu
 
         
         

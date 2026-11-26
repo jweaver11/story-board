@@ -347,13 +347,14 @@ class Widget(ft.Container):
         name = e.control.value
                                                 
         # Update our live title, and associated data
-        self.update_data(**{'title': name})   # Update our data with the new title and key
-        await self.save_file()  # Force a file save
-                
-        self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the name change
+        if await self.delete_file():
+            self.update_data(**{'title': name})   # Update our data with the new title and key
+            await self.save_file()  # Force a file save
+                    
+            self.story.tree_view_rail.reload_rail()   # Reload the rail to reflect the name change
 
-        if self.data.get('visible', False) == True:
-            await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
+            if self.data.get('visible', False) == True:
+                await self.story.workspace.update_widget_tab_title(self.data.get('index'), self.data.get('title'))  # Update the title of the tab in the workspace if we're visible
         
         e.page.pop_dialog()
         

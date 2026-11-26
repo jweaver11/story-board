@@ -1288,7 +1288,7 @@ class Map(Widget):
             self.context_menu.items = self.get_new_item_options()
             self.map_controller.update()
             
-            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"])
+            files = await ft.FilePicker().pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp", "jfif"])
             if files:
 
                 file_path = files[0].path

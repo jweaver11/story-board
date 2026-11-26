@@ -10,6 +10,7 @@ import asyncio
 import math
 from styles.snack_bar import SnackBar
 import flet_shadcn_ui as shad
+from styles.highlight_button import HighlightButton
 
 # Class for items within a tree view on the rail
 class RailFile(ft.GestureDetector):
@@ -151,13 +152,13 @@ class RailFile(ft.GestureDetector):
     # Called when hovering mouse over a tree view item
     async def _highlight(self, e=None):
         self.content.content.content.bgcolor = ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)
-        #self.options_button.opacity = 1
+        self.context_menu.opacity = 1
         self.update()
 
     # Called when stopping hover over a tree view item
     async def _stop_highlight(self, e=None):
         self.content.content.content.bgcolor = ft.Colors.TRANSPARENT
-        #self.options_button.opacity = 0
+        self.context_menu.opacity = 0
         self.update()
 
 
@@ -184,6 +185,14 @@ class RailFile(ft.GestureDetector):
 
         self.title_text = ft.Text(self.widget.data.get('title', 'untitled'), style=self.text_style, expand=True, overflow=ft.TextOverflow.ELLIPSIS)
 
+        self.context_menu = shad.ContextMenu(   # CM for opening menu when right clicking title of expansion tile
+            HighlightButton(ft.Icon(ft.Icons.MORE_HORIZ, ft.Colors.ON_SURFACE_VARIANT)),
+            items=self.get_menu_options(),
+            open_on_tap=True,
+            opacity=0,
+            margin=ft.Margin.only(right=6)
+        )
+
         self.content = ft.Draggable( 
             group="widgets",
             data=self.widget.data.get('id', ""),
@@ -194,12 +203,13 @@ class RailFile(ft.GestureDetector):
                         leading_control, 
                         self.title_text,
                         self.edit_title_tf,
-                        #self.options_button
+                        self.context_menu
                     ], spacing=6),
                     border_radius=4,
                     on_click=self.widget.show_widget,
                     padding=ft.Padding.symmetric(vertical=2),
                 ),
+                
                 items=self.get_menu_options(),
                 open_on_long_press=True if ft.context.page.platform.is_mobile() else False, 
             ),

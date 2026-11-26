@@ -488,7 +488,7 @@ class Template(Widget):
             async def upload_image(e: ft.Event):
                 # Grab a file and upload it
                 files = await ft.FilePicker().pick_files(
-                    allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp"],
+                    allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "webp", "jfif"],
                     dialog_title="Select image"
                 )
                 if files:
