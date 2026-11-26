@@ -208,7 +208,7 @@ class Workspace(ft.Container):
     # Creates a placeholder control for the tab view if there are no widgets in the workspace, since tab view needs a non-empty list
     def create_placeholder_tab_view(self) -> ft.Container:
         return ft.Container(
-            ft.Text("Add a widget to the workspace", theme_style=ft.TextThemeStyle.TITLE_LARGE), 
+            ft.Text(" ", theme_style=ft.TextThemeStyle.TITLE_LARGE), 
             expand=True, alignment=ft.Alignment.CENTER
         )
     

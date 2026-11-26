@@ -542,16 +542,6 @@ class RailFolder(ft.GestureDetector):
             directory=self.full_path,
         )
 
-        if not sub_folder_controls:
-            sub_folder_controls = [
-                ft.Container(
-                    ft.Text(f"Add items to {self.title}", color=ft.Colors.OUTLINE, italic=True, size=12), 
-                    border=ft.Border.only(left=ft.BorderSide(width=2, color=ft.Colors.OUTLINE_VARIANT)),
-                    padding=ft.Padding.only(left=6), height=29, alignment=ft.Alignment.CENTER_LEFT,
-                    on_click=self.new_item_clicked, visible=False
-                )
-            ]
-
         # The expansiontile that will hold everything
         self.expansion_tile = IsolatedExpansionTile(
             title=ft.Row(
